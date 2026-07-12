@@ -27,11 +27,11 @@ def build_cadastro_mestre():
     
     def process_ticker(ticker):
         try:
-            zz = ed.lista_caracteristicas(ticker)
-            if zz is None or zz.empty:
+            carac_deb = ed.lista_caracteristicas(ticker)
+            if carac_deb is None or carac_deb.empty:
                 return None
                 
-            dict_carac = {x.strip(): y for x, y in zip(zz.Descricao, zz.Valores)}
+            dict_carac = {str(x).strip(): (str(y).strip() if pd.notna(y) else '') for x, y in zip(carac_deb.Descricao, carac_deb.Valores)}
             
             data_vencimento = dict_carac.get('Data de Vencimento')
             indexador = dict_carac.get('indice')
@@ -44,12 +44,29 @@ def build_cadastro_mestre():
             except Exception:
                 data_venc_dt = pd.to_datetime(data_vencimento).strftime('%Y-%m-%d')
 
+            data_emissao = dict_carac.get('Data de Emissao', '')
+            try:
+                data_emissao_dt = pd.to_datetime(data_emissao, format='%d/%m/%Y').strftime('%Y-%m-%d') if data_emissao and data_emissao != '--' else ''
+            except Exception:
+                data_emissao_dt = ''
+
             return {
                 'Ticker': ticker,
-                'Indexador': str(indexador).strip().upper() if indexador else 'PRE',
-                'Data_Vencimento': data_venc_dt
+                'Indexador': str(indexador).upper() if indexador else 'PRE',
+                'Data_Emissao': data_emissao_dt,
+                'Data_Vencimento': data_venc_dt,
+                'Empresa': dict_carac.get('Empresa', ''),
+                'CNPJ': dict_carac.get('CNPJ', ''),
+                'Emissao': dict_carac.get('Emissao', ''),
+                'Situacao': dict_carac.get('Situacao', ''),
+                'Classe': dict_carac.get('Classe', ''),
+                'Garantia': dict_carac.get('Garantia/Especie', ''),
+                'Deb_Incentivada': dict_carac.get('Deb. Incent. (Lei 12.431)', ''),
+                'Resgate_Antecipado': dict_carac.get('Resgate Antecipado', ''),
+                'Agente_Fiduciario': dict_carac.get('Agente Fiduciario', ''),
+                'Coordenador_Lider': dict_carac.get('Coordenador Lider', '')
             }
-        except Exception:
+        except Exception as e:
             return None
 
     import concurrent.futures
@@ -82,10 +99,21 @@ def build_cadastro_mestre():
             
     df_cad['Indexador'] = df_cad['Indexador'].apply(clean_indexador)
     
-    # Salvando sobre o nosso mock
+    # Salvando o cadastro ampliado
     df_cad.to_csv(out_path, index=False)
     logger.info(f"Cadastro mestre real construído com sucesso! Salvo em: {out_path}")
     logger.info(f"Total de debêntures consolidadas: {len(df_cad)}")
+
+    # Unificação com o Histórico Bruto para criar o Dataset Integrado de Modelagem (Etapas 2 e 3)
+    logger.info("Realizando unificação do Cadastro Enriquecido com o Histórico Bruto...")
+    df_hist_full = pd.read_csv(hist_path)
+    # Evita duplicação de colunas caso o histórico já tenha recebido merge antes
+    cols_to_use = df_cad.columns.difference(df_hist_full.columns).tolist() + ['Ticker']
+    df_merged = pd.merge(df_hist_full, df_cad[cols_to_use], on='Ticker', how='left')
+    
+    merged_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "dados", "dataset_credito_consolidado.csv"))
+    df_merged.to_csv(merged_path, index=False)
+    logger.info(f"Dataset consolidado (Histórico + Cadastro ampliado) salvo com sucesso em: {merged_path}")
 
 if __name__ == '__main__':
     build_cadastro_mestre()

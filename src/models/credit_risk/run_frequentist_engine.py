@@ -90,12 +90,14 @@ def run_frequentist_pipeline(
     try:
         engine = CreditRiskEngine(df_merged)
         
-        logger.info("Executando pipeline de Volatilidade e K-Means Transversal...")
-        # Usando window_days = 60, step_days = 30 conforme documentação
-        df_completo, df_clusters = engine.execute_pipeline(window_days=60, step_days=30)
+        logger.info("Executando pipeline de Volatilidade e K-Means/GMM...")
+        # Configurar a Data de Corte (Split Date) para isolamento Treino/Validação
+        split_date_cfg = '2023-01-01'
+        logger.info(f"O Split Date (Treino vs Teste) está definido como: {split_date_cfg}")
+        df_completo, df_clusters = engine.execute_pipeline(split_date=split_date_cfg)
         
         if df_clusters.empty:
-            logger.warning("O K-Means não retornou resultados. Base insuficiente?")
+            logger.warning("O Clustering não retornou resultados no período Out-of-Sample. Base insuficiente?")
             return
             
         logger.info("Motor executado com sucesso!")

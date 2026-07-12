@@ -54,6 +54,16 @@ class AnbimaScraper:
         data_str_output = data.strftime("%Y%m%d")
         logger.info(f"Iniciando extração para a data: {data_str_input}")
         
+        # Garante a substituição caso o arquivo final já exista
+        novo_nome = f"{data_str_output}_debentures_previa_anbima.csv"
+        novo_caminho = os.path.join(self.download_dir, novo_nome)
+        if os.path.exists(novo_caminho):
+            try:
+                os.remove(novo_caminho)
+                logger.info(f"Arquivo antigo {novo_nome} removido para ser substituído pela nova extração.")
+            except Exception as e:
+                logger.warning(f"Não foi possível remover o arquivo antigo {novo_nome}: {e}")
+        
         try:
             wait = WebDriverWait(self.driver, 5) # Diminuído timeout para 5s em vez de 20s para acelerar erros
             # Esperar a página carregar até que o input de data apareça
@@ -123,13 +133,40 @@ class AnbimaScraper:
             # Tenta encontrar o botão CSV (se não houver dados, ele falha rápido pelo timeout menor)
             try:
                 btn_csv = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Baixar CSV das prévias do REUNE']")))
+                
+                # Snapshot dos arquivos antes do click para evitar race condition
+                arquivos_antes = set(f for f in os.listdir(self.download_dir) if f.endswith('.csv'))
                 btn_csv.click()
             except Exception:
                 logger.warning(f"Sem botão CSV para {data_str_input} (Sem dados no dia). Pulando...")
                 return
             
-            self._esperar_download()
-            self._renomear_arquivo_recente(data_str_output)
+            # Aguardar o download terminar de forma robusta
+            timeout = 30
+            novo_arquivo = None
+            for _ in range(timeout):
+                time.sleep(1)
+                arquivos_agora = set(f for f in os.listdir(self.download_dir) if f.endswith('.csv'))
+                novos_csvs = arquivos_agora - arquivos_antes
+                
+                if novos_csvs:
+                    # Garantir que nenhum arquivo temporário do Chrome ainda está baixando
+                    if not any(f.endswith(".crdownload") for f in os.listdir(self.download_dir)):
+                        novo_arquivo = list(novos_csvs)[0]
+                        break
+                        
+            if novo_arquivo:
+                caminho_antigo = os.path.join(self.download_dir, novo_arquivo)
+                novo_nome = f"{data_str_output}_debentures_previa_anbima.csv"
+                novo_caminho = os.path.join(self.download_dir, novo_nome)
+                try:
+                    if os.path.exists(novo_caminho):
+                        os.remove(novo_caminho)
+                    os.rename(caminho_antigo, novo_caminho)
+                except Exception as e:
+                    logger.error(f"Erro ao renomear {caminho_antigo}: {e}")
+            else:
+                logger.warning(f"Download não detectado no tempo esperado para {data_str_input}.")
             
             delay = random.uniform(2.0, 5.0)
             logger.info(f"Extração de {data_str_input} concluída com sucesso. Aguardando {delay:.1f} segundos...")
@@ -137,31 +174,6 @@ class AnbimaScraper:
             
         except Exception as e:
             logger.error(f"Erro inesperado ao extrair {data_str_input}: {e}")
-
-    def _esperar_download(self, timeout=30):
-        segundos = 0
-        while segundos < timeout:
-            time.sleep(1)
-            segundos += 1
-            if not any(f.endswith(".crdownload") for f in os.listdir(self.download_dir)):
-                return
-        logger.warning("Tempo limite de download atingido.")
-
-    def _renomear_arquivo_recente(self, data_str: str):
-        files = [os.path.join(self.download_dir, f) for f in os.listdir(self.download_dir) if f.endswith('.csv')]
-        if not files:
-            return
-        
-        latest_file = max(files, key=os.path.getctime)
-        if "reune" in os.path.basename(latest_file).lower() or "export" in os.path.basename(latest_file).lower():
-            novo_nome = f"{data_str}_debentures_previa_anbima.csv"
-            novo_caminho = os.path.join(self.download_dir, novo_nome)
-            try:
-                if os.path.exists(novo_caminho):
-                    os.remove(novo_caminho)
-                os.rename(latest_file, novo_caminho)
-            except Exception as e:
-                logger.error(f"Erro ao renomear o arquivo {latest_file}: {e}")
 
     def extrair_historico(self, data_inicio: str, data_fim: str):
         """
