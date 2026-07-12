@@ -51,6 +51,7 @@ class AnbimaScraper:
 
     def extrair_data(self, data: datetime):
         data_str_input = data.strftime("%d/%m/%Y")
+        data_str_output = data.strftime("%Y%m%d")
         logger.info(f"Iniciando extração para a data: {data_str_input}")
         
         try:
@@ -128,7 +129,7 @@ class AnbimaScraper:
                 return
             
             self._esperar_download()
-            self._renomear_arquivo_recente(data_str_input)
+            self._renomear_arquivo_recente(data_str_output)
             
             delay = random.uniform(2.0, 5.0)
             logger.info(f"Extração de {data_str_input} concluída com sucesso. Aguardando {delay:.1f} segundos...")
@@ -153,7 +154,7 @@ class AnbimaScraper:
         
         latest_file = max(files, key=os.path.getctime)
         if "reune" in os.path.basename(latest_file).lower() or "export" in os.path.basename(latest_file).lower():
-            novo_nome = f"debentures_previa_{data_str.replace('/', '-')}.csv"
+            novo_nome = f"{data_str}_debentures_previa_anbima.csv"
             novo_caminho = os.path.join(self.download_dir, novo_nome)
             try:
                 if os.path.exists(novo_caminho):

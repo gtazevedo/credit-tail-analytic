@@ -221,4 +221,8 @@ __marimo__/
 *.yaml
 
 #HTML
-.html
+*.html
+
+/dados
+/graficos
+/notebooks

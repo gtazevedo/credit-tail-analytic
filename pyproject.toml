@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "credit-tail-analytics"
+version = "1.0.0" 
+authors = [
+  { name="Guilherme Azevedo", email="guilherme.tt.azevedo@gmail.com" },
+]
+description = "Tail risk and secondary market liquidity analytics for Brazilian corporate bonds (debêntures)"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+    "debentures_dot_com",
+    "arch>=5.0",
+    "scikit-learn>=1.0",
+    "pandas",
+    "numpy",
+    "python-bcb",
+    "statsmodels",
+    "selenium",
+    "webdriver-manager",
+    "pymc",
+    "arviz"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/seu-usuario/credit-tail-analytics"
+"Bug Tracker" = "https://github.com/seu-usuario/credit-tail-analytics/issues"
