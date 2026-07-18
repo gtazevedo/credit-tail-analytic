@@ -64,7 +64,15 @@ def build_cadastro_mestre():
                 'Deb_Incentivada': dict_carac.get('Deb. Incent. (Lei 12.431)', ''),
                 'Resgate_Antecipado': dict_carac.get('Resgate Antecipado', ''),
                 'Agente_Fiduciario': dict_carac.get('Agente Fiduciario', ''),
-                'Coordenador_Lider': dict_carac.get('Coordenador Lider', '')
+                'Coordenador_Lider': dict_carac.get('Coordenador Lider', ''),
+                # Novos campos: segmentação e ground truth de validação
+                'Qtd_Emitida': dict_carac.get('Quantidade Emitida', ''),
+                'Qtd_Mercado': dict_carac.get('Quantidade em Mercado', ''),
+                # Taxa de emissão: spread contratado. Comparação com spread atual = medida de deterioração.
+                'Taxa_Emissao': dict_carac.get('Percentual Multiplicador/Rentabilidade', ''),
+                # Ground truth de validação do modelo: se Motivo_Saida == 'Recuperacao Judicial'
+                # e o motor havia sinalizado Vermelho antes, o modelo acertou.
+                'Motivo_Saida': dict_carac.get('Motivo de Saida', ''),
             }
         except Exception as e:
             return None
