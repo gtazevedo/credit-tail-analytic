@@ -17,6 +17,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Topic :: Office/Business :: Financial :: Investment",
 ]
+dependencies = [
     "debentures_dot_com",
     "arch>=5.0",
     "scikit-learn>=1.0",
@@ -27,9 +28,18 @@ classifiers = [
     "selenium",
     "webdriver-manager",
     "pymc",
-    "arviz"
+    "arviz",
+    "hmmlearn>=0.3",
+    "seaborn",
+    "matplotlib"
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/seu-usuario/credit-tail-analytics"
 "Bug Tracker" = "https://github.com/seu-usuario/credit-tail-analytics/issues"
+
+[project.scripts]
+credit-risk-engine = "credit_tail_analytics.models.credit_risk.run_frequentist_engine:_cli_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

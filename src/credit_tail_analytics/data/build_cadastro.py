@@ -4,13 +4,15 @@ import logging
 import pandas as pd
 from tqdm import tqdm
 from debentures_dot_com.emissoes import EmissoesDebentures
+from credit_tail_analytics.utils import dados_dir
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger('CadastroBuilder')
 
 def build_cadastro_mestre():
-    hist_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "dados", "debentures_historico_bruto.csv"))
-    out_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "dados", "cadastro_debentures.csv"))
+    dir_dados = dados_dir()
+    hist_path = dir_dados / "debentures_historico_bruto.csv"
+    out_path = dir_dados / "cadastro_debentures.csv"
     
     if not os.path.exists(hist_path):
         logger.error(f"Arquivo histórico não encontrado: {hist_path}")
@@ -119,7 +121,9 @@ def build_cadastro_mestre():
     cols_to_use = df_cad.columns.difference(df_hist_full.columns).tolist() + ['Ticker']
     df_merged = pd.merge(df_hist_full, df_cad[cols_to_use], on='Ticker', how='left')
     
-    merged_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "dados", "dataset_credito_consolidado.csv"))
+    dir_dados = dados_dir()
+    merged_path = dir_dados / "dataset_credito_consolidado.csv"
+
     df_merged.to_csv(merged_path, index=False)
     logger.info(f"Dataset consolidado (Histórico + Cadastro ampliado) salvo com sucesso em: {merged_path}")
 

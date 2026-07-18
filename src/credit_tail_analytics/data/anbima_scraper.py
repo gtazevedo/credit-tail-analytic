@@ -4,6 +4,7 @@ import random
 import logging
 from datetime import datetime
 import pandas as pd
+from credit_tail_analytics.utils import dados_dir
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -22,7 +23,7 @@ class AnbimaScraper:
         
         if download_dir is None:
             # Padrão para d:/projects/credit-tail-analytic/dados/debentures
-            self.download_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "dados", "debentures"))
+            self.download_dir = str(dados_dir() / "debentures")
         else:
             self.download_dir = os.path.abspath(download_dir)
             

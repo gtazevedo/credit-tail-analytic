@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import logging
 from bcb import sgs
+from credit_tail_analytics.utils import dados_dir
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger('MacroDownloader')
@@ -47,12 +48,11 @@ def download_macro_data(start_date='2018-01-01', end_date='2028-01-01'):
         df_macro.rename(columns={'index': 'Data'}, inplace=True)
         
         # Salva o arquivo em dados/
-        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        dados_dir = os.path.join(base_dir, "dados")
-        if not os.path.exists(dados_dir):
-            os.makedirs(dados_dir)
+        dir_dados = dados_dir()
+        if not dir_dados.exists():
+            dir_dados.mkdir(parents=True, exist_ok=True)
             
-        out_path = os.path.join(dados_dir, "macro_data.csv")
+        out_path = dir_dados / "macro_data.csv"
         df_macro.to_csv(out_path, index=False)
         logger.info(f"Dados macroeconômicos salvos com sucesso em: {out_path}")
         logger.info(f"Shape: {df_macro.shape} | Colunas: {list(df_macro.columns)}")

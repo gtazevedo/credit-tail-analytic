@@ -5,6 +5,7 @@ import re
 import logging
 import datetime
 from tqdm import tqdm
+from credit_tail_analytics.utils import dados_dir
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ def preencher_gaps(folder_path, date_pattern, all_files):
     gaps = expected_dates - datas_existentes
     
     # 4. Remover da lista as datas que sabidamente não existem (Blacklist)
-    blacklist_path = os.path.join(folder_path, "datas_faltantes.csv")
+    blacklist_path = folder_path / "datas_faltantes.csv"
     blacklist_dates = set()
     if os.path.exists(blacklist_path):
         try:
@@ -79,8 +80,8 @@ def preencher_gaps(folder_path, date_pattern, all_files):
                 scraper.extrair_data(dt_gap)
                 
                 # Valida se o arquivo baixou mesmo
-                expected_filename = os.path.join(folder_path, f"{dt_gap.strftime('%Y%m%d')}_debentures_previa_anbima.csv")
-                if not os.path.exists(expected_filename):
+                expected_filename = folder_path / f"{dt_gap.strftime('%Y%m%d')}_debentures_previa_anbima.csv"
+                if not expected_filename.exists():
                     novas_faltantes.append(gap)
         finally:
             scraper.fechar()
@@ -88,7 +89,7 @@ def preencher_gaps(folder_path, date_pattern, all_files):
         if novas_faltantes:
             logger.info(f"{len(novas_faltantes)} gaps eram indisponíveis na fonte. Adicionando à blacklist.")
             new_df = pd.DataFrame({'Data': novas_faltantes})
-            if os.path.exists(blacklist_path):
+            if blacklist_path.exists():
                 new_df.to_csv(blacklist_path, mode='a', header=False, index=False)
             else:
                 new_df.to_csv(blacklist_path, index=False)
@@ -97,8 +98,9 @@ def preencher_gaps(folder_path, date_pattern, all_files):
 
 
 def unify_csvs():
-    folder_path = os.path.join("dados", "debentures")
-    all_files = glob.glob(os.path.join(folder_path, "*.csv"))
+    dir_dados = dados_dir()
+    folder_path = dir_dados / "debentures"
+    all_files = glob.glob(str(folder_path / "*.csv"))
     
     if not all_files:
         logger.error("Nenhum arquivo CSV encontrado na pasta dados/debentures/")
@@ -110,7 +112,7 @@ def unify_csvs():
     preencher_gaps(folder_path, date_pattern, all_files)
     
     # Recarrega a lista de arquivos caso novos tenham sido baixados
-    all_files = glob.glob(os.path.join(folder_path, "*.csv"))
+    all_files = glob.glob(str(folder_path / "*.csv"))
     logger.info(f"Iniciando processamento de unificação em {len(all_files)} arquivos...")
     
     dataframes = []
@@ -179,8 +181,8 @@ def unify_csvs():
 
     # Ordenar por data e por ativo
     df_final = df_final.sort_values(by=['Data', 'Ticker']).reset_index(drop=True)
-    
-    output_path = os.path.join("dados", "debentures_historico_bruto.csv")
+    dir_dados = dados_dir()
+    output_path = dir_dados / "debentures_historico_bruto.csv"
     logger.info(f"Salvando o dataframe consolidado em {output_path}...")
     
     # Salvar em CSV (formato padrão universal, decimal ponto e separador vírgula)
