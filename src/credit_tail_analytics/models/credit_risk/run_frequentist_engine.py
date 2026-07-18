@@ -3,7 +3,7 @@ import sys
 import logging
 import pandas as pd
 import numpy as np
-from .risk_pipeline import CreditRiskEngine
+from credit_tail_analytics.models.credit_risk.risk_pipeline import CreditRiskEngine
 from credit_tail_analytics.utils import dados_dir, graficos_dir
 
 # ---------------------------------------------------------------------------
@@ -161,7 +161,7 @@ def run_frequentist_pipeline(
         df_ult = df_clusters[df_clusters['Data'] == ultima_data]
 
         for grupo, df_g in df_ult.groupby('Indexador_Grupo'):
-            print(f"\n▶  Grupo: {grupo}  ({len(df_g)} ativos em {ultima_data.date()})")
+            print(f"\n>  Grupo: {grupo}  ({len(df_g)} ativos em {ultima_data.date()})")
             print("-" * 70)
 
             cols_show = ['Ticker', 'Taxa_ZScore', 'Volatilidade_EGARCH']

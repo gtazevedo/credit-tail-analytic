@@ -265,17 +265,15 @@ class FeatureSelector:
 # Ponto de entrada standalone
 # ---------------------------------------------------------------------------
 if __name__ == '__main__':
-    import sys
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-    from credit_risk.risk_pipeline import CreditRiskEngine
+    from credit_tail_analytics.models.credit_risk.risk_pipeline import CreditRiskEngine
+    from credit_tail_analytics.utils import dados_dir
     import warnings
     warnings.filterwarnings('ignore')
-
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+    filter_low_liquidity = False
 
     logger.info("Carregando bases para Feature Selection...")
-    hist = pd.read_csv(os.path.join(base_dir, 'dados', 'debentures_historico_bruto.csv'))
-    cad  = pd.read_csv(os.path.join(base_dir, 'dados', 'cadastro_debentures.csv'))
+    hist = pd.read_csv(dados_dir() / 'debentures_historico_bruto.csv')
+    cad  = pd.read_csv(dados_dir() / 'cadastro_debentures.csv')
 
     df = pd.merge(hist, cad[['Ticker', 'Indexador', 'Data_Vencimento']], on='Ticker', how='left')
     df['Data']             = pd.to_datetime(df['Data'])
@@ -293,7 +291,7 @@ if __name__ == '__main__':
     engine = CreditRiskEngine(
         df.dropna(subset=['Data', 'Ticker', 'Indexador', 'PU', 'Taxa_Ativo',
                           'DU_Vencimento', 'Faixa_Volume_ANBIMA']),
-        filter_low_liquidity=True,
+        filter_low_liquidity=False,
     )
     engine.build_volatility_features(split_date='2023-01-01')
 
@@ -301,12 +299,12 @@ if __name__ == '__main__':
         engine.df,
         candidate_features=DEFAULT_CANDIDATE_FEATURES,
         split_date='2023-01-01',
-        filter_low_liquidity=True,
+        filter_low_liquidity=False,
     )
 
     ranking = selector.evaluate_subsets(min_features=2, max_features=4)
 
-    out_path = os.path.join(base_dir, 'dados', 'feature_selection_ranking.csv')
+    out_path = dados_dir() / 'feature_selection_ranking.csv'
     ranking.to_csv(out_path, index=False)
     logger.info(f"Ranking salvo em {out_path}.")
     print("\nTop 5 Conjuntos de Features:")

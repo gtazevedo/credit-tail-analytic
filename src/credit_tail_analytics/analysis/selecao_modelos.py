@@ -357,7 +357,8 @@ def run_validador_econometrico(
     ).reset_index()
 
     df_agg['Win_Rate_AIC_%'] = (df_agg['Vitorias_AIC'] / len(top_tickers)) * 100
-    df_plot = df_agg.sort_values('Rank_Medio_AIC').set_index('Nome do Modelo')
+    #df_plot = df_agg.sort_values('Rank_Medio_AIC').set_index('Nome do Modelo')
+    df_plot = df_agg.sort_values('Win_Rate_AIC_%', ascending=False).set_index('Nome do Modelo')
 
     logger.info(
         f"Torneio concluído. Top 5 modelos:\n"

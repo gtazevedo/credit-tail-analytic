@@ -68,6 +68,9 @@ EVENTOS_CREDITO: Dict[str, List] = {
         ('2024-01-25', 'Chapter 11\n(EUA)'),
         ('2025-04-01', 'Chapter 11\nEncerrado'),
     ],
+    "Rede D'Or": [
+        ('2023-08-01', 'Estresse de\nAlavancagem'),
+    ],
 }
 
 
@@ -362,6 +365,7 @@ def plot_hmm_probability(
     filename: str,
     out_dir: str,
     split_date: str,
+    eventos: Optional[List] = None,
 ):
     """
     Plota a probabilidade contínua de crise (Prob_Crise_HMM) junto ao regime
@@ -381,7 +385,8 @@ def plot_hmm_probability(
         logger.warning(f"[plot_hmm_probability] {title}: nenhum dado.")
         return
 
-    n_tickers = len([t for t in tickers if t in case_df['Ticker'].unique()])
+    tickers_present = [t for t in tickers if t in case_df['Ticker'].unique()]
+    n_tickers = len(tickers_present)
     if n_tickers == 0:
         return
 
@@ -391,7 +396,7 @@ def plot_hmm_probability(
 
     split_dt = pd.to_datetime(split_date)
 
-    for ax, ticker in zip(axes, tickers):
+    for ax, ticker in zip(axes, tickers_present):
         df_t = case_df[case_df['Ticker'] == ticker].sort_values('Data')
         df_t = df_t[df_t['Data'] >= split_dt]   # apenas OOS
         if df_t.empty:
@@ -429,16 +434,111 @@ def plot_hmm_probability(
         ax.set_ylim(0, 1)
         ax.grid(True, linestyle='--', alpha=0.3)
 
+        # Eventos
+        _add_event_lines([ax], eventos)
+        handles, labels = ax.get_legend_handles_labels()
+
         # Patches de legenda
         patches = [
             mpatches.Patch(color=CLUSTER_PALETTE[c], alpha=0.4, label=c)
             for c in CLUSTER_ORDER
         ]
-        ax.legend(handles=patches + [plt.Line2D([0], [0], color='#c0392b', lw=2,
-                                                 label='P(Crise) HMM')],
+        ax.legend(handles=handles + patches,
                   loc='upper right', fontsize=8, ncol=2)
 
     axes[0].set_title(f"Probabilidade Contínua de Crise (HMM)\n{title}", fontsize=12)
+    axes[-1].set_xlabel("Data")
+    axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+    plt.setp(axes[-1].xaxis.get_majorticklabels(), rotation=30, ha='right')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, filename), dpi=300, bbox_inches='tight')
+    plt.close()
+    logger.info(f"  → {filename}")
+
+
+# ===========================================================================
+# 4.5 K-MEANS METRIC — Métrica K-Means no tempo
+# ===========================================================================
+
+def plot_kmeans_metric(
+    df: pd.DataFrame,
+    tickers: List[str],
+    title: str,
+    filename: str,
+    out_dir: str,
+    split_date: str,
+    eventos: Optional[List] = None,
+):
+    """
+    Plota a métrica de risco (Z-Score) junto ao regime discreto (Cluster_KMeans)
+    para evidenciar o mapeamento atemporal do K-Means comparado à transição do HMM.
+    """
+    logger.info(f"Gerando K-Means Metric Plot ({title})...")
+
+    if 'Taxa_ZScore' not in df.columns or 'Cluster_KMeans' not in df.columns:
+        logger.warning("[plot_kmeans_metric] Colunas de K-Means não encontradas. Pulando.")
+        return
+
+    case_df = df[df['Ticker'].isin(tickers)].copy()
+    if case_df.empty:
+        return
+
+    tickers_present = [t for t in tickers if t in case_df['Ticker'].unique()]
+    n_tickers = len(tickers_present)
+    if n_tickers == 0:
+        return
+
+    fig, axes = plt.subplots(n_tickers, 1, figsize=(14, 4 * n_tickers), sharex=True)
+    if n_tickers == 1:
+        axes = [axes]
+
+    split_dt = pd.to_datetime(split_date)
+
+    for ax, ticker in zip(axes, tickers_present):
+        df_t = case_df[case_df['Ticker'] == ticker].sort_values('Data')
+        df_t = df_t[df_t['Data'] >= split_dt]
+        if df_t.empty:
+            ax.set_title(f"{ticker} — sem dados OOS")
+            continue
+
+        prev_date = df_t['Data'].iloc[0]
+        prev_cl   = df_t['Cluster_KMeans'].iloc[0]
+        for _, row in df_t.iterrows():
+            cl = row['Cluster_KMeans']
+            if cl != prev_cl:
+                ax.axvspan(
+                    prev_date, row['Data'],
+                    facecolor=CLUSTER_PALETTE.get(prev_cl, '#fff'),
+                    alpha=0.25
+                )
+                prev_date = row['Data']
+                prev_cl   = cl
+        ax.axvspan(
+            prev_date, df_t['Data'].iloc[-1],
+            facecolor=CLUSTER_PALETTE.get(prev_cl, '#fff'),
+            alpha=0.25
+        )
+
+        ax.plot(df_t['Data'], df_t['Taxa_ZScore'],
+                color='#2980b9', linewidth=2, label='Z-Score (Spread)')
+        ax.axhline(0, color='black', linestyle=':', linewidth=1, alpha=0.6)
+
+        ax.set_ylabel(f"{ticker}\nZ-Score")
+        ax.grid(True, linestyle='--', alpha=0.3)
+
+        # Eventos
+        _add_event_lines([ax], eventos)
+        handles, labels = ax.get_legend_handles_labels()
+
+        patches = [
+            mpatches.Patch(color=CLUSTER_PALETTE[c], alpha=0.4, label=c)
+            for c in CLUSTER_ORDER
+        ]
+        ax.legend(handles=handles + patches,
+                  loc='upper right', fontsize=8, ncol=2)
+
+    axes[0].set_title(f"Dinâmica de Spread (K-Means)\n{title}", fontsize=12)
     axes[-1].set_xlabel("Data")
     axes[-1].xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
     plt.setp(axes[-1].xaxis.get_majorticklabels(), rotation=30, ha='right')
@@ -632,12 +732,12 @@ def run_defense_visuals(
     Lê o CSV de resultados do motor (resultado_frequentist_engine.csv) e
     gera automaticamente todos os painéis comparativos K-Means vs HMM.
     """
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-
     if results_path is None:
-        results_path = os.path.join(base_dir, 'dados', 'resultado_frequentist_engine.csv')
+        from credit_tail_analytics.utils import dados_dir
+        results_path = str(dados_dir() / 'resultado_frequentist_engine.csv')
     if out_dir is None:
-        out_dir = os.path.join(base_dir, 'graficos')
+        from credit_tail_analytics.utils import graficos_dir
+        out_dir = str(graficos_dir())
 
     os.makedirs(out_dir, exist_ok=True)
 
@@ -684,10 +784,11 @@ def run_defense_visuals(
         (['CBRDA7', 'CBRDA8'],              'GPA / Pão de Açúcar',   '06_estudo_caso_pao_de_acucar.png', 'GPA / Pão de Açúcar'),
         (['LIGHA6', 'LIGHA9'],              'Light S.A.',             '07_estudo_caso_light.png',         'Light S.A.'),
         (['VVAR11', 'VVAR26', 'VVAR15'],    'Via Varejo (Casas Bahia)','08_estudo_caso_via_varejo.png',   'Via Varejo (Casas Bahia)'),
-        (['RDORB7', 'RDORC7', 'RDORA5'],   "Rede D'Or",              '09_estudo_caso_rede_dor.png',      None),
+        (['RDORB7', 'RDORC7', 'RDORA5'],   "Rede D'Or",              '09_estudo_caso_rede_dor.png',      "Rede D'Or"),
         (['SULA19', 'SULA29'],              'Sul América',            '10_estudo_caso_sulamerica.png',    None),
         (['VRGL17'],                        'GOL Linhas Aéreas',     '11_estudo_caso_gol.png',           'GOL Linhas Aéreas'),
         (['APOL11', 'POLI11', 'POLI21'],   'Polishop',               '12_estudo_caso_polishop.png',      None),
+        (['AMBP12', 'AMBP13'],              'Ambipar',                '13_estudo_caso_ambipar.png',       None),
     ]
 
     for tickers, title, filename, evento_key in casos:
@@ -697,7 +798,12 @@ def run_defense_visuals(
         # Plot adicional de probabilidade HMM por estudo de caso
         if has_hmm and 'Prob_Crise_HMM' in df.columns:
             hmm_filename = filename.replace('.png', '_hmm_prob.png')
-            plot_hmm_probability(df, tickers, title, hmm_filename, out_dir, split_date)
+            plot_hmm_probability(df, tickers, title, hmm_filename, out_dir, split_date, eventos=eventos)
+
+        # Plot adicional de z-score K-Means por estudo de caso
+        if 'Cluster_KMeans' in df.columns and 'Taxa_ZScore' in df.columns:
+            kmeans_filename = filename.replace('.png', '_kmeans_zscore.png')
+            plot_kmeans_metric(df, tickers, title, kmeans_filename, out_dir, split_date, eventos=eventos)
 
     logger.info(f"\n✓ Todos os gráficos salvos em: {out_dir}")
 

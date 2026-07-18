@@ -63,7 +63,7 @@ class CreditRiskEngine:
         eliminando zeros artificiais de marcação na curva.
     """
 
-    DEFAULT_FEATURES: List[str] = ['Taxa_ZScore', 'Volatilidade_EGARCH']
+    DEFAULT_FEATURES: List[str] = ['Spread_Equivalente', 'Taxa_Ajustada_Prazo']#['Taxa_ZScore', 'Volatilidade_EGARCH']
 
     def __init__(
         self,
