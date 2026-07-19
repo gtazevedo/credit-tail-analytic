@@ -594,7 +594,7 @@ class CreditRiskEngine:
             try:
                 hmm = GaussianHMM(
                     n_components=3,
-                    covariance_type='full',
+                    covariance_type='diag',  # Alterado de 'full' para 'diag' para evitar overfitting ao ruído
                     n_iter=100,
                     random_state=42,
                 )
@@ -671,23 +671,35 @@ class CreditRiskEngine:
                 )
             # -----------------------------------------------------------------------
 
-            # 2. Predição OOS (Ticker por Ticker para respeitar a transição temporal)
+            # 2. Predição OOS com Memória Temporal (Viterbi Contínuo)
             val_grupo = val_df[val_df['Indexador_Grupo'] == grupo]
             if val_grupo.empty:
                 logger.warning(f"[HMM] Grupo '{grupo}': sem dados OOS.")
                 continue
                 
-            for ticker, df_t in val_grupo.sort_values(['Ticker', 'Data']).groupby('Ticker'):
-                result_base = df_t[['Ticker', 'Data', 'Indexador_Grupo']].copy()
-                X_oos = df_t[feats].values
+            for ticker, df_t_oos in val_grupo.sort_values(['Ticker', 'Data']).groupby('Ticker'):
+                result_base = df_t_oos[['Ticker', 'Data', 'Indexador_Grupo']].copy()
                 
-                if len(X_oos) == 0:
+                # Busca o histórico In-Sample desse ticker para não quebrar a cadeia de Markov
+                df_t_is = train_df[(train_df['Indexador_Grupo'] == grupo) & (train_df['Ticker'] == ticker)]
+                
+                # Concatena a história completa do ativo
+                df_t_full = pd.concat([df_t_is, df_t_oos]).sort_values('Data')
+                X_full = df_t_full[feats].values
+                
+                if len(df_t_oos) == 0:
                     continue
                     
                 try:
-                    X_oos_sc = scaler.transform(X_oos)
-                    raw_states = hmm.predict(X_oos_sc)
-                    proba_mat  = hmm.predict_proba(X_oos_sc)
+                    X_full_sc = scaler.transform(X_full)
+                    # Prediz a série inteira para que o Viterbi flua do IS para o OOS
+                    raw_states_full = hmm.predict(X_full_sc)
+                    proba_mat_full  = hmm.predict_proba(X_full_sc)
+                    
+                    # Fatiamos apenas as últimas observações correspondentes ao OOS
+                    n_oos = len(df_t_oos)
+                    raw_states = raw_states_full[-n_oos:]
+                    proba_mat  = proba_mat_full[-n_oos:]
                     
                     result_base['Cluster_HMM'] = [cluster_map[s] for s in raw_states]
                     result_base['Prob_Crise_HMM'] = proba_mat[:, vermelho_id]
