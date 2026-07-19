@@ -23,8 +23,10 @@ def run_frequentist_pipeline(
     output_path:    str = None,
     model_type:     str = 'both',
     features:       list = None,
-    filter_low_liquidity: bool = True,
+    filter_low_liquidity: bool = False,
     split_date:     str = '2023-01-01',
+    auto_feature_selection: bool = True,
+    save_egarch:    bool = True,
 ):
     """
     Orquestrador Frequentist: Ingestão, Merge com Cadastro e Execução do Motor de Risco.
@@ -127,7 +129,25 @@ def run_frequentist_pipeline(
             df_merged,
             features=features,
             filter_low_liquidity=filter_low_liquidity,
+            save_egarch=save_egarch,
         )
+
+        if auto_feature_selection:
+            logger.info("Executando Feature Selection automático antes do motor...")
+            from credit_tail_analytics.models.credit_risk.feature_selection import FeatureSelector, DEFAULT_CANDIDATE_FEATURES
+            # Pré-calcula a volatilidade para o seletor avaliar
+            engine.build_volatility_features(split_date=split_date)
+            
+            selector = FeatureSelector(
+                df=engine.df,
+                candidate_features=DEFAULT_CANDIDATE_FEATURES,
+                filter_low_liquidity=filter_low_liquidity,
+            )
+            df_metrics = selector.evaluate_subsets()
+            best = selector.get_best_features()
+            logger.info(f"Features escolhidas pelo seletor: {best}")
+            features = best
+            engine.features = features
 
         df_completo, df_clusters = engine.execute_pipeline(
             split_date=split_date,
@@ -233,6 +253,8 @@ def _cli_main():
         features=args.features,
         filter_low_liquidity=not args.no_liquidity_filter,
         split_date=args.split_date,
+        auto_feature_selection=True,
+        save_egarch=True,
     )
 
 

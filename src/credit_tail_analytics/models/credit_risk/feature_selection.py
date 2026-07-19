@@ -4,20 +4,25 @@ import os
 import itertools
 from sklearn.preprocessing import RobustScaler
 from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.metrics import silhouette_score, davies_bouldin_score, calinski_harabasz_score
 import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Features padrão candidatas quando nenhuma for fornecida
+# Features padrão candidatas quando nenhuma for fornecida.
+# NOTA: Score_Liquidez foi deliberadamente excluída deste conjunto.
+# Ela é uma variável estrutural do ativo (faixa de volume ANBIMA), não do emissor,
+# e já é utilizada como filtro de entrada no CreditRiskEngine. Incluí-la como
+# feature de clusterização criaria um viés de liquidez nos clusters, que passariam
+# a refletir o tamanho das emissões em vez do risco de crédito do emissor.
 DEFAULT_CANDIDATE_FEATURES = [
-    'Taxa_ZScore',         # Risco relativo ao próprio histórico (anomalia)
-    'Volatilidade_EGARCH', # Risco de mercado dinâmico
-    'VaR_99',              # Risco de cauda (Tail Risk / t-Student)
-    'Spread_Equivalente',  # Nível absoluto de prêmio de risco (High Grade vs High Yield)
-    'Taxa_Ajustada_Prazo', # Prêmio ajustado pela duration/vencimento
-    'Score_Liquidez',      # Prêmio de iliquidez
+    'Taxa_ZScore',           # Risco relativo ao próprio histórico (anomalia de spread)
+    'Volatilidade_EGARCH',   # Risco de mercado dinâmico (volatilidade condicional AR-EGARCH-t)
+    'VaR_99',                # Risco de cauda — Valor em Risco 99% (t-Student)
+    'Expected_Shortfall_99', # Perda esperada além do VaR (CVaR / Expected Shortfall)
+    'Spread_Equivalente',    # Nível absoluto de prêmio de risco (High Grade vs High Yield)
+    'Taxa_Ajustada_Prazo',   # Prêmio ajustado pela duration/vencimento
 ]
 
 
@@ -27,18 +32,35 @@ class FeatureSelector:
     modelos de clusterização de risco de crédito (K-Means e HMM).
 
     Executa uma busca exaustiva (Grid Search) sobre combinações de K features (k ∈ [2, N]),
-    avaliando a capacidade de separabilidade cross-sectional e a estabilidade de transição dos 
-    regimes latentes. O modelo minimiza uma função perda multi-critério baseada em três heurísticas 
-    não-supervisionadas:
-    
-    1. Silhouette Score: Mede a coesão intra-cluster vs a separabilidade inter-cluster (maior é melhor).
-    2. Davies-Bouldin Index (DBI): Avalia a razão de dispersão intra-cluster pela distância 
-       entre centroides (menor é melhor).
-    3. Contagion Variance: Métrica autoral desenvolvida para o contexto de Regime Switching que penaliza 
-       alta variabilidade na proporção agregada da amostra classificada em 'High Risk' (Ruído de Markov), 
-       garantindo que os regimes tenham persistência macroeconômica teórica.
+    avaliando a capacidade de separabilidade cross-sectional dos regimes latentes.
+    O modelo seleciona o subconjunto ótimo por meio de uma função score multi-critério baseada
+    em três métricas não-supervisionadas clássicas da literatura de análise de clusters:
 
-    A otimização é conduzida estritamente de forma intra-indexador para isolar o mapeamento cross-sectional.
+    1. Silhouette Score (Rousseeuw, 1987): Mede a coesão intra-cluster vs a separabilidade
+       inter-cluster no espaço das features escaladas. Varia em [-1, 1]; maior é melhor.
+       Ref: Rousseeuw, P.J. (1987). "Silhouettes: A graphical aid to the interpretation and
+       validation of cluster analysis". Journal of Computational and Applied Mathematics, 20, 53–65.
+
+    2. Davies-Bouldin Index — DBI (Davies & Bouldin, 1979): Avalia a razão média de dispersão
+       intra-cluster pela distância entre centróides. Menor é melhor.
+       Ref: Davies, D.L. & Bouldin, D.W. (1979). "A cluster separation measure".
+       IEEE Transactions on Pattern Analysis and Machine Intelligence, 1(2), 224–227.
+
+    3. Calinski-Harabasz Index — CH (Calinski & Harabasz, 1974): Mede a razão entre a dispersão
+       inter-cluster (between-cluster sum of squares) e a dispersão intra-cluster (within-cluster
+       sum of squares), ponderada pelos graus de liberdade. Quanto maior, mais compactos e
+       bem-separados são os clusters. Não possui limite superior fixo (escala com N e K);
+       a normalização para composição do score global é feita min-max intra-ranking.
+       Ref: Caliński, T. & Harabasz, J. (1974). "A dendrite method for cluster analysis".
+       Communications in Statistics, 3(1), 1–27.
+
+    NOTA: A versão anterior utilizava uma métrica autoral denominada 'Contagion Variance',
+    que media a variância temporal da proporção de ativos em High Risk. Essa métrica foi
+    descontinuada por induzir viés de seleção: ao penalizar variância temporal alta, favorecia
+    features que geram regimes artificialmente estáveis, suprimindo sinais de stress genuínos.
+
+    A otimização é conduzida estritamente de forma intra-indexador para isolar o mapeamento
+    cross-sectional e eliminar o viés de nível nominal (Nominal Rate Bias).
     """
 
     def __init__(
@@ -111,7 +133,8 @@ class FeatureSelector:
             try:
                 km = KMeans(n_clusters=3, random_state=42, n_init=10)
                 labels = km.fit_predict(X_sc)
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Falha ao treinar KMeans (Grupo: {grupo}, Base_features: {base_features}): {e}")
                 continue
 
             res = grp_train[['Ticker', 'Data']].copy()
@@ -130,6 +153,7 @@ class FeatureSelector:
         self,
         min_features: int = 2,
         max_features: int = None,
+        n_jobs: int = 2,
     ) -> pd.DataFrame:
         """
         Itera sobre todas as combinações de features candidatas, avalia as métricas
@@ -143,12 +167,15 @@ class FeatureSelector:
             Tamanho mínimo dos subconjuntos a testar (default: 2).
         max_features : int, optional
             Tamanho máximo (default: len(candidate_features)).
+        n_jobs : int, default 2
+            Número de núcleos utilizados pelo joblib. Usar -1 para todos os núcleos
+            disponíveis (pode causar instabilidade em máquinas com pouca RAM).
 
         Retorna
         -------
         pd.DataFrame
             Colunas: Features, Num_Features, Silhouette_Score, Davies_Bouldin,
-                     Contagion_Variance, Global_Score.
+                     CH_Score, Global_Score.
         """
         # Filtra candidatos disponíveis no DataFrame
         available = [f for f in self.candidate_features if f in self.df.columns]
@@ -167,33 +194,34 @@ class FeatureSelector:
             all_combinations.extend(list(itertools.combinations(available, r)))
 
         total = len(all_combinations)
-        logger.info(f"[FeatureSelector] Testando {total} combinações de features.")
+        logger.info(
+            f"[FeatureSelector] Testando {total} combinações de features | "
+            f"Métricas: Silhouette, Davies-Bouldin, Calinski-Harabasz | n_jobs={n_jobs}"
+        )
 
-        results_list = []
         grupo_col = 'Indexador_Grupo' if 'Indexador_Grupo' in self.df.columns else None
+        df_full = self.df[self.df['Data'] < self.split_date].copy()
 
-        for i, subset in enumerate(all_combinations, 1):
+        def _eval_combo(i_and_subset):
+            i, subset = i_and_subset
             subset = list(subset)
             logger.info(f"  Combinação {i}/{total}: {subset}")
 
             res_df = self._run_kmeans_for_subset(subset)
             if res_df.empty:
-                continue
+                return None
 
-            # ---- Métricas de qualidade por Indexador_Grupo ----
-            sil_list, db_list, var_list = [], [], []
-
+            sil_list, db_list, ch_list = [], [], []
             grupos_avail = (
                 res_df['Indexador_Grupo'].unique()
                 if (grupo_col and 'Indexador_Grupo' in res_df.columns)
                 else ['_all']
             )
-            df_full = self.df[self.df['Data'] < self.split_date].copy()
-            df_full = df_full.dropna(subset=subset)
+            df_full_sub = df_full.dropna(subset=subset)
 
             for grupo in grupos_avail:
                 g_res  = res_df[res_df['Indexador_Grupo'] == grupo] if grupo_col else res_df
-                g_full = df_full[df_full['Indexador_Grupo'] == grupo] if grupo_col else df_full
+                g_full = df_full_sub[df_full_sub['Indexador_Grupo'] == grupo] if grupo_col else df_full_sub
 
                 merged = g_res.merge(g_full[['Ticker', 'Data'] + subset], on=['Ticker', 'Data'])
                 if len(merged) < 6 or merged['Cluster'].nunique() < 2:
@@ -205,27 +233,31 @@ class FeatureSelector:
                 try:
                     sil_list.append(silhouette_score(X_eval, labels))
                     db_list.append(davies_bouldin_score(X_eval, labels))
-                except Exception:
+                    # Calinski-Harabasz Index (CH): razão entre dispersão inter e intra-cluster.
+                    # Requer pelo menos 2 clusters e pelo menos 2 observações por cluster.
+                    # Ref: Caliński & Harabasz (1974), Communications in Statistics, 3(1), 1–27.
+                    ch_list.append(calinski_harabasz_score(X_eval, labels))
+                except Exception as e:
+                    logger.debug(f"Falha ao calcular métricas de validação (Grupo: {grupo}): {e}")
                     pass
 
-                # Estabilidade temporal: variância da fração de risco no tempo
-                if 'Data' in merged.columns:
-                    ts = merged.groupby('Data')['Cluster'].apply(
-                        lambda x: (x == x.max()).mean()  # proxy de "Vermelho"
-                    )
-                    if len(ts) > 2:
-                        var_list.append(ts.var())
-
             if not sil_list:
-                continue
+                return None
 
-            results_list.append({
-                'Features':           ', '.join(subset),
-                'Num_Features':       len(subset),
-                'Silhouette_Score':   float(np.mean(sil_list)),
-                'Davies_Bouldin':     float(np.mean(db_list)) if db_list else np.nan,
-                'Contagion_Variance': float(np.mean(var_list)) if var_list else np.nan,
-            })
+            return {
+                'Features':         ', '.join(subset),
+                'Num_Features':     len(subset),
+                'Silhouette_Score': float(np.mean(sil_list)),
+                'Davies_Bouldin':   float(np.mean(db_list)) if db_list else np.nan,
+                'CH_Score':         float(np.mean(ch_list)) if ch_list else np.nan,
+            }
+
+        from joblib import Parallel, delayed
+        results_raw = Parallel(n_jobs=n_jobs, prefer="threads")(
+            delayed(_eval_combo)(combo) for combo in enumerate(all_combinations, 1)
+        )
+        
+        results_list = [r for r in results_raw if r is not None]
 
         results_df = pd.DataFrame(results_list)
         if results_df.empty:
@@ -243,11 +275,15 @@ class FeatureSelector:
         sil_norm = _safe_norm(results_df['Silhouette_Score'])
         db_norm  = _safe_norm(results_df['Davies_Bouldin'], invert=True)
 
-        # Contagion Variance pode ter NaN; tratar antes de normalizar
-        cv_filled = results_df['Contagion_Variance'].fillna(results_df['Contagion_Variance'].max())
-        var_norm  = _safe_norm(cv_filled, invert=True)
+        # Calinski-Harabasz: maior é melhor. NaN → substitui por 0 antes de normalizar
+        # (evita que combinações sem CH válido recebam score artificialmente alto).
+        ch_filled = results_df['CH_Score'].fillna(0)
+        ch_norm   = _safe_norm(ch_filled)  # sem invert — CH maior = melhor separação
 
-        results_df['Global_Score'] = (sil_norm * 0.4) + (db_norm * 0.4) + (var_norm * 0.2)
+        # Pesos: Silhouette e DBI com 35% cada; CH com 30%.
+        # O CH complementa Silhouette+DBI capturando a razão absoluta de variância entre grupos,
+        # sem viés temporal — diferente da antiga Contagion Variance que penalizava sinais de stress.
+        results_df['Global_Score'] = (sil_norm * 0.35) + (db_norm * 0.35) + (ch_norm * 0.30)
         results_df = results_df.sort_values('Global_Score', ascending=False).reset_index(drop=True)
 
         # Preenche self.best_features com o vencedor
@@ -255,7 +291,10 @@ class FeatureSelector:
         self.best_features = best_row['Features'].split(', ')
         logger.info(
             f"[FeatureSelector] Melhor subconjunto: {self.best_features} "
-            f"(Global_Score={best_row['Global_Score']:.4f})"
+            f"(Global_Score={best_row['Global_Score']:.4f} | "
+            f"Silhouette={best_row['Silhouette_Score']:.4f} | "
+            f"DBI={best_row['Davies_Bouldin']:.4f} | "
+            f"CH={best_row['CH_Score']:.1f})"
         )
 
         return results_df
@@ -302,7 +341,7 @@ if __name__ == '__main__':
         filter_low_liquidity=False,
     )
 
-    ranking = selector.evaluate_subsets(min_features=2, max_features=4)
+    ranking = selector.evaluate_subsets(min_features=2, max_features=4, n_jobs=2)
 
     out_path = dados_dir() / 'feature_selection_ranking.csv'
     ranking.to_csv(out_path, index=False)

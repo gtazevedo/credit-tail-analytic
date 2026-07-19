@@ -10,6 +10,7 @@ from typing import Dict, List, Tuple, Union, Optional
 import warnings
 import logging
 from credit_tail_analytics.utils import dados_dir
+from tqdm import tqdm
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -70,10 +71,12 @@ class CreditRiskEngine:
         df: pd.DataFrame,
         features: Optional[List[str]] = None,
         filter_low_liquidity: bool = True,
+        save_egarch: bool = False,
     ) -> None:
         self.df = df.copy()
         self.features: List[str] = features if features is not None else self.DEFAULT_FEATURES
         self.filter_low_liquidity = filter_low_liquidity
+        self.save_egarch = save_egarch
 
         # volume_map: Score_Liquidez mais alto = mais líquido
         self.volume_map: Dict[str, int] = {
@@ -209,16 +212,17 @@ class CreditRiskEngine:
         group_df: pd.DataFrame,
         split_date: str,
         alpha: float = 0.01,
-    ) -> Tuple[pd.Series, pd.Series]:
+    ) -> Tuple[pd.Series, pd.Series, pd.Series]:
         returns = group_df['Delta_Spread']
         datas   = group_df['Data']
 
         vol_series = pd.Series(np.nan, index=returns.index)
         var_series = pd.Series(np.nan, index=returns.index)
+        es_series  = pd.Series(np.nan, index=returns.index)
 
         valid_idx = returns.dropna().index
         if len(valid_idx) < 30:
-            return vol_series, var_series
+            return vol_series, var_series, es_series
 
         returns_scaled = returns.loc[valid_idx] * 100
         datas_valid    = datas.loc[valid_idx]
@@ -228,12 +232,13 @@ class CreditRiskEngine:
         split_idx  = train_mask.sum()
 
         if split_idx < 25:
-            return vol_series, var_series
+            return vol_series, var_series, es_series
 
         try:
             model = arch_model(
                 returns_scaled,
                 mean='AR', lags=1,
+                #mean='Zero',
                 vol='EGARCH', p=1, o=1, q=1,
                 dist='t',
                 rescale=False,
@@ -242,20 +247,51 @@ class CreditRiskEngine:
             res_oos = model.fix(res_is.params)
 
             cond_vol  = res_oos.conditional_volatility
-            cond_mean = res_oos.conditional_mean
-            if isinstance(cond_mean, pd.DataFrame):
-                cond_mean = cond_mean.iloc[:, 0]
+            cond_mean = returns_scaled - res_oos.resid
+            #cond_mean = 0.0  # Assumimos média zero para o cálculo de risco puro
 
             nu      = res_is.params.get('nu', 5.0)
             q_alpha = model.distribution.ppf(1 - alpha, nu)
             var_99  = cond_mean + cond_vol * q_alpha
+            
+            # Expected Shortfall (ES) para t-Student
+            # ES_t = pdf(q) / alpha * (nu + q^2) / (nu - 1)
+            # Como o modelo usa t padronizada (variância 1), dividimos pelo fator de escala
+            q_t = stats.t.ppf(1 - alpha, df=nu)
+            es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1)
+            scale = np.sqrt(nu / (nu - 2)) if nu > 2 else 1.0
+            es_std = es_t / scale
+            cond_es = cond_mean + cond_vol * es_std
+
+            if getattr(self, 'save_egarch', False):
+                try:
+                    ticker = group_df['Ticker'].iloc[0] if 'Ticker' in group_df.columns else 'UNKNOWN'
+                    out_dir = dados_dir() / 'egarch'
+                    out_dir.mkdir(parents=True, exist_ok=True)
+                    
+                    with open(out_dir / f"{ticker}_params.txt", 'w') as f:
+                        f.write(res_is.summary().as_text())
+                    
+                    df_series = pd.DataFrame({
+                        'Data': datas_valid,
+                        'Returns_Scaled': returns_scaled,
+                        'Cond_Vol': cond_vol,
+                        'Cond_Mean': cond_mean,
+                        'VaR_99': var_99,
+                        'ES_99': cond_es
+                    })
+                    df_series.to_csv(out_dir / f"{ticker}_series.csv", index=False)
+                except Exception as e:
+                    logger.debug(f"Falha ao salvar egarch para {ticker}: {e}")
 
             vol_series.loc[valid_idx] = cond_vol / 100
             var_series.loc[valid_idx] = var_99  / 100
-        except Exception:
-            pass
+            es_series.loc[valid_idx]  = cond_es / 100
+        except Exception as e:
+            logger.debug(f"Falha EGARCH: {e}")
+            return vol_series, var_series, es_series
 
-        return vol_series, var_series
+        return vol_series, var_series, es_series
 
     def _kupiec_pof_test(
         self,
@@ -290,16 +326,26 @@ class CreditRiskEngine:
         return 1.0 - stats.chi2.cdf(lr_stat, df=1)
 
     def build_volatility_features(self, split_date: str) -> None:
-        """Estima EGARCH para cada Ticker e preenche Volatilidade_EGARCH e VaR_99."""
+        """Estima EGARCH para cada Ticker e preenche Volatilidade_EGARCH, VaR_99 e Expected_Shortfall_99."""
         self.df['Volatilidade_EGARCH'] = np.nan
-        self.df['VaR_99']              = np.nan
+        self.df['VaR_99'] = np.nan
+        self.df['Expected_Shortfall_99'] = np.nan
 
-        for ticker, group in self.df.groupby('Ticker'):
-            vol, var = self._egarch_var(
-                group[['Data', 'Delta_Spread']], split_date
-            )
-            self.df.loc[group.index, 'Volatilidade_EGARCH'] = vol
-            self.df.loc[group.index, 'VaR_99']              = var
+        def run_egarch(group):
+            vol, var, es = self._egarch_var(group, split_date)
+            return pd.DataFrame({'Volatilidade_EGARCH': vol, 'VaR_99': var, 'Expected_Shortfall_99': es})
+        
+        # Apply por Ticker
+        tqdm.pandas(desc="Calculando EGARCH por Ticker")
+        egarch_res = self.df.groupby('Ticker').progress_apply(run_egarch)
+        
+        # O apply pode retornar um df com multi-index (Ticker, index_original)
+        if isinstance(egarch_res.index, pd.MultiIndex):
+            egarch_res = egarch_res.reset_index(level=0, drop=True)
+            
+        # Garante que as colunas existam, descartando as vazias inicializadas e atualizando
+        self.df.drop(columns=['Volatilidade_EGARCH', 'VaR_99', 'Expected_Shortfall_99'], inplace=True)
+        self.df = self.df.join(egarch_res)
 
     # -----------------------------------------------------------------------
     # HELPER: Correção Semântica de Labels (Label Switching)
@@ -314,24 +360,54 @@ class CreditRiskEngine:
         Ordena os centróides pelo score de risco agregado e retorna um dicionário
         {cluster_id_raw → 'Verde'|'Amarelo'|'Vermelho'}.
 
-        O score é calculado como a soma das médias ajustadas de ZScore e
-        Volatilidade no espaço escalado dos centróides.
+        O score de risco de cada cluster é calculado como a soma ponderada dos valores
+        dos centróides no espaço escalado, com polaridade definida por feature:
+
+        - Polaridade +1.0: valor mais alto = mais risco (ex: Spread, Volatilidade, ES).
+        - Polaridade -1.0: valor mais alto = menos risco (ex: Score_Liquidez, onde
+          liquidez alta indica menor risco estrutural).
+
+        Isso garante que o mapeamento Verde → Amarelo → Vermelho seja semanticamente
+        correto para qualquer combinação de features, inclusive aquelas sem a palavra
+        'ZScore' ou 'Volatilidade' no nome (como Expected_Shortfall_99).
+
+        Se nenhuma feature for reconhecida no dicionário, o fallback soma todos os
+        centróides com polaridade +1 (comportamento anterior).
         """
+        # Dicionário de polaridade semântica por feature.
+        # Escopés cobertas: todas as candidatas em DEFAULT_CANDIDATE_FEATURES
+        # e Score_Liquidez (mantida aqui por robustez, caso seja passada externamente).
+        FEATURE_POLARITY: Dict[str, float] = {
+            'Taxa_ZScore':            +1.0,  # spread acima da média histórica = risco
+            'Volatilidade_EGARCH':    +1.0,  # volatilidade condicional = risco
+            'VaR_99':                 +1.0,  # VaR 99% (valor negativo maior em módulo = mais risco)
+            'Expected_Shortfall_99':  +1.0,  # ES: perda esperada além do VaR = risco
+            'Spread_Equivalente':     +1.0,  # spread absoluto alto = mais risco
+            'Taxa_Ajustada_Prazo':    +1.0,  # prêmio ajustado pela duration alto = mais risco
+            'Score_Liquidez':         -1.0,  # liquidez alta → menos risco estrutural (sentido inverso)
+        }
+
         n_clusters = centers.shape[0]
+        risk_scores = np.zeros(n_clusters)
+        matched = False
 
-        # Índices das features de risco no vetor de centróides
-        risk_indices = [
-            i for i, f in enumerate(feature_names)
-            if 'ZScore' in f or 'Volatilidade' in f or 'Ajustada' in f
-        ]
-        # Fallback: usa todas as features se nenhuma for reconhecida
-        if not risk_indices:
-            risk_indices = list(range(centers.shape[1]))
+        for i, feat in enumerate(feature_names):
+            polarity = FEATURE_POLARITY.get(feat)
+            if polarity is not None:
+                risk_scores += centers[:, i] * polarity
+                matched = True
 
-        risk_scores   = centers[:, risk_indices].sum(axis=1)
-        sorted_ids    = np.argsort(risk_scores)          # menor → maior risco
-        label_names   = ['Verde', 'Amarelo', 'Vermelho']
+        # Fallback: se nenhuma feature for reconhecida, soma todos os centróides com +1.
+        # Emite aviso para facilitar a depuração quando novas features forem adicionadas.
+        if not matched:
+            logger.warning(
+                f"[_label_switching_correction] Nenhuma feature reconhecida no dicionário "
+                f"de polaridade: {feature_names}. Usando fallback (soma de todos os centróides)."
+            )
+            risk_scores = centers.sum(axis=1)
 
+        sorted_ids  = np.argsort(risk_scores)          # menor score → Verde; maior → Vermelho
+        label_names = ['Verde', 'Amarelo', 'Vermelho']
         return {int(sorted_ids[i]): label_names[i] for i in range(n_clusters)}
 
     # -----------------------------------------------------------------------
@@ -439,11 +515,11 @@ class CreditRiskEngine:
         features: Optional[List[str]] = None,
     ) -> pd.DataFrame:
         """
-        Treina um GaussianHMM individualmente para cada Ticker (preservando a
-        ordem temporal) e prediz os estados OOS, segmentando por Indexador_Grupo.
-
-        Diferença fundamental vs K-Means: o HMM itera Ticker por Ticker e vê
-        a sequência cronológica, capturando persistência/inércia de regime.
+        Treina um GaussianHMM globalmente por 'Indexador_Grupo' (painel de dados),
+        mas preserva a ordem temporal das observações de cada Ticker.
+        
+        Isso permite que o HMM aprenda regimes macroeconômicos consistentes
+        (assim como o K-Means), mas aplique probabilidades de transição adequadas.
 
         Parâmetros
         ----------
@@ -471,70 +547,147 @@ class CreditRiskEngine:
         df_clean    = self.df[subset_cols].dropna(subset=feats).sort_values(['Ticker', 'Data'])
         split_dt    = pd.to_datetime(split_date)
 
+        train_df = df_clean[df_clean['Data'] < split_dt]
+        val_df   = df_clean[df_clean['Data'] >= split_dt]
+
         all_results: List[pd.DataFrame] = []
 
-        for (grupo, ticker), df_ticker in df_clean.groupby(['Indexador_Grupo', 'Ticker']):
-            df_ticker = df_ticker.sort_values('Data').reset_index(drop=True)
-
-            is_mask  = df_ticker['Data'] <  split_dt
-            oos_mask = df_ticker['Data'] >= split_dt
-
-            X_is  = df_ticker.loc[is_mask,  feats].values
-            X_oos = df_ticker.loc[oos_mask, feats].values
-
-            # Cria o template de resultado para este ticker
-            result_base = df_ticker.loc[oos_mask, ['Ticker', 'Data', 'Indexador_Grupo']].copy()
-
-            # Fallback para tickers sem dados suficientes
-            if len(X_is) < 10 or len(X_oos) == 0:
-                result_base['Cluster_HMM']   = 'Inconclusivo'
-                result_base['Prob_Crise_HMM'] = np.nan
-                all_results.append(result_base)
-                logger.warning(
-                    f"[HMM] {ticker} ({grupo}): IS insuficiente "
-                    f"({len(X_is)} obs). Marcado como Inconclusivo."
-                )
+        for grupo, train_grupo in train_df.groupby('Indexador_Grupo'):
+            
+            # 1. Prepara dados de treino em Painel (múltiplos Tickers)
+            X_train_list = []
+            lengths = []
+            
+            # Usa um único Scaler global por Grupo (mesmo comportamento do K-Means)
+            scaler = RobustScaler()
+            
+            for ticker, df_t in train_grupo.sort_values(['Ticker', 'Data']).groupby('Ticker'):
+                X_t = df_t[feats].values
+                if len(X_t) > 0:
+                    X_train_list.append(X_t)
+                    lengths.append(len(X_t))
+            
+            if not X_train_list:
+                logger.warning(f"[HMM] Grupo '{grupo}': sem dados IS. Pulando.")
                 continue
-
+                
+            X_train_arr = np.vstack(X_train_list)
+            
+            if len(X_train_arr) < 3:
+                logger.warning(f"[HMM] Grupo '{grupo}': dados insuficientes no IS. Pulando.")
+                continue
+                
+            # Escala e treina
+            X_train_sc = scaler.fit_transform(X_train_arr)
+            
             try:
-                # Escala pelo IS de cada Ticker (evita data leakage)
-                scaler  = RobustScaler()
-                X_is_sc = scaler.fit_transform(X_is)
-
                 hmm = GaussianHMM(
                     n_components=3,
                     covariance_type='full',
                     n_iter=100,
                     random_state=42,
                 )
-                hmm.fit(X_is_sc)
-
-                # Correção semântica: usa as médias dos estados (means_)
+                hmm.fit(X_train_sc, lengths)
+                
+                # Mapeia estados
                 cluster_map = self._label_switching_correction(hmm.means_, feats)
-
-                # Predição OOS
-                X_oos_sc  = scaler.transform(X_oos)
-                raw_states = hmm.predict(X_oos_sc)
-                proba_mat  = hmm.predict_proba(X_oos_sc)   # shape (n_oos, 3)
-
-                # Identifica o índice do estado "Vermelho" para extrair Prob_Crise
-                vermelho_id = next(
-                    (k for k, v in cluster_map.items() if v == 'Vermelho'), 2
-                )
-
-                result_base['Cluster_HMM']    = [cluster_map[s] for s in raw_states]
-                result_base['Prob_Crise_HMM'] = proba_mat[:, vermelho_id]
-
-                all_results.append(result_base)
-
+                vermelho_id = next((k for k, v in cluster_map.items() if v == 'Vermelho'), 2)
+                
             except Exception as exc:
-                result_base['Cluster_HMM']    = 'Inconclusivo'
-                result_base['Prob_Crise_HMM'] = np.nan
-                all_results.append(result_base)
-                logger.warning(
-                    f"[HMM] {ticker} ({grupo}): falha na convergência — {exc}. "
-                    "Marcado como Inconclusivo."
+                logger.warning(f"[HMM] Grupo '{grupo}': falha na convergência global — {exc}")
+                continue
+
+            # -----------------------------------------------------------------------
+            # CORREÇÃO PÓS-FIT: Recalibração da Matriz de Transição sem Bordas Inter-Ticker
+            # -----------------------------------------------------------------------
+            # PROBLEMA CONHECIDO DO hmmlearn:
+            # O método fit() do GaussianHMM aceita o parâmetro `lengths` para indicar onde
+            # cada sequência individual começa e termina dentro do array concatenado. Isso
+            # garante que o E-step (decodificação via Viterbi / forward-backward) respeite
+            # os limites de cada Ticker.
+            #
+            # No entanto, o M-step (atualização dos parâmetros via Expectation-Maximization)
+            # ainda acumula pseudo-contagens de transição incluindo o par:
+            #   (ultimo_estado_ticker_i, primeiro_estado_ticker_{i+1})
+            # Esse par não representa uma transição real, pois pertence a ativos distintos,
+            # e contamina a estimativa da matriz transmat_.
+            #
+            # Ref: Serafini, A. et al. (Issue #289, hmmlearn GitHub, 2016).
+            #      "GaussianHMM.fit ignores sequence boundaries in M-step".
+            #      Disponível em: https://github.com/hmmlearn/hmmlearn/issues/289
+            #      (Acessado em julho de 2026.)
+            #
+            # Ref: Bilmes, J. (1998). "A gentle tutorial of the EM algorithm and its
+            #      application to parameter estimation for Gaussian mixture and hidden
+            #      Markov models". ICSI Technical Report TR-97-021. University of
+            #      California, Berkeley.
+            #
+            # ESTRATÉGIA DE CORREÇÃO (sem trocar de biblioteca):
+            # 1. Decodificar os estados IS com o modelo treinado.
+            # 2. Recontabilizar as transições apenas dentro de cada Ticker (excluindo bordas).
+            # 3. Normalizar por linha e sobrescrever hmm.transmat_.
+            #
+            # Efeito esperado: a diagonal principal (auto-transições) sobe, refletindo a
+            # persistência real dos regimes intra-ativo. O sinal de Early Warning melhora
+            # porque o Vermelho de um ativo em crise tem maior probabilidade de permanecer
+            # Vermelho no período seguinte.
+            # -----------------------------------------------------------------------
+            try:
+                states_is = hmm.predict(X_train_sc, lengths)
+                n_states   = hmm.n_components
+                trans_counts = np.zeros((n_states, n_states))
+
+                pos = 0
+                for length in lengths:
+                    seq = states_is[pos : pos + length]
+                    # Itera apenas sobre transições DENTRO do Ticker (range exclui borda)
+                    for t in range(len(seq) - 1):
+                        trans_counts[seq[t], seq[t + 1]] += 1
+                    pos += length
+
+                # Laplace smoothing (1e-6) para evitar linhas com soma zero
+                trans_counts += 1e-6
+                hmm.transmat_ = trans_counts / trans_counts.sum(axis=1, keepdims=True)
+
+                logger.debug(
+                    f"[HMM] Grupo '{grupo}': transmat_ recalibrada sem bordas inter-ticker.\n"
+                    f"{np.round(hmm.transmat_, 3)}"
                 )
+            except Exception as exc_tm:
+                logger.warning(
+                    f"[HMM] Grupo '{grupo}': falha na recalibração de transmat_ — "
+                    f"{exc_tm}. Mantendo transmat_ original do fit()."
+                )
+            # -----------------------------------------------------------------------
+
+            # 2. Predição OOS (Ticker por Ticker para respeitar a transição temporal)
+            val_grupo = val_df[val_df['Indexador_Grupo'] == grupo]
+            if val_grupo.empty:
+                logger.warning(f"[HMM] Grupo '{grupo}': sem dados OOS.")
+                continue
+                
+            for ticker, df_t in val_grupo.sort_values(['Ticker', 'Data']).groupby('Ticker'):
+                result_base = df_t[['Ticker', 'Data', 'Indexador_Grupo']].copy()
+                X_oos = df_t[feats].values
+                
+                if len(X_oos) == 0:
+                    continue
+                    
+                try:
+                    X_oos_sc = scaler.transform(X_oos)
+                    raw_states = hmm.predict(X_oos_sc)
+                    proba_mat  = hmm.predict_proba(X_oos_sc)
+                    
+                    result_base['Cluster_HMM'] = [cluster_map[s] for s in raw_states]
+                    result_base['Prob_Crise_HMM'] = proba_mat[:, vermelho_id]
+                except Exception as exc:
+                    result_base['Cluster_HMM']    = 'Inconclusivo'
+                    result_base['Prob_Crise_HMM'] = np.nan
+                    
+                all_results.append(result_base)
+
+            logger.info(f"[HMM] Grupo '{grupo}': Treinado com {len(X_train_arr)} obs. "
+                        f"Predito {len(val_grupo)} obs OOS.")
 
         if not all_results:
             logger.warning("[HMM] Nenhum resultado produzido.")
@@ -608,7 +761,7 @@ class CreditRiskEngine:
 
         if not df_clusters.empty:
             aux_cols = ['Ticker', 'Data', 'Taxa_ZScore', 'Volatilidade_EGARCH',
-                        'Taxa_Ajustada_Prazo', 'Score_Liquidez', 'VaR_99', 'PU', 'Taxa_Ativo']
+                        'Taxa_Ajustada_Prazo', 'Score_Liquidez', 'VaR_99', 'Expected_Shortfall_99', 'PU', 'Taxa_Ativo']
             aux_cols = [c for c in aux_cols if c in self.df.columns]
             df_aux = self.df[aux_cols].drop_duplicates(subset=['Ticker', 'Data'])
             df_clusters = pd.merge(df_clusters, df_aux, on=['Ticker', 'Data'], how='left')

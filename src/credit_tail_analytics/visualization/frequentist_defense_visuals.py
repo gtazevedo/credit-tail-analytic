@@ -469,15 +469,45 @@ def plot_kmeans_metric(
     out_dir: str,
     split_date: str,
     eventos: Optional[List] = None,
+    metric_col: Optional[str] = None,
 ):
     """
-    Plota a métrica de risco (Z-Score) junto ao regime discreto (Cluster_KMeans)
-    para evidenciar o mapeamento atemporal do K-Means comparado à transição do HMM.
+    Plota a métrica de risco junto ao regime discreto (Cluster_KMeans)
+    para evidênciar o mapeamento atemporal do K-Means comparado à transição do HMM.
+
+    Parâmetros
+    ----------
+    metric_col : str, optional
+        Feature a ser plotada no eixo Y. Se None, autodetecta a primeira feature
+        disponível na ordem: Expected_Shortfall_99 > VaR_99 > Taxa_ZScore > Volatilidade_EGARCH.
+        Isso garante que o gráfico sempre reflita a feature efetivamente usada pelo modelo.
     """
     logger.info(f"Gerando K-Means Metric Plot ({title})...")
 
-    if 'Taxa_ZScore' not in df.columns or 'Cluster_KMeans' not in df.columns:
-        logger.warning("[plot_kmeans_metric] Colunas de K-Means não encontradas. Pulando.")
+    # Autodetecção da feature a plotar: usa ordem de prioridade econômica.
+    # A feature escolhida é a mesma que o feature selector provavelmente selecionou,
+    # tornando o gráfico coerente com a classificação exibida.
+    METRIC_PRIORITY = [
+        'Expected_Shortfall_99',
+        'VaR_99',
+        'Taxa_ZScore',
+        'Volatilidade_EGARCH',
+    ]
+    if metric_col is None:
+        for candidate in METRIC_PRIORITY:
+            if candidate in df.columns:
+                metric_col = candidate
+                break
+
+    if metric_col is None or metric_col not in df.columns:
+        logger.warning(
+            f"[plot_kmeans_metric] Nenhuma feature de métrica encontrada em {METRIC_PRIORITY}. "
+            "Pulando."
+        )
+        return
+
+    if 'Cluster_KMeans' not in df.columns:
+        logger.warning("[plot_kmeans_metric] Coluna Cluster_KMeans não encontrada. Pulando.")
         return
 
     case_df = df[df['Ticker'].isin(tickers)].copy()
@@ -520,11 +550,11 @@ def plot_kmeans_metric(
             alpha=0.25
         )
 
-        ax.plot(df_t['Data'], df_t['Taxa_ZScore'],
-                color='#2980b9', linewidth=2, label='Z-Score (Spread)')
+        ax.plot(df_t['Data'], df_t[metric_col],
+                color='#2980b9', linewidth=2, label=metric_col.replace('_', ' '))
         ax.axhline(0, color='black', linestyle=':', linewidth=1, alpha=0.6)
 
-        ax.set_ylabel(f"{ticker}\nZ-Score")
+        ax.set_ylabel(f"{ticker}\n{metric_col.replace('_', ' ')}")
         ax.grid(True, linestyle='--', alpha=0.3)
 
         # Eventos
@@ -618,13 +648,13 @@ def plot_case_study(
     eventos: Optional[List] = None,
 ):
     """
-    Estudo de caso empírico com 6 painéis:
-    1. Sinal discreto K-Means (Verde=1, Amarelo=2, Vermelho=3)
-    2. Sinal discreto HMM
-    3. Probabilidade contínua de crise (Prob_Crise_HMM)
-    4. Taxa Ajustada pelo Prazo
-    5. Z-Score do Spread (stress anual)
-    6. Volatilidade EGARCH
+    Estudo de caso empírico com painéis dinâmicos:
+    - Painel 0: Sinal discreto K-Means (Verde=1, Amarelo=2, Vermelho=3)
+    - Painel 1: Sinal discreto HMM
+    - Painel 2: Probabilidade contínua de crise (Prob_Crise_HMM)
+    - Painéis 3+: Features de risco presentes no DataFrame, plotadas em ordem de
+      prioridade econômica: Expected_Shortfall_99, VaR_99, Taxa_Ajustada_Prazo,
+      Taxa_ZScore, Volatilidade_EGARCH.
 
     Inclui linhas verticais de eventos de crédito e de início OOS.
     """
@@ -639,8 +669,23 @@ def plot_case_study(
     has_hmm    = 'Cluster_HMM'    in case_df.columns
     has_prob   = 'Prob_Crise_HMM' in case_df.columns
 
-    n_panels = 6
-    fig, axes = plt.subplots(n_panels, 1, figsize=(14, 16), sharex=True)
+    # Painéis de features exibidos em ordem de prioridade econômica.
+    # Apenas features presentes no DataFrame são incluídas, garantindo que os gráficos
+    # sempre reflitam as features efetivamente usadas pelo modelo naquela execução.
+    FEATURE_PANEL_ORDER = [
+        ('Expected_Shortfall_99', 'Expected\nShortfall 99'),
+        ('VaR_99',                'VaR 99 (%)'),
+        ('Taxa_Ajustada_Prazo',   'Taxa Ajustada\n(Yield)'),
+        ('Taxa_ZScore',           'Z-Score\nSpread'),
+        ('Volatilidade_EGARCH',   'Volatilidade\nEGARCH (%)'),
+    ]
+    feature_panels = [
+        (col, lbl) for col, lbl in FEATURE_PANEL_ORDER
+        if col in case_df.columns
+    ]
+
+    n_panels = 3 + len(feature_panels)  # K-Means + HMM + Prob_Crise + features dinâmicas
+    fig, axes = plt.subplots(n_panels, 1, figsize=(14, 4 * n_panels), sharex=True)
 
     for ticker in tickers:
         df_t = case_df[case_df['Ticker'] == ticker].sort_values('Data')
@@ -659,19 +704,17 @@ def plot_case_study(
             axes[1].step(df_t['Data'], df_t['_hmm_num'], where='post',
                          linewidth=2, label=ticker)
 
-        # Painel 2: Probabilidade contínua
+        # Painel 2: Probabilidade contínua de crise
         if has_prob:
             axes[2].plot(df_t['Data'], df_t['Prob_Crise_HMM'],
                          linewidth=1.8, label=ticker)
             axes[2].fill_between(df_t['Data'], df_t['Prob_Crise_HMM'], alpha=0.2)
 
-        # Painéis 3-5: features
-        if 'Taxa_Ajustada_Prazo' in df_t.columns:
-            axes[3].plot(df_t['Data'], df_t['Taxa_Ajustada_Prazo'], linewidth=1.5, label=ticker)
-        if 'Taxa_ZScore' in df_t.columns:
-            axes[4].plot(df_t['Data'], df_t['Taxa_ZScore'], linewidth=1.5, label=ticker)
-        if 'Volatilidade_EGARCH' in df_t.columns:
-            axes[5].plot(df_t['Data'], df_t['Volatilidade_EGARCH'], linewidth=1.5, label=ticker)
+        # Painéis 3+: features dinâmicas
+        for ax_idx, (feat_col, _) in enumerate(feature_panels):
+            ax = axes[3 + ax_idx]
+            if feat_col in df_t.columns:
+                ax.plot(df_t['Data'], df_t[feat_col], linewidth=1.5, label=ticker)
 
     # Linha de split + eventos
     split_dt = pd.to_datetime(split_date)
@@ -680,21 +723,29 @@ def plot_case_study(
 
     _add_event_lines(axes[:1], eventos)
 
-    # Formatação dos eixos
-    for ax_i, (ax, ylabel) in enumerate(zip(axes, [
-        'K-Means\n(regime)', 'HMM\n(regime)', 'P(Crise)\nHMM',
-        'Taxa Ajustada\n(Yield)', 'Z-Score\nSpread', 'Volatilidade\nEGARCH (%)'
-    ])):
+    # Formatação dos eixos fixos
+    fixed_labels = [
+        'K-Means\n(regime)',
+        'HMM\n(regime)',
+        'P(Crise)\nHMM',
+    ]
+    for ax, ylabel in zip(axes[:3], fixed_labels):
         ax.set_ylabel(ylabel, fontsize=9)
         ax.grid(True, alpha=0.3)
 
-    # Eixos de regime discreto (0-3)
+    # Formatação dos painéis de features dinâmicos
+    for ax_idx, (_, feat_lbl) in enumerate(feature_panels):
+        ax = axes[3 + ax_idx]
+        ax.set_ylabel(feat_lbl, fontsize=9)
+        ax.grid(True, alpha=0.3)
+
+    # Eixos de regime discreto (0–3)
     for ax in [axes[0], axes[1]]:
         ax.set_yticks([0, 1, 2, 3])
         ax.set_yticklabels(['Inc.', 'Verde', 'Amarelo', 'Vermelho'], fontsize=8)
         ax.set_ylim(-0.2, 3.5)
 
-    # Probabilidade 0-1
+    # Probabilidade 0–1
     axes[2].set_ylim(0, 1)
     axes[2].axhline(0.5, color='gray', linestyle=':', linewidth=1)
 
@@ -789,6 +840,9 @@ def run_defense_visuals(
         (['VRGL17'],                        'GOL Linhas Aéreas',     '11_estudo_caso_gol.png',           'GOL Linhas Aéreas'),
         (['APOL11', 'POLI11', 'POLI21'],   'Polishop',               '12_estudo_caso_polishop.png',      None),
         (['AMBP12', 'AMBP13'],              'Ambipar',                '13_estudo_caso_ambipar.png',       None),
+        # Casos Resilientes (Prova de falso-positivo vs robustez macro)
+        (['CAMLA1', 'CAMLB1'],              'Camil Alimentos',       '14_estudo_caso_camil_resiliente.png', None),
+        (['ALSO15', 'ALSO25'],              'Allos (Aliansce Sonae)', '15_estudo_caso_allos_resiliente.png', None),
     ]
 
     for tickers, title, filename, evento_key in casos:
@@ -800,10 +854,14 @@ def run_defense_visuals(
             hmm_filename = filename.replace('.png', '_hmm_prob.png')
             plot_hmm_probability(df, tickers, title, hmm_filename, out_dir, split_date, eventos=eventos)
 
-        # Plot adicional de z-score K-Means por estudo de caso
-        if 'Cluster_KMeans' in df.columns and 'Taxa_ZScore' in df.columns:
-            kmeans_filename = filename.replace('.png', '_kmeans_zscore.png')
-            plot_kmeans_metric(df, tickers, title, kmeans_filename, out_dir, split_date, eventos=eventos)
+        # Plot adicional de métrica K-Means por estudo de caso.
+        # metric_col=None ativa autodetecção: prioriza Expected_Shortfall_99 > VaR_99 > Taxa_ZScore.
+        if 'Cluster_KMeans' in df.columns:
+            kmeans_filename = filename.replace('.png', '_kmeans_metric.png')
+            plot_kmeans_metric(
+                df, tickers, title, kmeans_filename, out_dir, split_date,
+                eventos=eventos, metric_col=None,
+            )
 
     logger.info(f"\n✓ Todos os gráficos salvos em: {out_dir}")
 
