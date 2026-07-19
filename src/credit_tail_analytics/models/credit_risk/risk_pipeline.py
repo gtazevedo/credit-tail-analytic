@@ -64,7 +64,7 @@ class CreditRiskEngine:
         eliminando zeros artificiais de marcação na curva.
     """
 
-    DEFAULT_FEATURES: List[str] = ['Spread_Equivalente', 'Taxa_Ajustada_Prazo']#['Taxa_ZScore', 'Volatilidade_EGARCH']
+    DEFAULT_FEATURES: List[str] = ['Taxa_ZScore', 'Volatilidade_EGARCH']
 
     def __init__(
         self,
@@ -77,6 +77,8 @@ class CreditRiskEngine:
         self.features: List[str] = features if features is not None else self.DEFAULT_FEATURES
         self.filter_low_liquidity = filter_low_liquidity
         self.save_egarch = save_egarch
+        self._volatility_built: bool = False  # evita duplo EGARCH quando build_volatility_features
+                                               # é chamado antes de execute_pipeline (feature selection)
 
         # volume_map: Score_Liquidez mais alto = mais líquido
         self.volume_map: Dict[str, int] = {
@@ -326,7 +328,15 @@ class CreditRiskEngine:
         return 1.0 - stats.chi2.cdf(lr_stat, df=1)
 
     def build_volatility_features(self, split_date: str) -> None:
-        """Estima EGARCH para cada Ticker e preenche Volatilidade_EGARCH, VaR_99 e Expected_Shortfall_99."""
+        """Estima EGARCH para cada Ticker e preenche Volatilidade_EGARCH, VaR_99 e Expected_Shortfall_99.
+
+        Se já foi chamado anteriormente (flag _volatility_built=True), a função retorna
+        imediatamente sem recalcular, evitando duplo EGARCH quando o Feature Selector
+        precisa das features antes de execute_pipeline().
+        """
+        if self._volatility_built:
+            logger.info("build_volatility_features() já foi executado — pulando (evita duplo EGARCH).")
+            return
         self.df['Volatilidade_EGARCH'] = np.nan
         self.df['VaR_99'] = np.nan
         self.df['Expected_Shortfall_99'] = np.nan
@@ -346,6 +356,7 @@ class CreditRiskEngine:
         # Garante que as colunas existam, descartando as vazias inicializadas e atualizando
         self.df.drop(columns=['Volatilidade_EGARCH', 'VaR_99', 'Expected_Shortfall_99'], inplace=True)
         self.df = self.df.join(egarch_res)
+        self._volatility_built = True
 
     # -----------------------------------------------------------------------
     # HELPER: Correção Semântica de Labels (Label Switching)

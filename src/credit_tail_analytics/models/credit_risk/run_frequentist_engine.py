@@ -135,16 +135,32 @@ def run_frequentist_pipeline(
         if auto_feature_selection:
             logger.info("Executando Feature Selection automático antes do motor...")
             from credit_tail_analytics.models.credit_risk.feature_selection import FeatureSelector, DEFAULT_CANDIDATE_FEATURES
-            # Pré-calcula a volatilidade para o seletor avaliar
+
+            # Pré-calcula a volatilidade para que todas as features candidatas (incluindo
+            # Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99) estejam disponíveis no df
+            # antes do FeatureSelector avaliar as combinações. Sem essa chamada, o filtro
+            # `available = [f for f in candidates if f in df.columns]` excluiria as features
+            # EGARCH e o seletor testaria apenas as 3 features pré-EGARCH (4 combinações em vez
+            # de 57 para 6 candidatas).
+            # NOTA: a segunda chamada em execute_pipeline() será no-op graças à flag
+            # _volatility_built=True definida em build_volatility_features().
             engine.build_volatility_features(split_date=split_date)
-            
+
             selector = FeatureSelector(
                 df=engine.df,
                 candidate_features=DEFAULT_CANDIDATE_FEATURES,
                 filter_low_liquidity=filter_low_liquidity,
             )
             df_metrics = selector.evaluate_subsets()
-            best = selector.get_best_features()
+
+            metrics_path = dados_dir() / 'feature_selection_metrics.csv'
+            df_metrics.to_csv(metrics_path, index=False)
+            logger.info(f"Métricas de Feature Selection salvas em: {metrics_path}")
+
+            # Fix #3: selector.best_features é um atributo (lista), não um método.
+            # get_best_features() não existe e causaria AttributeError silencioso,
+            # forçando fallback para DEFAULT_FEATURES incorretos.
+            best = selector.best_features
             logger.info(f"Features escolhidas pelo seletor: {best}")
             features = best
             engine.features = features
@@ -259,4 +275,5 @@ def _cli_main():
 
 
 if __name__ == "__main__":
-    _cli_main()
+    #_cli_main()
+    run_frequentist_pipeline()

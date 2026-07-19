@@ -134,7 +134,7 @@ class FeatureSelector:
                 km = KMeans(n_clusters=3, random_state=42, n_init=10)
                 labels = km.fit_predict(X_sc)
             except Exception as e:
-                logger.debug(f"Falha ao treinar KMeans (Grupo: {grupo}, Base_features: {base_features}): {e}")
+                logger.debug(f"Falha ao treinar KMeans (Grupo: {grupo}, Base_features: {features_subset}): {e}")
                 continue
 
             res = grp_train[['Ticker', 'Data']].copy()
