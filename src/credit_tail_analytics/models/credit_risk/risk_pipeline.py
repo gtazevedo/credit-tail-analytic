@@ -72,11 +72,13 @@ class CreditRiskEngine:
         features: Optional[List[str]] = None,
         filter_low_liquidity: bool = True,
         save_egarch: bool = False,
+        split_date: str = '2023-01-01',
     ) -> None:
         self.df = df.copy()
         self.features: List[str] = features if features is not None else self.DEFAULT_FEATURES
         self.filter_low_liquidity = filter_low_liquidity
         self.save_egarch = save_egarch
+        self.split_date = pd.to_datetime(split_date)
         self._volatility_built: bool = False  # evita duplo EGARCH quando build_volatility_features
                                                # é chamado antes de execute_pipeline (feature selection)
 
@@ -122,7 +124,14 @@ class CreditRiskEngine:
         )
 
         # 3. Reclassificação do Indexador (separa DI% do DI+)
-        medias_taxa = self.df.groupby('Ticker')['Taxa_Ativo'].transform('mean')
+        # Usamos apenas dados In-Sample para evitar data leakage
+        mask_is = self.df['Data'] < self.split_date
+        medias_taxa_is = self.df[mask_is].groupby('Ticker')['Taxa_Ativo'].mean()
+        medias_taxa_full = self.df.groupby('Ticker')['Taxa_Ativo'].transform('mean')
+        
+        # Mapeia as médias IS e preenche com a média de toda a base (se não houver IS)
+        medias_taxa = self.df['Ticker'].map(medias_taxa_is).fillna(medias_taxa_full)
+
         is_di = self.df['Indexador'].str.upper() == 'DI'
         is_percent = medias_taxa > 30
         self.df.loc[is_di & is_percent,  'Indexador'] = 'DI_Percentual'
@@ -191,7 +200,9 @@ class CreditRiskEngine:
         )
 
         # 9. Delta_Spread — input do EGARCH
-        self.df['Delta_Spread'] = self.df.groupby('Ticker')['Spread_Ffill'].transform(
+        # Calculamos sobre a série ORIGINAL (Spread_Equivalente), sem ffill, 
+        # para que o motor não entenda interpolações de liquidez como inércia
+        self.df['Delta_Spread'] = self.df.groupby('Ticker')['Spread_Equivalente'].transform(
             lambda x: x.diff()
         )
 
@@ -261,9 +272,15 @@ class CreditRiskEngine:
             # Como o modelo usa t padronizada (variância 1), dividimos pelo fator de escala
             q_t = stats.t.ppf(1 - alpha, df=nu)
             es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1)
-            scale = np.sqrt(nu / (nu - 2)) if nu > 2 else 1.0
-            es_std = es_t / scale
-            cond_es = cond_mean + cond_vol * es_std
+            
+            if nu > 2:
+                scale = np.sqrt(nu / (nu - 2))
+                es_t_padronizado = es_t / scale
+                cond_es = cond_mean + cond_vol * es_t_padronizado
+            else:
+                # O ES diverge ao infinito para nu <= 2 (variância/média infinitas)
+                cond_es = pd.Series(np.nan, index=returns_scaled.index)
+
 
             if getattr(self, 'save_egarch', False):
                 try:
@@ -309,7 +326,8 @@ class CreditRiskEngine:
         if n == 0:
             return np.nan
 
-        failures   = np.sum(ret < var)
+        # Cauda direita: violação ocorre quando retorno (Delta_Spread) é MAIOR que o VaR 99%
+        failures   = np.sum(ret > var)
         p_expected = 1.0 - nivel_confianca
 
         if failures == 0:

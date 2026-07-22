@@ -130,6 +130,7 @@ def run_frequentist_pipeline(
             features=features,
             filter_low_liquidity=filter_low_liquidity,
             save_egarch=save_egarch,
+            split_date=split_date,
         )
 
         if auto_feature_selection:
@@ -150,6 +151,7 @@ def run_frequentist_pipeline(
                 df=engine.df,
                 candidate_features=DEFAULT_CANDIDATE_FEATURES,
                 filter_low_liquidity=filter_low_liquidity,
+                split_date=split_date,
             )
             df_metrics = selector.evaluate_subsets()
 
@@ -275,5 +277,4 @@ def _cli_main():
 
 
 if __name__ == "__main__":
-    #_cli_main()
-    run_frequentist_pipeline()
+    _cli_main()

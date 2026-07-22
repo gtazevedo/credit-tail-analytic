@@ -49,29 +49,47 @@ MODEL_COLORS = {
 # ---------------------------------------------------------------------------
 # Eventos de crédito conhecidos (ground truth narrativo)
 # ---------------------------------------------------------------------------
-EVENTOS_CREDITO: Dict[str, List] = {
-    'Lojas Americanas': [
-        ('2023-01-11', 'Fraude Contábil\nR$20bi'),
-    ],
-    'GPA / Pão de Açúcar': [
-        ('2024-06-01', 'Saída do\nGrupo Casino'),
-        ('2026-02-01', 'Déficit Capital\nde Giro'),
-        ('2026-03-01', 'Recuperação\nExtrajudicial'),
-    ],
-    'Light S.A.': [
-        ('2023-06-26', 'Recuperação\nJudicial'),
-    ],
-    'Via Varejo (Casas Bahia)': [
-        ('2023-06-01', 'Reestruturação\nOperacional'),
-    ],
-    'GOL Linhas Aéreas': [
-        ('2024-01-25', 'Chapter 11\n(EUA)'),
-        ('2025-04-01', 'Chapter 11\nEncerrado'),
-    ],
-    "Rede D'Or": [
-        ('2023-08-01', 'Estresse de\nAlavancagem'),
-    ],
-}
+EVENTOS_CREDITO: Dict[str, List] = {}
+
+def _load_eventos():
+    from credit_tail_analytics.utils import dados_dir
+    csv_path = dados_dir() / 'estudos_caso.csv'
+    if os.path.exists(csv_path):
+        estudos = pd.read_csv(csv_path)
+        for _, row in estudos.iterrows():
+            empresa = row['Empresa']
+            data_ev = row['Data do Evento']
+            # Converter data 'jan./2023' para '2023-01-01' se possível, senao deixa o texto
+            # Mas _add_event_lines tenta fazer pd.to_datetime(data_str).
+            # Vamos tratar 'jan./2023' manualmente:
+            meses = {'jan.': '01', 'fev.': '02', 'mar.': '03', 'abr.': '04', 'mai.': '05', 'jun.': '06', 
+                     'jul.': '07', 'ago.': '08', 'set.': '09', 'out.': '10', 'nov.': '11', 'dez.': '12'}
+            dt_str = str(data_ev).lower()
+            for m, num in meses.items():
+                if dt_str.startswith(m):
+                    parts = dt_str.replace(' ', '').split('/')
+                    if len(parts) == 2:
+                        dt_str = f"{parts[1]}-{num}-01"
+                        break
+            if '202' not in dt_str:
+                dt_str = '2023-06-01' # fallback
+            else:
+                if '/' in dt_str and len(dt_str) > 10:
+                    dt_str = dt_str.split('/')[0].strip()
+                    if len(dt_str) == 4:
+                        dt_str = f"{dt_str}-06-01"
+            
+            try:
+                pd.to_datetime(dt_str)
+            except:
+                dt_str = '2023-06-01'
+            
+            label = str(row['Tipo de Evento']).replace(' ', '\n')
+            if empresa not in EVENTOS_CREDITO:
+                EVENTOS_CREDITO[empresa] = []
+            EVENTOS_CREDITO[empresa].append((dt_str, label))
+
+_load_eventos()
 
 
 # ---------------------------------------------------------------------------
@@ -830,20 +848,49 @@ def run_defense_visuals(
     # ------------------------------------------------------------------
     # Estudos de Caso
     # ------------------------------------------------------------------
-    casos = [
-        (['LAME29', 'LAMEA1'],              'Lojas Americanas',      '05_estudo_caso_americanas.png',    'Lojas Americanas'),
-        (['CBRDA7', 'CBRDA8'],              'GPA / Pão de Açúcar',   '06_estudo_caso_pao_de_acucar.png', 'GPA / Pão de Açúcar'),
-        (['LIGHA6', 'LIGHA9'],              'Light S.A.',             '07_estudo_caso_light.png',         'Light S.A.'),
-        (['VVAR11', 'VVAR26', 'VVAR15'],    'Via Varejo (Casas Bahia)','08_estudo_caso_via_varejo.png',   'Via Varejo (Casas Bahia)'),
-        (['RDORB7', 'RDORC7', 'RDORA5'],   "Rede D'Or",              '09_estudo_caso_rede_dor.png',      "Rede D'Or"),
-        (['SULA19', 'SULA29'],              'Sul América',            '10_estudo_caso_sulamerica.png',    None),
-        (['VRGL17'],                        'GOL Linhas Aéreas',     '11_estudo_caso_gol.png',           'GOL Linhas Aéreas'),
-        (['APOL11', 'POLI11', 'POLI21'],   'Polishop',               '12_estudo_caso_polishop.png',      None),
-        (['AMBP12', 'AMBP13'],              'Ambipar',                '13_estudo_caso_ambipar.png',       None),
-        # Casos Resilientes (Prova de falso-positivo vs robustez macro)
-        (['CAMLA1', 'CAMLB1'],              'Camil Alimentos',       '14_estudo_caso_camil_resiliente.png', None),
-        (['ALSO15', 'ALSO25'],              'Allos (Aliansce Sonae)', '15_estudo_caso_allos_resiliente.png', None),
-    ]
+    from credit_tail_analytics.utils import dados_dir
+    cadastro_path = dados_dir() / 'cadastro_debentures.csv'
+    df_cad = pd.read_csv(cadastro_path) if os.path.exists(cadastro_path) else pd.DataFrame()
+
+    prefix_map = {
+        'Lojas Americanas': ['LAME', 'AMER'],
+        'GPA / Pão de Açúcar': ['CBRD', 'PCAR'],
+        'Light S.A.': ['LIGH', 'LSVE'],
+        'Via Varejo (Casas Bahia)': ['VVAR', 'CBHA'],
+        'Grupo Casas Bahia': ['VVAR', 'CBHA'],
+        'Gol Linhas Aéreas': ['GOLL', 'VRGL'],
+        "Rede D'Or": ['RDOR'],
+        'Oi S.A.': ['OIBR', 'BFLE', 'SNGO', 'FRAG', 'RODT', 'PQCN', 'CLAG'],
+        'CVC Corp': ['CVCB'],
+        'Azul': ['AZUL', 'SAAS'],
+        'Multi / Multilaser': ['MULP', 'VLIM', 'VLIO'],
+        'Dasa': ['DASA'],
+        'Unigel': ['UGEL'],
+        'Sequoia Logística': ['SEQL'],
+        'Madero': ['MDRO'],
+    }
+
+    casos = []
+    idx = 5
+    for empresa, eventos in EVENTOS_CREDITO.items():
+        tickers_empresa = set()
+        
+        if empresa in prefix_map:
+            for p in prefix_map[empresa]:
+                tickers_empresa.update([t for t in df['Ticker'].unique() if str(t).startswith(p)])
+                
+        if not df_cad.empty:
+            first_word = empresa.split()[0].upper()
+            if first_word not in ['GRUPO', 'VIA', 'OI', 'GOL']:
+                tkrs_cad = df_cad[df_cad['Empresa'].str.contains(first_word, na=False, case=False)]['Ticker'].unique()
+                tickers_empresa.update([t for t in tkrs_cad if t in df['Ticker'].unique()])
+                
+        tickers_empresa = list(tickers_empresa)
+        if tickers_empresa:
+            filename_empresa = empresa.lower().replace(" ", "_").replace("/", "").replace("&", "")
+            casos.append((tickers_empresa, empresa, f'{idx:02d}_estudo_caso_{filename_empresa}.png', empresa))
+            idx += 1
+
 
     for tickers, title, filename, evento_key in casos:
         eventos = EVENTOS_CREDITO.get(evento_key) if evento_key else None

@@ -231,7 +231,7 @@ class FeatureSelector:
                 labels = merged['Cluster'].values
 
                 try:
-                    sil_list.append(silhouette_score(X_eval, labels))
+                    sil_list.append(silhouette_score(X_eval, labels, sample_size=10000, random_state=42))
                     db_list.append(davies_bouldin_score(X_eval, labels))
                     # Calinski-Harabasz Index (CH): razão entre dispersão inter e intra-cluster.
                     # Requer pelo menos 2 clusters e pelo menos 2 observações por cluster.
