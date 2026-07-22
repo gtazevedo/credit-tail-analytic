@@ -119,9 +119,7 @@ class CreditRiskEngine:
         )
 
         # 2. Log-retorno do PU
-        self.df['Log_Retorno'] = self.df.groupby('Ticker')['PU'].transform(
-            lambda x: np.log(x / x.shift(1))
-        )
+        self.df['Log_Retorno'] = np.log(self.df['PU'] / self.df.groupby('Ticker')['PU'].shift(1))
 
         # 3. Reclassificação do Indexador (separa DI% do DI+)
         # Usamos apenas dados In-Sample para evitar data leakage
@@ -202,9 +200,7 @@ class CreditRiskEngine:
         # 9. Delta_Spread — input do EGARCH
         # Calculamos sobre a série ORIGINAL (Spread_Equivalente), sem ffill, 
         # para que o motor não entenda interpolações de liquidez como inércia
-        self.df['Delta_Spread'] = self.df.groupby('Ticker')['Spread_Equivalente'].transform(
-            lambda x: x.diff()
-        )
+        self.df['Delta_Spread'] = self.df.groupby('Ticker')['Spread_Equivalente'].diff()
 
         # 10. Filtro de liquidez: zera observações de baixa liquidez (Faixa 3 ANBIMA)
         if self.filter_low_liquidity:
@@ -312,8 +308,8 @@ class CreditRiskEngine:
 
         return vol_series, var_series, es_series
 
+    @staticmethod
     def _kupiec_pof_test(
-        self,
         retornos: Union[pd.Series, np.ndarray],
         var_limits: Union[pd.Series, np.ndarray],
         nivel_confianca: float = 0.99,
@@ -518,9 +514,19 @@ class CreditRiskEngine:
 
             X_val_sc = scaler.transform(val_grupo[feats].values)
             raw_labels = kmeans.predict(X_val_sc)
+            distances = kmeans.transform(X_val_sc)
+
+            # Cálculo da distância relativa para o centróide 'Vermelho' (K-Means)
+            try:
+                red_idx = next(k for k, v in cluster_map.items() if v == 'Vermelho')
+                sum_dists = distances.sum(axis=1)
+                prob_kmeans = 1.0 - (distances[:, red_idx] / np.maximum(sum_dists, 1e-9))
+            except StopIteration:
+                prob_kmeans = np.nan
 
             resultado = val_grupo[['Ticker', 'Data', 'Indexador_Grupo']].copy()
             resultado['Cluster_KMeans'] = [cluster_map[c] for c in raw_labels]
+            resultado['Prob_Crise_KMeans'] = prob_kmeans
             all_results.append(resultado)
 
             logger.info(
@@ -801,8 +807,21 @@ class CreditRiskEngine:
             df_clusters = pd.DataFrame()
 
         if not df_clusters.empty:
+            # 1. Ensemble Score: Ponderação 70% HMM e 30% K-Means
+            if 'Prob_Crise_HMM' in df_clusters.columns and 'Prob_Crise_KMeans' in df_clusters.columns:
+                df_clusters['Credit_Tail_Risk_Score'] = (
+                    (0.70 * df_clusters['Prob_Crise_HMM'].fillna(0)) + 
+                    (0.30 * df_clusters['Prob_Crise_KMeans'].fillna(0))
+                ) * 100
+                
+                # Suavização Exponencial (EMA) de 10 períodos agrupada por Ticker para remover o ruído
+                df_clusters = df_clusters.sort_values(by=['Ticker', 'Data'])
+                df_clusters['Credit_Tail_Risk_Score'] = df_clusters.groupby('Ticker')['Credit_Tail_Risk_Score'].transform(
+                    lambda x: x.ewm(span=10, min_periods=1, adjust=False).mean()
+                )
+
             aux_cols = ['Ticker', 'Data', 'Taxa_ZScore', 'Volatilidade_EGARCH',
-                        'Taxa_Ajustada_Prazo', 'Score_Liquidez', 'VaR_99', 'Expected_Shortfall_99', 'PU', 'Taxa_Ativo']
+                        'Taxa_Ajustada_Prazo', 'Score_Liquidez', 'VaR_99', 'Expected_Shortfall_99', 'PU', 'Taxa_Ativo', 'Delta_Spread']
             aux_cols = [c for c in aux_cols if c in self.df.columns]
             df_aux = self.df[aux_cols].drop_duplicates(subset=['Ticker', 'Data'])
             df_clusters = pd.merge(df_clusters, df_aux, on=['Ticker', 'Data'], how='left')
