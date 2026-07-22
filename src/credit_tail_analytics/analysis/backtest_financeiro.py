@@ -177,34 +177,39 @@ class BacktestFinanceiro:
                 cash *= (1.0 + daily_cdi)
                 
                 if is_first_day:
-                    cash = initial_capital
-                    is_first_day = False
-                
-                # 2. Executar Stop (Venda)
-                cash_liberado = 0.0
-                for t, rgm in regimes.items():
-                    if rgm == 'Vermelho':
-                        dias_cura[t] = 0
-                        cash_liberado += capital[t]
-                        capital[t] = 0.0
-                    else:
-                        if dias_cura[t] is not None:
-                            dias_cura[t] += 1
-                cash += cash_liberado
-                
-                # 3. Executar Reaplicação (Compra)
-                if cash > 0.01:
-                    elegiveis = []
-                    for t, rgm in regimes.items():
-                        if rgm == 'Verde':
-                            if dias_cura[t] is None or dias_cura[t] >= cure_days:
-                                elegiveis.append(t)
-                                
-                    if len(elegiveis) > 0:
-                        aporte = cash / len(elegiveis)
-                        for t in elegiveis:
+                    ativos_dia = group['Ticker'].tolist()
+                    if len(ativos_dia) > 0:
+                        aporte = initial_capital / len(ativos_dia)
+                        for t in ativos_dia:
                             capital[t] += aporte
                         cash = 0.0
+                    is_first_day = False
+                else:
+                    # 2. Executar Stop (Venda)
+                    cash_liberado = 0.0
+                    for t, rgm in regimes.items():
+                        if rgm == 'Vermelho':
+                            dias_cura[t] = 0
+                            cash_liberado += capital[t]
+                            capital[t] = 0.0
+                        else:
+                            if dias_cura[t] is not None:
+                                dias_cura[t] += 1
+                    cash += cash_liberado
+                    
+                    # 3. Executar Reaplicação (Compra)
+                    if cash > 0.01:
+                        elegiveis = []
+                        for t, rgm in regimes.items():
+                            if rgm == 'Verde':
+                                if dias_cura[t] is None or dias_cura[t] >= cure_days:
+                                    elegiveis.append(t)
+                                    
+                        if len(elegiveis) > 0:
+                            aporte = cash / len(elegiveis)
+                            for t in elegiveis:
+                                capital[t] += aporte
+                            cash = 0.0
                 
                 history.append(sum(capital.values()) + cash)
                 
