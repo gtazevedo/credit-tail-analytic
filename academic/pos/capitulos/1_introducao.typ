@@ -1,4 +1,4 @@
-= Introdução
+= Introdução <cap_introducao>
 
 O mercado de crédito privado brasileiro vem crescendo continuamente, e se consolidando como uma ferramenta de captação de recursos para as empresas, como se pode observar em #cite(<anbima2026recorde>, form: "prose"). Uma das principais ferramentas de crédito privado utilizadas são as debêntures, que tiveram um crescimento de 307% no volume de emissões quando comparamos o volume observado em 2020 contra o volume observado em 2025. 
 Porém, esse mercado enfrenta problemas de liquidez, e conforme #cite(<sheng2008liquidez>, form: "prose"), apresenta as seguintes características:

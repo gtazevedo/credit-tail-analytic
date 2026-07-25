@@ -44,9 +44,52 @@ Eles transitam entre diferentes estados, onde as equações que regem os preços
 
 == Aprendizado de Máquina Não Supervisionado: K-Means e HMM
 
-Enquanto alguns autores na literatura propõem a integração direta (como os modelos MS-GARCH unificados), uma abordagem moderna e altamente escalável para o risco de crédito utiliza algoritmos de Aprendizado de Máquina (*Machine Learning*) não supervisionados para classificar os regimes de mercado.
+Enquanto alguns autores na literatura propõem a integração direta (como os modelos MS-GARCH unificados), neste trabalho adotam-se dois modelos tintos para agrupar e classificar os regimes de risco
+utilizando como variáveis de entrada o *spread* de crédito e a volatilidade extraída pelo modelo EGARCH. Esses modelos são:
 
-Neste trabalho, adotam-se dois modelos distintos para agrupar e classificar os regimes de risco, utilizando como *features* (variáveis de entrada) o *spread* de crédito e a volatilidade extraída pelo modelo EGARCH:
+=== K-Means
 
-1. *K-Means:* Um algoritmo de clusterização baseado em distância. O K-Means particiona os dados em $K$ grupos distintos, minimizando a variância intra-cluster. Embora seja extremamente eficiente para separar períodos de alta e baixa volatilidade/spread de forma estática, ele ignora a dependência temporal (a probabilidade de transição de um dia para o outro).
-2. *Hidden Markov Models (HMM):* Diferentemente do K-Means, o HMM é um modelo probabilístico que assume que o sistema é um processo de Markov com estados não observáveis (ocultos). Ele não apenas agrupa os dados baseando-se nas emissões (volatilidade e spread), mas também estima a *matriz de transição* entre os regimes, capturando perfeitamente a dinâmica temporal de "entrar" e "sair" de uma crise.
+Um algoritmo popular para problemas de clusterização é o *K-means* que particiona os dados em $K$ grupos distintos, minimizando a variância intra-cluster. Para utilizá-lo no problema
+em questão, foram criados três clusters de acordo com o nível de risco do papel, de forma que o esperado é que conforme um papel começa apresentar durante o seu período de negociação
+uma variação mais errática do seu spread ele vá migrando do cluster de baixo ao cluster de alto risco.
+
+Para entender melhor essa aplicação vamos tomar como base #cite(<bishop2006pattern>, form: "prose"), em nosso problema temos que identificar grupos ou *clusters* de dados em um espaço multidimensional.
+Suponha que esse espaço seja dado por $\{x_1, x_2, dots, x_N\}$ onde cada um dos $N$ pontos no espaço multidimensional é um vetor de dimensão $D$.
+
+O objetivo do algoritmo de K-means é particionar os dados em $K$ grupos distintos, de forma que a soma do quadrado das distancias de cada ponto com o vetor
+$\mu_k$ mais próximo seja minimizada. Ou de forma mais formal: 
+
+
+$ J = sum_{n=1}^N sum_{k=1}^K r_{n k} || x_n - mu_k ||^2 $ <eq_kmeans>
+
+Onde $r_{n k} in \{0, 1\}$ é uma variável indicadora que assume o valor $1$ se o ponto $x_n$ for atribuído ao *cluster* $k$ (e $0$ caso contrário), 
+enquanto $mu_k$ representa o vetor centroide do *cluster* $k$. O objetivo é encontrar os valores de ${r_{nk}}$ e ${mu_k}$ que minimizam $J$. Isso pode ser realizado por meio de um
+processo iterativo; para mais detalhes recomenda-se consultar #cite(<bishop2006pattern>, form: "prose").
+
+Apesar de sua eficiência em separar os períodos de forma estática, minimizando $J$, 
+o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro, e como será analisado posteriormente, isso dá maior estabilidade aos resultados, porém,
+faz com seu tempo de reação seja mais lento, ou em alguns casos seja insensível devido a uma quebra de regime abrupta.
+
+=== Hidden Markov Models (HMM)
+
+Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM, um modelo probabilístico ideal para utilização em dados sequenciais. 
+Conforme detalhado por #cite(<bishop2006pattern>, form: "prose"), o HMM parte do princípio de que os dados que medidos no mercado 
+(como, por exemplo, o *spread* e a volatilidade) são reflexos de um estado que não pode ser observado.
+Esse estado é a causa do comportamento dos preços, e é chamado de **variável latente** (ou *hidden state*).
+
+Seja $z_n$ a variável latente que representa o estado ou regime oculto do mercado no tempo $n$ . 
+No HMM, assume-se que o comportamento do variável observada é gerado por um processo de Markov onde a probabilidade do estado atual $z_n$ 
+depende diretamente do estado imediatamente 
+anterior $z_{n-1}$, o que é expresso por meio de uma distribuição condicional $p(z_n | z_{n-1})$.
+
+Como as variáveis latentes assumem um conjunto finito de $K$ regimes categóricos (neste estudo, 3 níveis de risco), 
+essa distribuição condicional $p(z_n | z_{n-1})$ corresponde matematicamente a uma tabela de valores que denotaremos pela matriz $A$. 
+Os elementos dessa matriz $A$ são conhecidos como *probabilidades de transição* e representam a chance do mercado migrar do regime $i$ para o regime $j$ de um instante de 
+tempo para o outro.
+
+Isso é similar ao tratamento que se faz com matrizes de transição de rating, onde assume-se que uma empresa com rating AAA tem uma chance $p_{AAA \to AA}$ de migrar para o rating AA 
+em um dado ano, uma chance $p_{AAA \to A}$ de migrar para o rating A, e assim sucessivamente.
+
+Dessa forma, o HMM não apenas agrupa os dados de forma estática com base nas emissões observadas (volatilidade e *spread*), mas também estima a matriz de transição estocástica $A$. 
+É justamente o uso das variáveis latentes $z_n$ e $z_{n-1}$ que permite ao modelo capturar a 
+inércia do mercado de debêntures e modelar a dinâmica de transições entre regimes.
