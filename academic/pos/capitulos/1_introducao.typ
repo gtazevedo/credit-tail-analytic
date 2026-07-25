@@ -1,7 +1,7 @@
 = Introdução
 
-O mercado de crédito privado brasileiro vem crescendo continuamente, e se consolidando como uma ferramenta de captação de recursos para as empresas, como se pode observar em @anbima2026recorde. Uma das principais ferramentas de crédito privado utilizadas são as debêntures, que tiveram um crescimento de 307% no volume de emissões quando comparamos o volume observado em 2020 contra o volume observado em 2025. 
-Porém, esse mercado enfrenta problemas de liquidez, e conforme @sheng2008liquidez, apresenta as seguintes características:
+O mercado de crédito privado brasileiro vem crescendo continuamente, e se consolidando como uma ferramenta de captação de recursos para as empresas, como se pode observar em #cite(<anbima2026recorde>, form: "prose"). Uma das principais ferramentas de crédito privado utilizadas são as debêntures, que tiveram um crescimento de 307% no volume de emissões quando comparamos o volume observado em 2020 contra o volume observado em 2025. 
+Porém, esse mercado enfrenta problemas de liquidez, e conforme #cite(<sheng2008liquidez>, form: "prose"), apresenta as seguintes características:
 
 - As transações são dispersas e ocorrem em duas diferentes instituições - Bolsa de Valores de São Paulo (Bovespa Fix) e Sistema Nacional de Debêntures (SND);
 - Existe baixa atividade, não havendo registro de transações para períodos longos e, em algumas emissões de debêntures, o volume de transações no mercado secundário é quase nulo e o valor total em reais é baixo;
@@ -19,19 +19,19 @@ e outras características, como:
 - A baixa presença de pessoas físicas e investidores estrangeiros;
 - O fato de os intermediários manterem os papéis na carteira até o vencimento;
 
-serem reforçadas por estudos mais recentes como @barra2021estudo e @anbima2026recorde, houve algumas mudanças relevantes que sugerem um amadurecimento institucional. A amostra deste estudo indica que as empresas têm conseguido alongar o perfil de suas dívidas, com as debêntures apresentando uma mediana de sete anos de prazo até o vencimento.
+serem reforçadas por estudos mais recentes como #cite(<barra2021estudo>, form: "prose") e #cite(<anbima2026recorde>, form: "prose"), houve algumas mudanças relevantes que sugerem um amadurecimento institucional. A amostra deste estudo indica que as empresas têm conseguido alongar o perfil de suas dívidas, com as debêntures apresentando uma mediana de sete anos de prazo até o vencimento.
 
 == O Problema de Pesquisa
 
 Apesar do crescimento e amadurecimento do mercado de crédito privado brasileiro, a baixa liquidez no mercado secundário representa um desafio para a precificação e acompanhamento de risco do papel.
-Estudos como @correa2010aprecamento focam em problemas de apreçamento do spread de crédito, enquanto estudos como @sheng2008liquidez analisam os fatores que afetam o prêmio de liquidez em debêntures. 
+Estudos como #cite(<correa2010aprecamento>, form: "prose") focam em problemas de apreçamento do spread de crédito, enquanto estudos como #cite(<sheng2008liquidez>, form: "prose") analisam os fatores que afetam o prêmio de liquidez em debêntures. 
 Contudo, muitos modelos assumem situações normais de mercado, enquanto outros fazem suposições ainda mais fortes que não condizem com a realidade do mercado brasileiro. Bancos e assets muitas vezes seguem
 controlando o risco de cauda de debêntures baseado em GARCH e VaR contínuos, que possuem suposições violadas quando ocorrem eventos extremos, e podem estar subestimando o risco observado.
 
-Como demonstrado por @bao2011illiquidity, o mercado de crédito corporativo apresenta fricções de liquidez que impedem o ajuste contínuo dos preços, eventos recentes envolvendo o Grupo Pão de Açucar e Americanas são exemplos dos 
+Como demonstrado por #cite(<bao2011illiquidity>, form: "prose"), o mercado de crédito corporativo apresenta fricções de liquidez que impedem o ajuste contínuo dos preços, eventos recentes envolvendo o Grupo Pão de Açucar e Americanas são exemplos dos 
 saltos observados nos precos das debêntures desses emissores; No caso das Americanas, houve uma queda de 50% no valor das debentures em um dia, acumulando perdas de cerca de 90% em uma semana; Já no caso do Grupo Pão de Açucar,
-foram observados deságios de até cerca de 70%. Nessas situações, modelos GARCH e VaR tradicionais falham em capturar o risco de cauda, uma vez que segundo @jorion2006, assumem que a liquidação será instantanea a preço de tela.
-Para corrigir essas suposições e capturar quebras estruturais, a literatura mais moderna defende a transição para modelos baseados em mudanças de regime (Markov-Switching), conforme proposto por @haas2004new e @ardia2019markov.
+foram observados deságios de até cerca de 70%. Nessas situações, modelos GARCH e VaR tradicionais falham em capturar o risco de cauda, uma vez que segundo #cite(<jorion2006>, form: "prose"), assumem que a liquidação será instantanea a preço de tela.
+Para corrigir essas suposições e capturar quebras estruturais, a literatura mais moderna defende a transição para modelos baseados em mudanças de regime (Markov-Switching), conforme proposto por #cite(<haas2004new>, form: "prose") e #cite(<ardia2019markov>, form: "prose").
 
 == Objetivos (Geral e Específicos)
 
