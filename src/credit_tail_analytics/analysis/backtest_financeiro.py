@@ -258,10 +258,20 @@ class BacktestFinanceiro:
         df_pnl['BnH_Cum'] = history_bnh
 
         # ---------------------------------------------------------------
-        # Alocadores táticos (KMeans, HMM, Ensemble) — CDI real no caixa
+        # Alocadores táticos — CDI real no caixa
         # ---------------------------------------------------------------
-        for modelo in ['KMeans', 'HMM', 'Ensemble']:
-            col = f'Cluster_{modelo}'
+        model_configs = [
+            ('KMeans', ['Vermelho']),
+            ('HMM', ['Vermelho']),
+            ('Ensemble', ['Vermelho']),
+            ('KMeans_Amarelo', ['Vermelho', 'Amarelo']),
+            ('HMM_Amarelo', ['Vermelho', 'Amarelo']),
+            ('Ensemble_Amarelo', ['Vermelho', 'Amarelo'])
+        ]
+        
+        for config_name, stop_regimes in model_configs:
+            col_base = config_name.replace('_Amarelo', '')
+            col = f'Cluster_{col_base}'
             if col not in self.df.columns:
                 continue
 
@@ -296,7 +306,7 @@ class BacktestFinanceiro:
                     # 3. Stop (Venda) — regime Vermelho
                     cash_liberado = 0.0
                     for t, rgm in regimes.items():
-                        if rgm == 'Vermelho':
+                        if rgm in stop_regimes:
                             dias_cura[t] = 0
                             cash_liberado += capital[t]
                             capital[t] = 0.0
@@ -318,17 +328,20 @@ class BacktestFinanceiro:
 
                 history.append(sum(capital.values()) + cash)
 
-            df_pnl[f'{modelo}_Cum'] = history
+            df_pnl[f'{config_name}_Cum'] = history
 
         # ---------------------------------------------------------------
         # Gráfico das curvas de PnL
         # ---------------------------------------------------------------
         fig, ax = plt.subplots(figsize=(12, 6))
         estilos = {
-            'BnH_Cum':      ('gray', '--', 'Benchmark (Buy & Hold)', 1.5),
-            'KMeans_Cum':   ('#3498db', '-', 'K-Means (Tático)', 1.2),
-            'HMM_Cum':      ('#9b59b6', '-', 'HMM (Tático)', 1.2),
-            'Ensemble_Cum': ('#e74c3c', '-', 'Ensemble (Tático)', 2.5),
+            'BnH_Cum':              ('gray', '--', 'Benchmark (BnH)', 1.5),
+            'KMeans_Cum':           ('#3498db', '-', 'K-Means (Vende Vermelho)', 1.2),
+            'HMM_Cum':              ('#9b59b6', '-', 'HMM (Vende Vermelho)', 1.2),
+            'Ensemble_Cum':         ('#e74c3c', '-', 'Ensemble (Vende Vermelho)', 2.5),
+            'KMeans_Amarelo_Cum':   ('#2980b9', ':', 'K-Means (Vende Amarelo)', 1.0),
+            'HMM_Amarelo_Cum':      ('#8e44ad', ':', 'HMM (Vende Amarelo)', 1.0),
+            'Ensemble_Amarelo_Cum': ('#c0392b', ':', 'Ensemble (Vende Amarelo)', 2.0),
         }
         for col, (cor, ls, label, lw) in estilos.items():
             if col in df_pnl.columns:
