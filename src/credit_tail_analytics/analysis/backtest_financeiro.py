@@ -336,7 +336,7 @@ class BacktestFinanceiro:
         fig, ax = plt.subplots(figsize=(12, 6))
         estilos = {
             'BnH_Cum':              ('black', '--', 'Benchmark (Buy & Hold)', 1.5),
-            'HMM_Amarelo_Cum':      ('#27ae60', '-', 'HMM (Vende Amarelo) - VENCEDOR', 1.5),
+            'HMM_Amarelo_Cum':      ('#27ae60', '-', 'HMM (Vende Amarelo)', 1.5),
             'HMM_Cum':              ('#2ecc71', ':', 'HMM (Vende Vermelho)', 1.5),
             'KMeans_Amarelo_Cum':   ('#c0392b', '-', 'K-Means (Vende Amarelo)', 1.5),
             'KMeans_Cum':           ('#e74c3c', ':', 'K-Means (Vende Vermelho)', 1.5),
