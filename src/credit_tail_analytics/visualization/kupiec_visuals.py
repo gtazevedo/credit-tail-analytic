@@ -7,8 +7,8 @@ import logging
 from typing import List, Optional
 from credit_tail_analytics.utils import graficos_dir
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
-logger = logging.getLogger('KupiecVisuals')
+# Sem logging.basicConfig — configuração delegada ao caller
+logger = logging.getLogger(__name__)
 
 def plot_kupiec_validation(
     df: pd.DataFrame,
@@ -54,15 +54,37 @@ def plot_kupiec_validation(
             ax.set_title(f"{ticker} — sem dados OOS de VaR/Delta")
             continue
             
-        # Pega estatísticas de Kupiec
+        # Pega estatísticas de Kupiec para este ticker
         stats = df_kupiec_results[df_kupiec_results['Ticker'] == ticker]
         if not stats.empty:
             s = stats.iloc[0]
-            valido = s['Modelo_Valido']
-            p_val = s['P_Valor']
+
+            # Compatibilidade: suporta CSV gerado antes e depois da refatoração
+            # Novo formato: P_Valor_POF / P_Valor_CC / P_Valor_Joint / Joint_Valido
+            # Formato legado: P_Valor / Modelo_Valido
+            if 'P_Valor_POF' in s.index:
+                p_pof   = s['P_Valor_POF']
+                p_cc    = s.get('P_Valor_CC',    float('nan'))
+                p_joint = s.get('P_Valor_Joint', float('nan'))
+                valido  = s.get('Joint_Valido', s.get('Modelo_Valido', 'N/A'))
+            else:
+                # Legado — arquivo gerado antes da refatoração do Kupiec
+                p_pof   = s.get('P_Valor', float('nan'))
+                p_cc    = float('nan')
+                p_joint = float('nan')
+                valido  = s.get('Modelo_Valido', 'N/A')
+
             f_real = s['Falhas_Reais']
-            f_esp = s['Falhas_Esperadas']
-            subtitle = f"Kupiec POF: {valido} (P-Valor={p_val} | Falhas: {f_real} Reais vs {f_esp} Esp.)"
+            f_esp  = s['Falhas_Esperadas']
+
+            def _fmt(v):
+                return f"{v:.4f}" if v == v else "N/A"  # NaN-safe
+
+            subtitle = (
+                f"Joint: {valido} | "
+                f"POF p={_fmt(p_pof)} | CC p={_fmt(p_cc)} | Joint p={_fmt(p_joint)} | "
+                f"Falhas: {f_real} reais vs {f_esp:.2f} esp."
+            )
         else:
             subtitle = "Kupiec Stats: N/A"
 

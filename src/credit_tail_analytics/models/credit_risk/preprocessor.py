@@ -42,7 +42,8 @@ class DataPreprocessor:
         df = df.copy()
         required_columns = [
             'Data', 'Ticker', 'Indexador', 'PU',
-            'Faixa_Volume_ANBIMA', 'Taxa_Ativo', 'DU_Vencimento'
+            'Faixa_Volume_ANBIMA', 'Taxa_Ativo', 'DU_Vencimento',
+            'Taxa_Minima', 'Taxa_Maxima'
         ]
         missing = [col for col in required_columns if col not in df.columns]
         if missing:
@@ -100,24 +101,27 @@ class DataPreprocessor:
             .map(lambda x: INDEXADOR_GRUPO_MAP.get(x, INDEXADOR_OUTRO))
         )
 
-        # 6. Spread equivalente (normalizado por indexador)
-        def calc_spread(row):
-            idx  = str(row['Indexador']).upper()
-            taxa = row['Taxa_Ativo']
-            cdi  = row['CDI_Anual']
-            if pd.isna(taxa) or pd.isna(cdi):
-                return np.nan
-            if idx in ['DI_SPREAD', 'IPCA', 'IGPM']:
-                return taxa
-            elif idx == 'DI_PERCENTUAL':
-                fator_diario_cdi    = (1 + cdi / 100.0) ** (1 / 252)
-                fator_diario_titulo = (fator_diario_cdi - 1) * (taxa / 100.0) + 1
-                yield_anualizado    = fator_diario_titulo ** 252 - 1
-                return yield_anualizado * 100.0 - cdi
-            else:
-                return taxa - cdi
+        # 6. Spread equivalente (normalizado por indexador) — vetorizado
+        idx_upper = df['Indexador'].str.upper()
+        taxa      = df['Taxa_Ativo']
+        cdi       = df['CDI_Anual']
 
-        df['Spread_Equivalente'] = df.apply(calc_spread, axis=1)
+        # DI_PERCENTUAL: converte via fator diário e extrai prêmio sobre o CDI
+        is_pct            = idx_upper == 'DI_PERCENTUAL'
+        fator_diario_cdi  = (1 + cdi / 100.0) ** (1 / 252)
+        fator_diario_tit  = (fator_diario_cdi - 1) * (taxa / 100.0) + 1
+        spread_pct        = (fator_diario_tit ** 252 - 1) * 100.0 - cdi
+
+        # DI_SPREAD / IPCA / IGPM / IGPM: taxa já é spread puro
+        is_pure = idx_upper.isin(['DI_SPREAD', 'IPCA', 'IGPM'])
+
+        # Demais (PRE, Outro…): taxa − CDI
+        spread_outros = taxa - cdi
+
+        df['Spread_Equivalente'] = np.where(
+            is_pct,  spread_pct,
+            np.where(is_pure, taxa, spread_outros)
+        )
 
         # 7. Taxa ajustada pelo prazo
         du_seguro = np.maximum(df['DU_Vencimento'], 2)
@@ -138,6 +142,18 @@ class DataPreprocessor:
 
         # 9. Delta_Spread — input do EGARCH
         df['Delta_Spread'] = df.groupby('Ticker')['Spread_Equivalente'].diff()
+
+        # 9.5 Features Preditivas Intraday (Microestrutura)
+        # Preenche NaNs com a própria taxa (se não houve range negociado no dia)
+        df['Taxa_Minima'] = df['Taxa_Minima'].fillna(df['Taxa_Ativo'])
+        df['Taxa_Maxima'] = df['Taxa_Maxima'].fillna(df['Taxa_Ativo'])
+        
+        # Range = Máximo - Mínimo do dia. Explode quando formadores de mercado estão ansiosos (Bid-Ask alargado)
+        df['Spread_Range_Intraday'] = df['Taxa_Maxima'] - df['Taxa_Minima']
+        
+        # Skew = (Fechamento - Mínimo) / (Range). Varia de 0 (fechou na mínima) a 1 (fechou na máxima).
+        # Sinaliza pressão compradora ou vendedora no dia.
+        df['Spread_Skew_Intraday'] = (df['Taxa_Ativo'] - df['Taxa_Minima']) / (df['Spread_Range_Intraday'] + 1e-6)
 
         # 10. Filtro de liquidez: zera observações de baixa liquidez (Faixa 3 ANBIMA)
         if self.filter_low_liquidity:

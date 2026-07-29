@@ -24,28 +24,28 @@ pacote `debentures_dot_com`. O leitor pode replicar esse download por meio da fu
 As informações macroeconomicas (CDI, Selic, IPCA Mensal e 12M e IGPM Mensal) foram extraidas utilizando o pacote `python-bcb`. O leitor pode replicar esse download por meio
 da função `data.download_macro.download_macro_data`, que é uma aplicação direta do pacote de #cite(<freitaspythonbcb>, form: "prose") para as variaveis de interesse para a pesquisa.
 
-Na etapa de pré-processamento, estruturada na classe `DataPreprocessor`, foi realizada a normalização e tratamento das variáveis para garantir que 
-todas as debêntures pudessem ser comparadas de forma equitativa, independentemente de seus indexadores. Primeiramente, as observações foram agrupadas por *tickers* e ordenadas cronologicamente.
-
-Como a base de dados extraida da ANBIMA abrange múltiplos indexadores (como IPCA+, DI+ e % do CDI), foi necessário unificar a medida de risco por meio do cálculo do
-*Spread Equivalente* ($S_t$). Para os títulos atrelados a índices de inflação (como IPCA, IGPM) ou compostos por um prêmio direto sobre o DI (DI Spread), 
-a própria taxa informada no secundário já reflete diretamente o prêmio de risco:
-$ S_t = "Taxa do Ativo"_t $
-
-Contudo, para papéis indexados a um percentual do CDI (ex: 120% do DI), foi realizada uma conversão explícita baseada na taxa CDI anualizada extraida do pacote `python-bcb` 
-para isolar a taxa adicional. A transformação anualiza o fator diário do título e extrai o prêmio sobre a taxa livre de risco:
+Na etapa de pré-processamento, estruturada na classe `DataPreprocessor`, foi realizada a normalização e tratamento das variáveis. Para papéis indexados a um percentual do CDI 
+(ex: 120% do DI), foi realizada uma conversão explícita baseada na taxa CDI anualizada (extraída via `python-bcb`). 
+A transformação anualiza o fator diário do título e extrai o prêmio absoluto sobre a taxa livre de risco, conforme abaixo:
 $ F_"cdi" = (1 + "CDI"_t / 100)^(1/252) $
 $ F_"titulo" = (F_"cdi" - 1) times ("Taxa do Ativo"_t / 100) + 1 $
 $ S_t = ( (F_"titulo")^252 - 1 ) times 100 - "CDI"_t $
 
-Após o cálculo e padronização do *spread* equivalente em toda a amostra, foi calculado o *Delta Spread* ($\Delta S_t$), que representa a variação diária do spread do titulo obtido na etapa
-anterior:
+Para os títulos atrelados a índices de inflação (como IPCA, IGPM) ou por um prêmio direto sobre o DI (DI Spread), a própria taxa informada no secundário já reflete o prêmio de risco 
+puro:
+$ S_t = "Taxa do Ativo"_t $. 
+
+A partir dessa informação, foi calculado a variação diária do *spread* (*Delta Spread*), que atua como o principal input para o ajuste temporal do modelo EGARCH.
+
 $ Delta S_t = S_t - S_(t-1) $
 
-$\Delta S_t$ atua como o principal input para o modelo EGARCH implementado.
+Como a base de dados extraída da ANBIMA abrange múltiplos indexadores (como IPCA+, DI+ e % do CDI), foi necessário separar esse grupos treinar e aplicar o modelo de forma independente,
+criando uma instância de modelagem por indexador, 
+conforme será detalhado nas sessões seguintes,
+uma vez que os papéis de diferentes indexadores possuem comportamento de risco distintos, assim como distinta sensibilidade a variação da taxa. 
 
 Como citado em @cap_introducao, um desafio inerente ao mercado secundário de crédito privado brasileiro é a baixa liquidez dos ativos, inclusive com alguns chegando a possuir
-dias sem nego. A ANBIMA classifica o volume de negociação em faixas, sendo a faixa mais baixa dada por "Até 1MM", e portanto, dado as informações possuídas na realização dessa pesquisa,
+dias sem negociação. A ANBIMA classifica o volume de negociação em faixas, sendo a faixa mais baixa dada por "Até 1MM", e portanto, dado as informações possuídas na realização dessa pesquisa,
 esses são os ativos definidos como ilíquidos. No código implementado, desenvolveu-se uma rotina de tratamento governada pela flag `filter_low_liquidity`. Quando habilitada, 
 essa rotina transforma o *Delta Spread* dos dias classificados na faixa de menor liquidez em valores nulos (`NaN`). O propósito dessa funcionalidade é impedir que, caso sejam observados
 eventos de variação de spread expurios, devido a baixa liquidez, eles não sejam propagados para o modelo EGARCH, o que poderia corromper a estimação da persistência e dos choques 
@@ -58,7 +58,37 @@ a configuração `filter_low_liquidity` foi mantida como `False`. Consequentemen
 ou anulação das variações de preço oriundas das faixas de baixa liquidez.
 
 == O Pipeline de Risco (EGARCH, K-Means e HMM)
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+Para a implementação dos modelos, foi criado um *pipeline* de risco, que, através de um fluxo linear estima as variáveis de maior impacto para o modelo, realiza o cálculo do volatilidade,
+VaR e *Expected Shortfall* (ES) por papel e, por fim, aplica o algoritmo K-Means e o Modelo Oculto de Markov (HMM). Uma vez obtdos os resultados do K-Means e HMM tambem se gera um modelo
+*Ensemble*, ponderando os resultados de cada modelo. Para mais detalhes sobre o funcionamento do *pipeline*, consultar a documentação do projeto disponível no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório do GitHub].
+Abaixamos será detalhado a metodologia aplicada em cada etapa.
+
+=== EGARCH
+
+Apesar do viés teórico discutido em @cap_revisao_lit, para se optar pelo modelo EGARCH, foram testados vários modelos da familia GARCH em um modelo de torneio de *grid-search*, para
+diferentes tamanhos de amostra. O torneio avaliou os dados a partir de 2018 até o fim de 2022, que foi o período utilizado para treinamento do modelo, sendo o período a partir de 2023
+o período de validação dos resultados. O código listou todos os ativos e filtrou os 30, 50, 100, 500, 1000, 3000, 5000 mais líquidos do período.
+
+Para cada um dos ativos selecionados, o otimizador testou um grid combinatório de 32 especificações da familia GARCH (utilizando o pacote `arch`). Os hiperparâmetros iterados foram:
+- Média Condicional: Fixada em um modelo Autorregressivo de ordem 1 (AR(1)).
+- Famílias de Volatilidade: GARCH tradicional, EGARCH (exponencial), GJR-GARCH (assimétrico) e TARCH.
+- Defasagens (Lags) $p$: 1 e 2 (Impacto da variância passada).
+- Defasagens (Lags) $q$: 1 e 2 (Impacto dos choques correntes).
+- Distribuição dos Resíduos: Normal (normal) e t-Student (studentst).
+
+Para cada modelo em cada ativo foi calculado o Critério de Informação de Akaike (AIC) e o modelo eligido foi aquele que apresentou o melhor rank médio de AIC ao longo de todos os 
+ativos testados, de forma a escolher o modelo que em média, se adapte melhor ao mercado. Para amostras pequenas o destaque foi o modelo GARCH(1,1,1), mas a medida que a quantidade de
+amostras aumentou e se aproximou da quantidade de amostras total desse estudo, o modelo EGARCH passou a apresentar resultados superiores, como se pode observar nas figuras abaixo:
+
+
+
+
+Validação de Resíduos: Após coroar o modelo vencedor (que, nos seus testes, resultou no EGARCH), o validador ainda aplica:
+Teste Ljung-Box (Lag 10): Para confirmar que não restou autocorrelação serial não-explicada nos resíduos padronizados.
+Teste ARCH-LM (Lag 10): Para atestar que toda a heterocedasticidade condicional foi devidamente "sugada" pelo modelo.
+
+Para mais informações, pode ser consultada a classe `ValidadorEconometrico`, disponível em `analysis.selecao_modelos`
 
 == Protocolos de Validação (Kupiec POF e Backtest)
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.

@@ -216,10 +216,10 @@ def run_frequentist_pipeline(
                 (df_g.get('Cluster_HMM',    pd.Series(dtype=str)) == 'Vermelho')
             ]
             if not df_vermelhos.empty:
-                print(f"⚠  Ativos em VERMELHO: {len(df_vermelhos)}")
+                print(f"[!] Ativos em VERMELHO: {len(df_vermelhos)}")
                 print(df_vermelhos[cols_show].head(10).to_markdown(floatfmt=".4f"))
             else:
-                print("✓  Nenhum ativo em VERMELHO nesta janela.")
+                print("[!] Nenhum ativo em VERMELHO nesta janela.")
 
         print("\n" + "=" * 80 + "\n")
 
@@ -277,4 +277,6 @@ def _cli_main():
 
 
 if __name__ == "__main__":
-    _cli_main()
+    #_cli_main()
+    run_frequentist_pipeline(filter_low_liquidity=False)
+    

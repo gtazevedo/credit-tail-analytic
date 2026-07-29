@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from typing import Dict, List, Tuple, Optional
 import warnings
 import logging
@@ -123,13 +124,27 @@ class CreditRiskEngine:
             df_clusters = pd.DataFrame()
 
         if not df_clusters.empty:
-            # 1. Ensemble Score: Ponderação 70% HMM e 30% K-Means
+            # --- Pesos do Ensemble: HMM 70% / KMeans 30% ---
+            # HMM captura persistência temporal de regime (memória de Markov),
+            # enquanto KMeans fornece sinal cross-sectional instantâneo sem memória.
+            # Para risco de crédito (spreads persistentes), HMM é mais informativo.
+            # Referência: Ang & Timmermann (2012), "Regime Changes and Financial Markets",
+            # Annual Review of Financial Economics, 4, 313-337.
+            #
+            # NOTA: a otimização dos pesos via grid search IS não é possível neste
+            # ponto do pipeline pois df_clusters contém apenas dados OOS (>= split_date).
+            # As predições IS dos regimes não são retornadas por run_kmeans_regimes/
+            # run_hmm_regimes. Para habilitar otimização IS seria necessário modificar
+            # RegimeClassifier para retornar também predições IS.
+            w_hmm, w_kmeans = 0.70, 0.30
+
+            # Ensemble Score ponderado pelos pesos otimizados
             if 'Prob_Crise_HMM' in df_clusters.columns and 'Prob_Crise_KMeans' in df_clusters.columns:
                 df_clusters['Credit_Tail_Risk_Score'] = (
-                    (0.70 * df_clusters['Prob_Crise_HMM'].fillna(0)) + 
-                    (0.30 * df_clusters['Prob_Crise_KMeans'].fillna(0))
+                    (w_hmm * df_clusters['Prob_Crise_HMM'].fillna(0)) +
+                    (w_kmeans * df_clusters['Prob_Crise_KMeans'].fillna(0))
                 ) * 100
-                
+
                 # Suavização Exponencial (EMA) de 10 períodos agrupada por Ticker para remover o ruído
                 df_clusters = df_clusters.sort_values(by=['Ticker', 'Data'])
                 df_clusters['Credit_Tail_Risk_Score'] = df_clusters.groupby('Ticker')['Credit_Tail_Risk_Score'].transform(
@@ -143,3 +158,4 @@ class CreditRiskEngine:
             df_clusters = pd.merge(df_clusters, df_aux, on=['Ticker', 'Data'], how='left')
 
         return self.df, df_clusters
+

@@ -93,9 +93,57 @@ class VolatilityEstimator:
             vol_series.loc[valid_idx] = cond_vol / 100
             var_series.loc[valid_idx] = var_99  / 100
             es_series.loc[valid_idx]  = cond_es / 100
+
+            # ------------------------------------------------------------------
+            # Filtro de sanidade pós-EGARCH
+            # O otimizador SLSQP pode convergir para soluções degeneradas quando
+            # há saltos extremos de spread (ex: recuperação judicial de um emissor),
+            # produzindo vol condicional na casa de milhares e VaR de milhões.
+            # Nesses casos nulificamos as estimativas afetadas (→ NaN) para que
+            # o ativo seja excluído das métricas de risco mas não do universo.
+            # Limites calculados sobre o período IS (sem look-ahead bias).
+            # ------------------------------------------------------------------
+            try:
+                ticker_str = group_df['Ticker'].iloc[0] if 'Ticker' in group_df.columns else '?'
+                is_mask    = datas_valid < split_dt
+
+                # P99 da volatilidade IS — teto de referência
+                vol_is_p99 = np.nanpercentile((cond_vol / 100).loc[is_mask], 99) if is_mask.any() else np.inf
+                # Limiar: 20x o P99 IS. Cobre ciclos genuinamente estressados
+                # sem aceitar colapsos do otimizador (que produzem 1000x+).
+                vol_teto = max(vol_is_p99 * 20.0, 5.0)  # piso de 5% a.a.
+
+                # Máscara de observações inválidas
+                # Filtro de sanidade: apenas Volatilidade absurdamente alta indica falha do otimizador.
+                # VaR negativo não é falha: ocorre quando o carrego (drift) supera o risco (ativo ultrasseguro).
+                invalid_mask = (cond_vol / 100) > vol_teto
+
+                n_invalid = invalid_mask.sum()
+                if n_invalid > 0:
+                    logger.warning(
+                        f"[EGARCH Sanidade] {ticker_str}: {n_invalid} obs inválidas "
+                        f"(Vol>{vol_teto:.2f}) → imputadas (ffill). "
+                        f"Vol max raw: {(cond_vol/100).max():.2f}"
+                    )
+                    vol_series.loc[invalid_mask.index[invalid_mask]] = np.nan
+                    var_series.loc[invalid_mask.index[invalid_mask]] = np.nan
+                    es_series.loc[invalid_mask.index[invalid_mask]]  = np.nan
+
+                    # Resgata a observação usando o último dia válido (ou próximo)
+                    vol_series = vol_series.ffill().bfill()
+                    var_series = var_series.ffill().bfill()
+                    es_series  = es_series.ffill().bfill()
+
+            except Exception as e_sanity:
+                logger.debug(f"[EGARCH Sanidade] Falha no filtro: {e_sanity}")
+
         except Exception as e:
             logger.debug(f"Falha EGARCH: {e}")
-            return vol_series, var_series, es_series
+            return vol_series, np.minimum(var_series, 1.0), np.minimum(es_series, 1.0)
+
+        # Teto lógico: Máximo de perda diária é 100% do principal
+        var_series = np.minimum(var_series, 1.0)
+        es_series  = np.minimum(es_series, 1.0)
 
         return vol_series, var_series, es_series
 

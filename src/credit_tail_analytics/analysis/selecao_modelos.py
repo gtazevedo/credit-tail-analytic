@@ -224,7 +224,7 @@ def run_validador_econometrico(
     cadastro_path:        Optional[str] = None,
     split_date:           str  = '2023-01-01',
     n_ativos:             int  = 30,
-    filter_low_liquidity: bool = True,
+    filter_low_liquidity: bool = False,
 ) -> tuple:
     """
     Executa o torneio GARCH nos N ativos mais líquidos do período de teste.
@@ -236,7 +236,7 @@ def run_validador_econometrico(
     cadastro_path : str, optional
         Caminho para o CSV de cadastro. Usa path padrão se None.
     split_date : str
-        Data de corte; usa apenas dados >= split_date para o torneio.
+        Data de corte; usa apenas dados < split_date para o torneio.
     n_ativos : int
         Número de ativos mais líquidos a avaliar.
     filter_low_liquidity : bool, default True
@@ -298,7 +298,7 @@ def run_validador_econometrico(
             return taxa.diff().dropna()
 
     # Filtra período de teste e aplica filtro de liquidez
-    df_teste = df[df['Data'] >= split_date].copy()
+    df_teste = df[df['Data'] < split_date].copy()
     if filter_low_liquidity and 'Faixa_Volume_ANBIMA' in df_teste.columns:
         n_antes = len(df_teste)
         df_teste = df_teste[df_teste['Faixa_Volume_ANBIMA'] != 'Até 1MM'].copy()
@@ -388,7 +388,7 @@ def run_validador_econometrico(
     ax.set_ylabel('Posição Média no Ranking (1 = Melhor)')
     ax.set_title(
         f'Torneio GARCH: Ranking Médio dos Modelos ({n_ativos} Ativos)\n'
-        f'Período de Teste (>= {split_date})'
+        f'Período de Teste (< {split_date})'
         + (' — Faixa 3 ANBIMA Excluída' if filter_low_liquidity else '')
     )
     ax.set_xticks(x)
@@ -397,7 +397,7 @@ def run_validador_econometrico(
     ax.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
 
-    grafico_path = str(graficos_dir() / f'comparacao_modelos_ranking_n{n_ativos}.png')
+    grafico_path = str(graficos_dir() / f'comparacao_modelos_ranking_n{n_ativos}_{filter_low_liquidity}.png')
     plt.savefig(grafico_path, dpi=150)
     plt.close()
     logger.info(f"Gráfico salvo em: {grafico_path}")
@@ -408,5 +408,6 @@ def run_validador_econometrico(
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
     for n_ativos in [30, 50, 100, 500, 1000, 3000, 5000]:
+        df_agg, spec = run_validador_econometrico(n_ativos=n_ativos, filter_low_liquidity=False)
         df_agg, spec = run_validador_econometrico(n_ativos=n_ativos, filter_low_liquidity=True)
         print("\nSpec GARCH recomendado:", spec)
