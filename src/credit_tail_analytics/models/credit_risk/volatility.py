@@ -109,13 +109,13 @@ class VolatilityEstimator:
 
                 # P99 da volatilidade IS — teto de referência
                 vol_is_p99 = np.nanpercentile((cond_vol / 100).loc[is_mask], 99) if is_mask.any() else np.inf
-                # Limiar: 20x o P99 IS. Cobre ciclos genuinamente estressados
-                # sem aceitar colapsos do otimizador (que produzem 1000x+).
+                # Limiar: 20x o P99 IS. Mitiga falhas de convergência do algoritmo SLSQP
+                # sob saltos discretos na microestrutura de ativos ilíquidos.
                 vol_teto = max(vol_is_p99 * 20.0, 5.0)  # piso de 5% a.a.
 
                 # Máscara de observações inválidas
-                # Filtro de sanidade: apenas Volatilidade absurdamente alta indica falha do otimizador.
-                # VaR negativo não é falha: ocorre quando o carrego (drift) supera o risco (ativo ultrasseguro).
+                # Filtro de sanidade: Restrição imposta a variâncias divergentes.
+                # VaR negativo ocorre quando o carrego (drift) supera o risco em ativos de ultra baixa volatilidade.
                 invalid_mask = (cond_vol / 100) > vol_teto
 
                 n_invalid = invalid_mask.sum()
@@ -141,7 +141,8 @@ class VolatilityEstimator:
             logger.debug(f"Falha EGARCH: {e}")
             return vol_series, np.minimum(var_series, 1.0), np.minimum(es_series, 1.0)
 
-        # Teto lógico: Máximo de perda diária é 100% do principal
+        # Restrição do limite superior de perda esperada (100% do principal) para garantir consistência
+        # teórica e estabilidade geométrica nas distâncias do espaço latente dos clusters.
         var_series = np.minimum(var_series, 1.0)
         es_series  = np.minimum(es_series, 1.0)
 

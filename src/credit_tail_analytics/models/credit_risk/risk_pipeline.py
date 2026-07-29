@@ -145,7 +145,7 @@ class CreditRiskEngine:
                     (w_kmeans * df_clusters['Prob_Crise_KMeans'].fillna(0))
                 ) * 100
 
-                # Suavização Exponencial (EMA) de 10 períodos agrupada por Ticker para remover o ruído
+                # Filtro de Suavização Exponencial (EMA) de 10 períodos agrupado por Ticker para mitigação de ruído microestrutural.
                 df_clusters = df_clusters.sort_values(by=['Ticker', 'Data'])
                 df_clusters['Credit_Tail_Risk_Score'] = df_clusters.groupby('Ticker')['Credit_Tail_Risk_Score'].transform(
                     lambda x: x.ewm(span=10, min_periods=1, adjust=False).mean()

@@ -297,7 +297,8 @@ class RegimeClassifier:
                     if len(X_t) > 0:
                         scaler_t = RobustScaler()
                         scaler_t.fit(X_t)
-                        # Restaura o piso de variância: IQR individual não pode ser < 10% do IQR global (evita divisão por zero)
+                        # Imposição de piso geométrico: O IQR individual deve corresponder a no mínimo 10% do IQR global.
+                        # Isso previne a degeneração de variância (divisão por zero) em ativos estruturalmente ilíquidos.
                         scaler_t.scale_ = np.maximum(scaler_t.scale_, global_scale * 0.10)
                         
                         X_t_sc   = scaler_t.transform(X_t)
@@ -352,11 +353,12 @@ class RegimeClassifier:
                         trans_counts[seq[t], seq[t + 1]] += 1
                     pos += length
 
-                # Laplace Smoothing forte e piso de transição para evitar que o modelo fique preso
+                # Suavização de Laplace (Prior) aplicada à matriz de transição empírica.
+                # Mitiga o problema de estados absorventes causados por ausência de transições na amostra de treinamento.
                 trans_counts += 1.0  
                 hmm.transmat_ = trans_counts / trans_counts.sum(axis=1, keepdims=True)
                 
-                # Força um piso mínimo de 1% de chance de transição (evita lock-in em Verde/Vermelho)
+                # Imposição de um limiar mínimo de probabilidade de transição (1%) para evitar dependência excessiva do estado anterior.
                 hmm.transmat_ = np.maximum(hmm.transmat_, 0.01)
                 hmm.transmat_ = hmm.transmat_ / hmm.transmat_.sum(axis=1, keepdims=True)
 
