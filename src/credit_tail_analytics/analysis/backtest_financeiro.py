@@ -335,13 +335,13 @@ class BacktestFinanceiro:
         # ---------------------------------------------------------------
         fig, ax = plt.subplots(figsize=(12, 6))
         estilos = {
-            'BnH_Cum':              ('gray', '--', 'Benchmark (BnH)', 1.5),
-            'KMeans_Cum':           ('#3498db', '-', 'K-Means (Vende Vermelho)', 1.2),
-            'HMM_Cum':              ('#9b59b6', '-', 'HMM (Vende Vermelho)', 1.2),
-            'Ensemble_Cum':         ('#e74c3c', '-', 'Ensemble (Vende Vermelho)', 2.5),
-            'KMeans_Amarelo_Cum':   ('#2980b9', ':', 'K-Means (Vende Amarelo)', 1.0),
-            'HMM_Amarelo_Cum':      ('#8e44ad', ':', 'HMM (Vende Amarelo)', 1.0),
-            'Ensemble_Amarelo_Cum': ('#c0392b', ':', 'Ensemble (Vende Amarelo)', 2.0),
+            'BnH_Cum':              ('black', '--', 'Benchmark (Buy & Hold)', 2.0),
+            'HMM_Amarelo_Cum':      ('#27ae60', '-', 'HMM (Vende Amarelo) - VENCEDOR', 3.0),
+            'HMM_Cum':              ('#2ecc71', ':', 'HMM (Vende Vermelho)', 1.5),
+            'KMeans_Amarelo_Cum':   ('#c0392b', '-', 'K-Means (Vende Amarelo)', 2.0),
+            'KMeans_Cum':           ('#e74c3c', ':', 'K-Means (Vende Vermelho)', 1.5),
+            'Ensemble_Amarelo_Cum': ('#2980b9', '-', 'Ensemble (Vende Amarelo)', 1.5),
+            'Ensemble_Cum':         ('#3498db', ':', 'Ensemble (Vende Vermelho)', 1.5),
         }
         for col, (cor, ls, label, lw) in estilos.items():
             if col in df_pnl.columns:
