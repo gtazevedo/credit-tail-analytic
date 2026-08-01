@@ -34,6 +34,10 @@ class DataPreprocessor:
         }
 
     def process(self, df: pd.DataFrame) -> pd.DataFrame:
+        # Filtro hardcoded para ativos com erros crônicos de marcação que distorcem o motor
+        if 'Ticker' in df.columns:
+            df = df[df['Ticker'] != 'RDVT11'].copy()
+            
         df = self._validate_input(df)
         df = self._feature_engineering(df)
         return df
@@ -155,14 +159,30 @@ class DataPreprocessor:
         # Sinaliza pressão compradora ou vendedora no dia.
         df['Spread_Skew_Intraday'] = (df['Taxa_Ativo'] - df['Taxa_Minima']) / (df['Spread_Range_Intraday'] + 1e-6)
 
-        # 10. Filtro de liquidez: zera observações de baixa liquidez (Faixa 3 ANBIMA)
+        # 10. Filtro de liquidez: Banimento Transversal de Tickers Cronicamente Ilíquidos
         if self.filter_low_liquidity:
-            mask_baixa = df['Score_Liquidez'] == 1
-            n_removidos = mask_baixa.sum()
-            df.loc[mask_baixa, 'Delta_Spread'] = np.nan
-            logger.info(
-                f"Filtro de liquidez (Faixa 3 ANBIMA): {n_removidos} observações "
-                f"removidas do Delta_Spread antes do EGARCH."
-            )
+            split_dt = pd.to_datetime(self.split_date)
+            df_is = df[df['Data'] < split_dt]
+            
+            if not df_is.empty:
+                # Calcula a % de dias que cada Ticker passou na Faixa 3 durante o In-Sample
+                mask_baixa_is = df_is['Score_Liquidez'] == 1
+                taxa_iliquidez = mask_baixa_is.groupby(df_is['Ticker']).mean()
+                
+                # Bane tickers que ficaram >= 95% do In-Sample como Faixa 3 (Massa Falida / Cronicamente Ilíquido)
+                tickers_banidos = taxa_iliquidez[taxa_iliquidez >= 0.95].index.tolist()
+                
+                if tickers_banidos:
+                    n_banidos = len(tickers_banidos)
+                    linhas_antes = len(df)
+                    df = df[~df['Ticker'].isin(tickers_banidos)].reset_index(drop=True)
+                    linhas_depois = len(df)
+                    logger.info(
+                        f"Filtro de liquidez (Ticker Ban): {n_banidos} ativos banidos por "
+                        f"serem cronicamente ilíquidos no In-Sample. "
+                        f"({linhas_antes - linhas_depois} observações deletadas no total)."
+                    )
+            else:
+                logger.warning("Filtro de liquidez ativo, mas não há dados In-Sample para calibrar o banimento.")
 
         return df

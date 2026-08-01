@@ -145,17 +145,16 @@ class CreditRiskEngine:
                     (w_kmeans * df_clusters['Prob_Crise_KMeans'].fillna(0))
                 ) * 100
 
-                # Filtro de Suavização Exponencial (EMA) de 10 períodos agrupado por Ticker para mitigação de ruído microestrutural.
+                # Filtro de Suavização Exponencial (EMA) de 21 períodos agrupado por Ticker para mitigação de ruído microestrutural.
                 df_clusters = df_clusters.sort_values(by=['Ticker', 'Data'])
                 df_clusters['Credit_Tail_Risk_Score'] = df_clusters.groupby('Ticker')['Credit_Tail_Risk_Score'].transform(
-                    lambda x: x.ewm(span=10, min_periods=1, adjust=False).mean()
+                    lambda x: x.ewm(span=21, min_periods=1, adjust=False).mean()
                 )
 
             aux_cols = ['Ticker', 'Data', 'Taxa_ZScore', 'Volatilidade_EGARCH',
-                        'Taxa_Ajustada_Prazo', 'Score_Liquidez', 'VaR_99', 'Expected_Shortfall_99', 'PU', 'Taxa_Ativo', 'Delta_Spread']
+                        'Taxa_Ajustada_Prazo', 'Score_Liquidez', 'VaR_99', 'Expected_Shortfall_99', 'PU', 'Taxa_Ativo', 'Delta_Spread', 'Valor_Evento']
             aux_cols = [c for c in aux_cols if c in self.df.columns]
             df_aux = self.df[aux_cols].drop_duplicates(subset=['Ticker', 'Data'])
             df_clusters = pd.merge(df_clusters, df_aux, on=['Ticker', 'Data'], how='left')
 
         return self.df, df_clusters
-

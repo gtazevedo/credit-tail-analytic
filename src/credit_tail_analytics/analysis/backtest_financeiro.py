@@ -118,16 +118,18 @@ class BacktestFinanceiro:
         # Carrega CDI histórico real
         self._cdi_map: Dict[pd.Timestamp, float] = _load_cdi_diario()
 
-        # Incorpora eventos financeiros
-        df_ev = download_eventos_financeiros()
-        if not df_ev.empty and 'Data' in df_ev.columns and 'Ativo' in df_ev.columns:
-            df_ev['Data'] = pd.to_datetime(df_ev['Data'], format='%d/%m/%Y', errors='coerce')
-            df_ev_grouped = df_ev.groupby(['Ativo', 'Data'])['Valor_Evento'].sum().reset_index()
-            df_ev_grouped.rename(columns={'Ativo': 'Ticker'}, inplace=True)
-            self.df = pd.merge(self.df, df_ev_grouped, on=['Ticker', 'Data'], how='left')
-            self.df['Valor_Evento'] = self.df['Valor_Evento'].fillna(0.0)
-        else:
-            self.df['Valor_Evento'] = 0.0
+        # Incorpora eventos financeiros apenas se o pipeline não os tiver fornecido
+        if 'Valor_Evento' not in self.df.columns:
+            df_ev = download_eventos_financeiros()
+            if not df_ev.empty and 'Data' in df_ev.columns and 'Ativo' in df_ev.columns:
+                df_ev['Data'] = pd.to_datetime(df_ev['Data'], format='%d/%m/%Y', errors='coerce')
+                df_ev_grouped = df_ev.groupby(['Ativo', 'Data'])['Valor_Evento'].sum().reset_index()
+                df_ev_grouped.rename(columns={'Ativo': 'Ticker'}, inplace=True)
+                self.df = pd.merge(self.df, df_ev_grouped, on=['Ticker', 'Data'], how='left')
+            else:
+                self.df['Valor_Evento'] = 0.0
+                
+        self.df['Valor_Evento'] = self.df['Valor_Evento'].fillna(0.0)
 
         # Retorno total diário (Mark-to-Market + Evento)
         if 'PU' not in self.df.columns:
@@ -202,7 +204,7 @@ class BacktestFinanceiro:
     def simulate_portfolio(
         self,
         initial_capital: float = 1_000_000.0,
-        cure_days: int = 15,
+        cure_days: int = 60,
     ) -> pd.DataFrame:
         """
         Simula portfólio tático para cada modelo (KMeans, HMM, Ensemble) e o
@@ -310,8 +312,14 @@ class BacktestFinanceiro:
                             dias_cura[t] = 0
                             cash_liberado += capital[t]
                             capital[t] = 0.0
-                        elif dias_cura[t] is not None:
-                            dias_cura[t] += 1
+                    
+                    # Atualiza dias de cura para todos os ativos
+                    for t in dias_cura:
+                        if dias_cura[t] is not None:
+                            # Se não está em stop_regime hoje (ou não tem regime hoje), incrementa
+                            if t not in regimes or regimes[t] not in stop_regimes:
+                                dias_cura[t] += 1
+                                
                     cash += cash_liberado
 
                     # 4. Reaplicação (Compra) — regime Verde após quarentena

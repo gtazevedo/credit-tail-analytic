@@ -47,22 +47,29 @@ uma vez que os papéis de diferentes indexadores possuem comportamento de risco 
 Como citado em @cap_introducao, um desafio inerente ao mercado secundário de crédito privado brasileiro é a baixa liquidez dos ativos, inclusive com alguns chegando a possuir
 dias sem negociação. A ANBIMA classifica o volume de negociação em faixas, sendo a faixa mais baixa dada por "Até 1MM", e portanto, dado as informações possuídas na realização dessa pesquisa,
 esses são os ativos definidos como ilíquidos. No código implementado, desenvolveu-se uma rotina de tratamento governada pela flag `filter_low_liquidity`. Quando habilitada, 
-essa rotina transforma o *Delta Spread* dos dias classificados na faixa de menor liquidez em valores nulos (`NaN`). O propósito dessa funcionalidade é impedir que, caso sejam observados
+essa rotina remove da base de dados para treinamento (que será detalhada posteriormente), os ativos que permaneceram como iliquidos durante um período igual ou superior a 95% da amostra.
+O propósito dessa funcionalidade é impedir que, caso sejam observados
 eventos de variação de spread expurios, devido a baixa liquidez, eles não sejam propagados para o modelo EGARCH, o que poderia corromper a estimação da persistência e dos choques 
-(parâmetros $alpha$ e $beta$) da variância condicional. Além disso, ao substituir o *spread* por nulo em vez de deletar a linha do banco de dados, garante-se a 
-integridade da sequência temporal (os dias continuam existindo), requisito obrigatório para o treinamento das Cadeias de Markov.
+(parâmetros $alpha$ e $beta$) da variância condicional. É importante notar que esses ativos foram removidos apenas da amostra de teste, com a exceção de RDVT11, que foi removido manualmente da amostra
+devido aos seguintes fatores:
+- O ativo não tinha dados de negociação durante a etapa de treinamento, então seria considerado posteriormente, mesmo iliquido.
+- A série de preços do ativo apresenta grandes variações, com um espaçamento elevado entre os dados, o que pode introduzir vieses na estimação.
+    - Em 05/12/2023 o ativo foi negociado com PU de 1001.77, sendo negociado novamente apenas em 20/03/2024 com PU de 1.40 e posterio em 21/03/2024 com PU de 0.000014. Voltando a ser negociado em 26/07/2024 com PU de 38.04 e em 28/02/2025 com PU de 754.31.
+- A empresa passou por eventos de reestruturação e recuperação judicial
 
-Contudo, com o objetivo de capturar o comportamento do mercado de crédito de forma irrestrita e avaliar a robustez do algoritmo de K-Means 
-e da matriz de transição do HMM mesmo diante dos ruídos típicos de negociação e baixa liquidez, para os resultados que serão apresentados neste trabalho, 
-a configuração `filter_low_liquidity` foi mantida como `False`. Consequentemente, o modelo de risco processou a totalidade dos dados extraidos do sistema REUNE, sem a supressão 
-ou anulação das variações de preço oriundas das faixas de baixa liquidez.
+A principio, a empresa deveria ser um exemplo de evento que o modelo deveria prever, porém, devido ao espaçamento irregular de marcações e a falta de liquidez, ocorrem inconsistencias expurias, que serão mais detalhadas posteriormente. Também serão mostrados os 
+resultados obtidos quando o ativo é mantido na amostra, para efeitos de comparação.
 
 == O Pipeline de Risco (EGARCH, K-Means e HMM)
 
 Para a implementação dos modelos, foi criado um *pipeline* de risco, que, através de um fluxo linear estima as variáveis de maior impacto para o modelo, realiza o cálculo do volatilidade,
-VaR e *Expected Shortfall* (ES) por papel e, por fim, aplica o algoritmo K-Means e o Modelo Oculto de Markov (HMM). Uma vez obtdos os resultados do K-Means e HMM tambem se gera um modelo
+VaR e *Expected Shortfall* (ES) por papel e, por fim, aplica o algoritmo K-Means e o Modelo Oculto de Markov (HMM). Uma vez obtdos os resultados do K-Means e HMM, se gera um modelo
 *Ensemble*, ponderando os resultados de cada modelo. Para mais detalhes sobre o funcionamento do *pipeline*, consultar a documentação do projeto disponível no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório do GitHub].
 Abaixamos será detalhado a metodologia aplicada em cada etapa.
+
+=== Pré-processamento de Dados e Filtros
+
+
 
 === EGARCH
 

@@ -62,12 +62,17 @@ class VolatilityEstimator:
             q_t = stats.t.ppf(1 - alpha, df=nu)
             es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1)
             
-            if nu > 2:
-                scale = np.sqrt(nu / (nu - 2))
-                es_t_padronizado = es_t / scale
-                cond_es = cond_mean + cond_vol * es_t_padronizado
-            else:
-                cond_es = pd.Series(np.nan, index=returns_scaled.index)
+            q_t = stats.t.ppf(1 - alpha, df=nu)
+            es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1) if nu > 1.01 else 0.0
+            
+            # Se nu <= 2, a variância teórica é infinita, e o ES diverge. 
+            # Para manter o sinal qualitativo (cauda pesadíssima) sem destruir o array com NaNs,
+            # ancoramos 'nu' marginalmente acima de 2 (2.05) para o cálculo do multiplicador de escala.
+            nu_es = max(nu, 2.05)
+            scale = np.sqrt(nu_es / (nu_es - 2))
+            es_t_padronizado = es_t / scale if nu > 1.01 else 5.0 # fallback multiplier for extreme tails
+            
+            cond_es = cond_mean + cond_vol * es_t_padronizado
 
             if self.save_egarch:
                 try:
@@ -129,13 +134,13 @@ class VolatilityEstimator:
                     var_series.loc[invalid_mask.index[invalid_mask]] = np.nan
                     es_series.loc[invalid_mask.index[invalid_mask]]  = np.nan
 
-                    # Resgata a observação usando o último dia válido (ou próximo)
-                    vol_series = vol_series.ffill().bfill()
-                    var_series = var_series.ffill().bfill()
-                    es_series  = es_series.ffill().bfill()
-
             except Exception as e_sanity:
                 logger.debug(f"[EGARCH Sanidade] Falha no filtro: {e_sanity}")
+            
+            # Preenche os NaNs (causados por invalid_mask ou gaps numéricos)
+            vol_series = vol_series.ffill().bfill()
+            var_series = var_series.ffill().bfill()
+            es_series  = es_series.ffill().bfill()
 
         except Exception as e:
             logger.debug(f"Falha EGARCH: {e}")

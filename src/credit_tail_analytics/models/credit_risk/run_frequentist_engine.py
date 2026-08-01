@@ -278,5 +278,5 @@ def _cli_main():
 
 if __name__ == "__main__":
     #_cli_main()
-    run_frequentist_pipeline(filter_low_liquidity=False)
+    run_frequentist_pipeline(filter_low_liquidity=True)
     
