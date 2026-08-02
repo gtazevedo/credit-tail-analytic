@@ -1,4 +1,6 @@
 = Revisão da Literatura <cap_revisao_lit>
+// TODO: Adicionar sobre Expected Shortfall e os testes utilizados e distruibcao t student
+// Falar tambem de RobustScaler, Sillhoutte Score, Indicide Davies BOuldin, Indice Calinski e Metodo de Borda
 
 A ideia central deste trabalho parte da modelagem de risco de crédito de debêntures. Mas o que é risco? Existem várias definições. #cite(<jorion2006>, form: "prose") talvez tenha uma das mais simples
 e intuitivas: risco é a volatilidade dos resultados inesperados, que podem representar o valor de ativos, patrimônios ou resultados. E esse risco pode ser originado de várias formas,
@@ -17,7 +19,7 @@ de forma mais formal, é o quantil da distribuição de ganhos e perdas projetad
 meio de modelos como o GARCH, que apesar de ser amplamente utilizado, falha em choques assimétricos, como observamos nos eventos recentes envolvendo o Grupo Pão de Açúcar e Americanas.
 Para superar essa fraqueza do modelo GARCH, #cite(<nelson1991conditional>, form: "prose") propõe o modelo EGARCH, que captura assimetrias na volatilidade dos ativos financeiros.
 
-Matematicamente, a especificação da variância condicional do EGARCH(1,1) de Nelson (1991) é dada por:
+Matematicamente, a especificação da variância condicional do EGARCH(1,1) de #cite(<nelson1991conditional>, form: "prose") é dada por:
 
 #set math.equation(numbering: "(1)")
 $ ln(sigma_t^2) = omega + alpha [ |z_(t-1)| - sqrt(2 / pi) ] + gamma z_(t-1) + beta ln(sigma_(t-1)^2) $ <eq_egarch>
@@ -60,11 +62,11 @@ O objetivo do algoritmo de K-means é particionar os dados em $K$ grupos distint
 $\mu_k$ mais próximo seja minimizada. Ou de forma mais formal: 
 
 
-$ J = sum_{n=1}^N sum_{k=1}^K r_{n k} || x_n - mu_k ||^2 $ <eq_kmeans>
+$ J = sum_{n=1}^N sum_{k=1}^K r_(n k) || x_n - mu_k ||^2 $ <eq_kmeans>
 
-Onde $r_{n k} in \{0, 1\}$ é uma variável indicadora que assume o valor $1$ se o ponto $x_n$ for atribuído ao *cluster* $k$ (e $0$ caso contrário), 
-enquanto $mu_k$ representa o vetor centroide do *cluster* $k$. O objetivo é encontrar os valores de ${r_{nk}}$ e ${mu_k}$ que minimizam $J$. Isso pode ser realizado por meio de um
-processo iterativo; para mais detalhes recomenda-se consultar #cite(<bishop2006pattern>, form: "prose").
+Onde $r_(n k) in \{0, 1\}$ é uma variável indicadora, onde $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao *cluster* $k$ e $r_(n j) = 0$ para $j != k$, 
+enquanto $mu_k$ representa o vetor centroide do *cluster* $k$. O objetivo é encontrar os valores de $r_(n k)$ e $mu_k$ que minimizam $J$. Isso pode ser realizado por meio de um
+algoritmo iterativo, divido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algortimo de maxmimização de expectativa (EM)).
 
 Apesar de sua eficiência em separar os períodos de forma estática, minimizando $J$, 
 o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro, e como será analisado posteriormente, isso dá maior estabilidade aos resultados, porém,
@@ -75,7 +77,7 @@ faz com seu tempo de reação seja mais lento, ou em alguns casos seja insensív
 Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM, um modelo probabilístico ideal para utilização em dados sequenciais. 
 Conforme detalhado por #cite(<bishop2006pattern>, form: "prose"), o HMM parte do princípio de que os dados que medidos no mercado 
 (como, por exemplo, o *spread* e a volatilidade) são reflexos de um estado que não pode ser observado.
-Esse estado é a causa do comportamento dos preços, e é chamado de **variável latente** (ou *hidden state*).
+Esse estado é a causa do comportamento dos preços, e é chamado de *variável latente* (ou _hidden state_).
 
 Seja $z_n$ a variável latente que representa o estado ou regime oculto do mercado no tempo $n$ . 
 No HMM, assume-se que o comportamento do variável observada é gerado por um processo de Markov onde a probabilidade do estado atual $z_n$ 
@@ -87,8 +89,8 @@ essa distribuição condicional $p(z_n | z_{n-1})$ corresponde matematicamente a
 Os elementos dessa matriz $A$ são conhecidos como *probabilidades de transição* e representam a chance do mercado migrar do regime $i$ para o regime $j$ de um instante de 
 tempo para o outro.
 
-Isso é similar ao tratamento que se faz com matrizes de transição de rating, onde assume-se que uma empresa com rating AAA tem uma chance $p_{AAA \to AA}$ de migrar para o rating AA 
-em um dado ano, uma chance $p_{AAA \to A}$ de migrar para o rating A, e assim sucessivamente.
+Isso é similar ao tratamento que se faz com matrizes de transição de rating, onde assume-se que uma empresa com rating AAA tem uma chance $p_("AAA" -> "AA")$ de migrar para o rating AA 
+no próximo dia, independentemente do rating que a empresa tinha ontem. O tempo necessário para a empresa migrar de AAA para AA não importa, apenas o rating atual influencia a chance.
 
 Dessa forma, o HMM não apenas agrupa os dados de forma estática com base nas emissões observadas (volatilidade e *spread*), mas também estima a matriz de transição estocástica $A$. 
 É justamente o uso das variáveis latentes $z_n$ e $z_{n-1}$ que permite ao modelo capturar a 
