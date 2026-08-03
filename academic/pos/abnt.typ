@@ -59,5 +59,7 @@
     v(1.5em)
   }
 
+  set math.equation(numbering: "(1)")
+
   body
 }

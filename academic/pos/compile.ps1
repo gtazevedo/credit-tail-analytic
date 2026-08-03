@@ -3,13 +3,13 @@
 # Para compilar, basta rodar este script.
 
 $MainFile = "main.typ"
-$OutputFile = "TCC_Mestrado.pdf"
+$OutputFile = "TCC_Pos.pdf"
 
 Write-Host "Iniciando compilação do Typst..." -ForegroundColor Cyan
 
 # Verifica se o typst está instalado
 if (Get-Command "typst" -ErrorAction SilentlyContinue) {
-    # typst compile main.typ TCC_Mestrado.pdf
+    # typst compile main.typ TCC_Pos.pdf
     typst compile $MainFile $OutputFile
     
     if ($?) {

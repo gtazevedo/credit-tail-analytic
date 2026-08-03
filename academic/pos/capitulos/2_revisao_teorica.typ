@@ -66,7 +66,12 @@ $ J = sum_{n=1}^N sum_{k=1}^K r_(n k) || x_n - mu_k ||^2 $ <eq_kmeans>
 
 Onde $r_(n k) in \{0, 1\}$ é uma variável indicadora, onde $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao *cluster* $k$ e $r_(n j) = 0$ para $j != k$, 
 enquanto $mu_k$ representa o vetor centroide do *cluster* $k$. O objetivo é encontrar os valores de $r_(n k)$ e $mu_k$ que minimizam $J$. Isso pode ser realizado por meio de um
-algoritmo iterativo, divido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algortimo de maxmimização de expectativa (EM)).
+algoritmo iterativo, divido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algortimo de maximimização de expectativa (EM)).
+
+O modelo, por vezes apresenta um problema conhecido como *Label Switching*, no qual os centróides gerados recebem rótulos arbitrários, 
+isso ocorre porque o algoritmo inicializa os centróides ($\mu_k$) de forma aleatória e busca minimizar a soma das distancias quadráticas (conforme a @eq_kmeans), 
+independentemente dos rótulos atribuídos aos centróides. Porém, existem muitas formas conhecidas de tratar esse problema. A forma adotada nesse trabalho será detalhada em @subcap_kmeans, 
+mas envolve a aplicação de um vetor de polaridade de risco para fixar os rótulos nos regimes Verde (baixo risco), Amarelo (alerta) e Vermelho (crise).
 
 Apesar de sua eficiência em separar os períodos de forma estática, minimizando $J$, 
 o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro, e como será analisado posteriormente, isso dá maior estabilidade aos resultados, porém,

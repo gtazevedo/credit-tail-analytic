@@ -201,11 +201,92 @@ denotando que a distância entre os centros dos clusters é expressivamente maio
 Uma vez que as métricas atuam em ordens de grandeza e domínios matemáticos distintos, o subconjunto vencedor não é escolhido por médias absolutas, mas sim pelo método de agregação de Ranks de Borda (*Borda Count*). 
 O algoritmo computa a posição de cada combinação no ranking individual de cada métrica. O *Borda Score* final é dado pela soma das posições invertidas, garantindo uma eleição ordinal, determinística e robusta às magnitudes isoladas de índices específicos.
 
-=== K-Means
+Como resultado da otimização, o subconjunto eleito como vencedor combinou as variáveis `Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`. A @fig_feature_selection ilustra o Top 10 das combinações avaliadas, ordenadas pelo *Borda Score*, evidenciando o 
+desempenho superior do trio escolhido na capacidade de particionamento latente.
 
+#figure(
+  image("../imagens/feature_selection_ranking.png", width: 90%),
+  caption: [Top 10 Subconjuntos de Variáveis classificados pelo método de Borda Count.]
+) <fig_feature_selection>
 
+Uma forma mais ludica de observar o desempenho superior dessas variáveis, é realizar a comparação de forma multidimensional, a @fig_feature_radar 
+ilustra o desempenho das quatro principais combinações normalizado nos três eixos de avaliação (Coesão, Dispersão e Separação). O gráfico demonstra 
+graficamente como a combinação vencedora consegue maximizar simultaneamente o *Silhouette Score* e o *Calinski-Harabasz*, enquanto minimiza o índice de 
+*Davies-Bouldin*.
+
+#figure(
+  image("../imagens/feature_selection_radar.png", width: 90%),
+  caption: [Comparação Multidimensional das métricas de particionamento (Min-Max Scaled).]
+) <fig_feature_radar>
+
+Na @fig_feature_radar, o conjunto dado pelas variáveis `Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99` e o conjunto dado pelas variáveis `Taxa_ZScore`, `Volatilidade_EGARCH` e `VaR_99`
+parecem ter um desempenho muito similar, mas quando observamos a @fig_feature_selection, o primeiro conjunto possui um score superior. A única diferença entre eles é a substituição
+do Expected Shortfall pelo VaR, porém, o Expected Shortfall possui um score superior em todas as métricas, apesar de ser visualmente dificil a identificação na @fig_feature_radar.
+Além disso, como foi abordado em @cap_revisao_lit o Expected shortfall é uma métrica superior, pois enquanto o VaR responde a pergunta "Qual é a perda máxima que posso esperar com 99% de confiança?", 
+o Expected Shortfall responde a pergunta "Qual é a perda média que posso esperar quando o VaR for excedido?". Além disso, diferentemente do VaR, o Expected Shortfall é uma medida de risco
+coerente, o que o torna uma métrica superior.
+
+=== K-Means <subcap_kmeans>
+
+Eleitas as variáveis de entrada do modelo (`Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`), o algoritmo K-Means atua como uma *baseline* atemporal.
+O processo é realizado iterativamente para cada grupo de indexador (ex: DI, IPCA), a fim de respeitar as dinâmicas particulares de cada mercado.
+
+O primeiro passo é a separação da amostra de treino e teste (*In-Sample* para treino, *Out-of-Sample* para teste), conforme detalhado em @subcap_processamento.
+Para garantir que *outliers* extremos (como casos que discutimos nas seções anteriores, em que ativos passam dias sem negociação e depois quando voltam a ser negociados
+apresentam saltos no spread), aplica-se uma Winsorização (clipagem) no 1º e 99º percentis utilizando os dados *In-Sample*. Esses limites são posteriormente aplicados aos dados
+*Out-of-Sample*, prevenindo o viés de antecipação de informação (*look-ahead bias*).
+
+Em seguida, os dados são padronizados através do algoritmo `RobustScaler`. Para capturar o risco relativo de cada papel, o escalonamento é 
+feito individualmente por ativo, possuindo como limitador inferior 10% da variância (IQR) global do indexador, evitando que ativos estruturalmente ilíquidos 
+sofram explosões numéricas. Já, que, uma vez o *RobustScaler* é dado por:
+
+$ "Scaled"(x) = (x - Q_2(x)) / (Q_3(x) - Q_1(x)) $
+
+Caso o IQR ($Q_3(x) - Q_1(x)$) seja nulo ou próximo de zero, o escalonamento se torna indefinido.
+
+O K-Means é então treinado nos dados padronizados com $k=3$ agrupamentos. Devido à natureza não-supervisionada do K-Means (o problema do *Label Switching*), 
+os centróides gerados recebem rótulos arbitrários. O modelo resolve este problema através de um vetor de polaridade de risco (onde valores maiores de volatilidade e 
+*Z-Score* implicam maior risco), ordenando as médias dos agrupamentos para classificar deterministicamente os regimes em Verde (baixo risco), Amarelo (alerta) e Vermelho (crise). 
+
+Na etapa preditiva, para a construção de um modelo misto ponderado (conforme será abordado em @subcap_modelo_misto), a probabilidade de crise (`Prob_Crise_KMeans`) é definida com base na distância euclidiana inversa de cada observação 
+*Out-of-Sample* até o centróide Vermelho.
 
 === HMM
+
+O Modelo Oculto de Markov (HMM - *Hidden Markov Model*) acrescenta a dependência temporal que o K-Means ignora. O pré-processamento para o HMM segue as exatas mesmas premissas 
+de divisão, winsorização e padronização geométrica (piso de variância) descritas em @subcap_kmeans, adicionando apenas a restrição de que a massa de dados obedeça estritamente a 
+ordenação sequencial no tempo. Já que para o HMM, essa ordanação é de extrema importância para que o modelo consiga modelar as transições entre os estados latentes.
+
+O treinamento *In-Sample* é realizado através de um HMM Gaussiano (`GaussianHMM`) de 3 estados latentes com matriz de covariância diagonal, aplicando o 
+algoritmo de otimização de *Baum-Welch*. Da mesma forma, os vetores de médias estimadas para as emissões Gaussianas sofrem a correção heurística de *Label Switching* 
+para rotular os estados como Verde, Amarelo e Vermelho.
+
+Uma alteração fundamental feita no HMM padrão diz respeito à calibração da Matriz de Transição de Estados ($A$). Em bases de dados com regimes muito duradouros, pode haver a total ausência empírica de transições entre estados extremos (como saltos diretos de Verde para Vermelho) na amostra de treinamento. 
+Isso gera probabilidades de transição iguais a zero, 
+transformando os regimes em "estados absorventes" (uma vez que o modelo entre nesse estado, a probabilidade de sair matematicamente se anula). Para mitigar esse problema, aplicou-se primeiramente a *Suavização de Laplace* (*Additive Smoothing*) sobre a matriz empírica de contagens de transição:
+
+$ P'_{i j} = (C_{i j} + alpha) / ( sum_{k=1}^K C_{i k} + K alpha ) $ <eq_laplace_hmm>
+
+onde $C_{i j}$ é a contagem empírica de transições do estado $i$ para o estado $j$ observadas na sequência latente decodificada do *In-Sample*, $K=3$ é o número de estados, e $alpha = 1$ atua como o pseudo-fator aditivo. 
+
+Complementarmente à equação @eq_laplace_hmm, para garantir matematicamente que o modelo permaneça reativo aos novos choques de mercado em tempo real e não dependa excessivamente da inércia do estado anterior, 
+impôs-se um limiar (piso) arbitrário de 1% ($0.01$) sobre a matriz de probabilidade de transição, seguido por uma re-normalização linha a linha (para assegurar que o somatório das probabilidades convirja para 1):
+
+$ P''_{i j} = max(P'_{i j}, 0.01) $
+$ P_{i j} = P''_{i j} / (sum_{k=1}^K P''_{i k}) $ <eq_hmm_piso>
+
+Esse mecanismo em duas etapas força o modelo a manter vias probabilísticas ativas e o impede de tornar-se inerte, especialmente para a saída do estado de crise (Vermelho).
+
+A inferência nos dados *Out-of-Sample* é rigorosamente desenhada para evitar viés do futuro. Para estimar a probabilidade de um ativo estar em crise no dia $t$, 
+o modelo recebe apenas a sequência de variáveis observáveis do instante inicial até o instante $t$ (janela expansiva causal). A sequência ótima de estados latentes é decodificada utilizando o *Algoritmo de Viterbi*, 
+e a probabilidade marginal instantânea de crise (`Prob_Crise_HMM`) é inferida simultaneamente pelo algoritmo *Forward-Backward*.
+
+
+=== Modelo Misto (Ensemble) <subcap_modelo_misto>
+
+As predições individuais do K-Means e do HMM são posteriormente combinadas em uma pontuação final, 
+buscando mesclar a estabilidade atemporal do particionamento geométrico (K-Means) com a agilidade e memória temporal do 
+filtro bayesiano (HMM).
 
 
 == Protocolos de Validação (Kupiec POF e Backtest)

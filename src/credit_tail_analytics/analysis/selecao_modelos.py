@@ -159,14 +159,14 @@ class ValidadorEconometrico:
 
 def recommend_garch_spec(df_torneio: pd.DataFrame) -> dict:
     """
-    Extrai o modelo campeão do torneio (menor rank médio de AIC) e retorna
+    Extrai o modelo campeão do torneio (maior Win Rate AIC ou menor Rank) e retorna
     os parâmetros recomendados como dicionário pronto para `arch_model`.
 
     Parâmetros
     ----------
     df_torneio : pd.DataFrame
-        DataFrame retornado por `run_validador_econometrico()` (coluna 'Nome do Modelo'
-        e 'Rank_Medio_AIC' ou 'AIC').
+        DataFrame retornado por `run_validador_econometrico()` (com a coluna 'Win_Rate_AIC_%', 
+        'Rank_Medio_AIC' ou 'AIC').
 
     Retorna
     -------
@@ -176,7 +176,16 @@ def recommend_garch_spec(df_torneio: pd.DataFrame) -> dict:
     """
     DEFAULT_SPEC = {'vol': 'EGARCH', 'p': 1, 'o': 1, 'q': 1, 'dist': 'studentst'}
 
-    rank_col = 'Rank_Medio_AIC' if 'Rank_Medio_AIC' in df_torneio.columns else 'AIC'
+    if 'Win_Rate_AIC_%' in df_torneio.columns:
+        rank_col = 'Win_Rate_AIC_%'
+        ascending_order = False
+    elif 'Rank_Medio_AIC' in df_torneio.columns:
+        rank_col = 'Rank_Medio_AIC'
+        ascending_order = True
+    else:
+        rank_col = 'AIC'
+        ascending_order = True
+
     if 'Status de Convergência' in df_torneio.columns:
         df_validos = df_torneio[df_torneio['Status de Convergência'] == 'Sucesso'].copy()
     else:
@@ -186,7 +195,7 @@ def recommend_garch_spec(df_torneio: pd.DataFrame) -> dict:
         logger.warning("[recommend_garch_spec] Nenhum modelo válido. Usando spec padrão.")
         return DEFAULT_SPEC
 
-    best_name = df_validos.sort_values(rank_col).iloc[0]['Nome do Modelo']
+    best_name = df_validos.sort_values(rank_col, ascending=ascending_order).iloc[0]['Nome do Modelo']
 
     try:
         # Parsing do nome: "EGARCH(1,1,1) t-Student"
