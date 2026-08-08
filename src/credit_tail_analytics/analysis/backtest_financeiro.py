@@ -204,7 +204,9 @@ class BacktestFinanceiro:
     def simulate_portfolio(
         self,
         initial_capital: float = 1_000_000.0,
-        cure_days: int = 60,
+        cure_days: int = 180,
+        transaction_cost: float = 0.005,
+        meses_payback: int = 3,
     ) -> pd.DataFrame:
         """
         Simula portfólio tático para cada modelo (KMeans, HMM, Ensemble) e o
@@ -251,7 +253,7 @@ class BacktestFinanceiro:
                 if ativos_dia:
                     aporte = cash_bnh / len(ativos_dia)
                     for t in ativos_dia:
-                        capital_bnh[t] += aporte
+                        capital_bnh[t] += aporte * (1.0 - transaction_cost)
                     cash_bnh = 0.0
                 is_first_day = False
 
@@ -280,6 +282,7 @@ class BacktestFinanceiro:
             capital      = {t: 0.0 for t in tickers}
             cash         = 0.0
             dias_cura    = {t: None for t in tickers}
+            dias_verde   = {t: 0 for t in tickers}
             history      = []
             is_first_day = True
 
@@ -287,6 +290,7 @@ class BacktestFinanceiro:
                 cdi_dia  = self._get_cdi_diario(pd.Timestamp(current_date))
                 retornos = dict(zip(group['Ticker'], group['Retorno_Total']))
                 regimes  = dict(zip(group['Ticker'], group[col]))
+                taxas    = dict(zip(group['Ticker'], group['Taxa_Ativo'])) if 'Taxa_Ativo' in group.columns else {}
 
                 # 1. Mark-to-Market dos ativos alocados
                 for t in capital:
@@ -301,7 +305,7 @@ class BacktestFinanceiro:
                     if ativos_dia:
                         aporte = initial_capital / len(ativos_dia)
                         for t in ativos_dia:
-                            capital[t] += aporte
+                            capital[t] += aporte * (1.0 - transaction_cost)
                         cash = 0.0
                     is_first_day = False
                 else:
@@ -310,7 +314,7 @@ class BacktestFinanceiro:
                     for t, rgm in regimes.items():
                         if rgm in stop_regimes:
                             dias_cura[t] = 0
-                            cash_liberado += capital[t]
+                            cash_liberado += capital[t] * (1.0 - transaction_cost)
                             capital[t] = 0.0
                     
                     # Atualiza dias de cura para todos os ativos
@@ -319,18 +323,29 @@ class BacktestFinanceiro:
                             # Se não está em stop_regime hoje (ou não tem regime hoje), incrementa
                             if t not in regimes or regimes[t] not in stop_regimes:
                                 dias_cura[t] += 1
+
+                    # Atualiza inércia de dias verdes
+                    for t, rgm in regimes.items():
+                        if rgm == 'Verde':
+                            dias_verde[t] += 1
+                        else:
+                            dias_verde[t] = 0
                                 
                     cash += cash_liberado
 
                     # 4. Reaplicação (Compra) — regime Verde após quarentena
-                    elegiveis = [
-                        t for t, rgm in regimes.items()
-                        if rgm == 'Verde' and (dias_cura[t] is None or dias_cura[t] >= cure_days)
-                    ]
+                    limite_spread = (transaction_cost * (12.0 / meses_payback)) * 100.0
+                    elegiveis = []
+                    for t, rgm in regimes.items():
+                        if rgm == 'Verde' and (dias_cura[t] is None or dias_cura[t] >= cure_days):
+                            if dias_verde[t] >= 15:
+                                taxa = taxas.get(t, 0.0)
+                                if pd.notna(taxa) and taxa >= limite_spread:
+                                    elegiveis.append(t)
                     if cash > 0.01 and elegiveis:
                         aporte = cash / len(elegiveis)
                         for t in elegiveis:
-                            capital[t] += aporte
+                            capital[t] += aporte * (1.0 - transaction_cost)
                             dias_cura[t] = None  # zera quarentena ao reentrar
                         cash = 0.0
 

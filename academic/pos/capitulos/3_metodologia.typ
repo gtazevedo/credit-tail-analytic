@@ -51,7 +51,48 @@ resultados obtidos quando o ativo é mantido na amostra, para efeitos de compara
 Para a implementação dos modelos, foi criado um *pipeline* de risco, que, através de um fluxo linear estima as variáveis de maior impacto para o modelo, realiza o cálculo do volatilidade,
 VaR e *Expected Shortfall* (ES) por papel e, por fim, aplica o algoritmo K-Means e o Modelo Oculto de Markov (HMM). Uma vez obtdos os resultados do K-Means e HMM, se gera um modelo
 *Ensemble*, ponderando os resultados de cada modelo. Para mais detalhes sobre o funcionamento do *pipeline*, consultar a documentação do projeto disponível no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório do GitHub].
-Abaixamos será detalhado a metodologia aplicada em cada etapa.
+Abaixo será detalhada a metodologia aplicada em cada etapa. Para facilitar a compreensão sistêmica, a @fig_pipeline ilustra a arquitetura global do *pipeline*, desde a coleta de dados e divisão temporal até o processamento nos motores estocásticos e a simulação final (*Backtest*).
+
+#import "@preview/diagraph:0.3.2": raw-render
+
+#figure(
+  raw-render(
+```dot
+digraph G {
+    rankdir=TB;
+    node [shape=box, style=rounded, fontname="Arial"];
+    
+    anbima [label="Dados ANBIMA"];
+    macro [label="Dados Macro"];
+    pre [label="Pré-Processamento\n& Filtro de Liquidez"];
+    is [label="Treinamento (IS)"];
+    oos [label="Backtest (OOS)"];
+    egarch [label="Motor EGARCH-t\n(Volatilidade)"];
+    kmeans [label="K-Means\n(Topológico)"];
+    hmm [label="HMM\n(Temporal)"];
+    ensemble [label="Ensemble Misto\n(EMA 3 dias)"];
+    backtest [label="Estratégias de Liquidação\n(Defesas de Re-entrada)"];
+    resultado [label="Performance vs BnH", shape=box, peripheries=2];
+
+    anbima -> pre;
+    macro -> pre;
+    pre -> is [label=" In-Sample"];
+    pre -> oos [label=" Out-of-Sample"];
+    is -> egarch;
+    egarch -> kmeans;
+    egarch -> hmm;
+    kmeans -> ensemble;
+    hmm -> ensemble;
+    ensemble -> backtest;
+    oos -> backtest;
+    backtest -> resultado;
+}
+```
+  ),
+  caption: [Arquitetura do Pipeline de Risco e Backtest]
+) <fig_pipeline>
+
+
 
 === Pré-processamento de Dados e Filtros <subcap_processamento>
 
@@ -248,10 +289,11 @@ O K-Means é então treinado nos dados padronizados com $k=3$ agrupamentos. Devi
 os centróides gerados recebem rótulos arbitrários. O modelo resolve este problema através de um vetor de polaridade de risco (onde valores maiores de volatilidade e 
 *Z-Score* implicam maior risco), ordenando as médias dos agrupamentos para classificar deterministicamente os regimes em Verde (baixo risco), Amarelo (alerta) e Vermelho (crise). 
 
-Na etapa preditiva, para a construção de um modelo misto ponderado (conforme será abordado em @subcap_modelo_misto), a probabilidade de crise (`Prob_Crise_KMeans`) é definida com base na distância euclidiana inversa de cada observação 
+Na etapa preditiva, para a construção de um modelo misto ponderado (conforme será abordado em @subcap_modelo_misto), a probabilidade de crise (`Prob_Crise_KMeans`) é definida 
+com base na distância euclidiana inversa de cada observação 
 *Out-of-Sample* até o centróide Vermelho.
 
-=== HMM
+=== HMM <subcap_hmm>
 
 O Modelo Oculto de Markov (HMM - *Hidden Markov Model*) acrescenta a dependência temporal que o K-Means ignora. O pré-processamento para o HMM segue as exatas mesmas premissas 
 de divisão, winsorização e padronização geométrica (piso de variância) descritas em @subcap_kmeans, adicionando apenas a restrição de que a massa de dados obedeça estritamente a 
@@ -284,10 +326,73 @@ e a probabilidade marginal instantânea de crise (`Prob_Crise_HMM`) é inferida 
 
 === Modelo Misto (Ensemble) <subcap_modelo_misto>
 
-As predições individuais do K-Means e do HMM são posteriormente combinadas em uma pontuação final, 
+As predições individuais do K-Means (detalhada em @subcap_kmeans) e do HMM (detalhada em @subcap_hmm) são posteriormente combinadas em uma pontuação final, 
 buscando mesclar a estabilidade atemporal do particionamento geométrico (K-Means) com a agilidade e memória temporal do 
 filtro bayesiano (HMM).
 
+A combinação matemática é realizada através de uma média ponderada das probabilidades individuais de cada modelo,
+sendo os pesos definidos *a priori*. Atribui-se um peso de 70% a probabilidade do modelo HMM devido a premissa de que
+o mercado e os agentes nele inseridos possuem memoria e inercia, ou seja, conseguem reagir de forma mais rápida a choques
+que tragam informações sobre um possível evento de cauda. Os 30% restantes foram atribuidos ao modelo K-Means, atuando como uma
+âncora temporal de estabilidade, tentando reduzir as varias oscilações observadas no HMM. A equação do *Ensemble* no instante $t$ é dada por:
+
+$ "Probabilidade Sintética"_t = 0.70 times "Prob_Crise_HMM"_t + 0.30 times "Prob_Crise_KMeans"_t $ 
+
+Por fim, para garantir uma combinação mais suave e menos suscetível a ruídos de alta frequência, aplicou-se um filtro de 
+média móvel exponencial de 3 dias ($"EMA"_3$) sobre a "Probabilidade Sintética", gerando a pontuação final de risco. A fórmula 
+da Média Móvel Exponencial é calculada recursivamente da seguinte forma:
+
+$ "Pontuação Final"_t = alpha times "Probabilidade Sintética"_t + (1 - alpha) times "Pontuação Final"_{t-1} $
+
+onde $alpha$ é o fator de suavização, definido por $alpha = 2 / (N + 1)$. Para uma janela de $N=3$ dias, o fator 
+resulta em $alpha = 0.5$. Dessa forma, a "Pontuação Final" de risco absorve os choques recentes rapidamente, 
+mas preserva a memória de curto prazo para evitar que a volatilidade diária acione alarmes falsos de crise.
 
 == Protocolos de Validação (Kupiec POF e Backtest)
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+Para testar a robustez e a aplicabilidade prática do modelo desenvolvido, a etapa de validação foi estruturada em duas 
+dimensões complementares, aplicadas sobre o período *Out-of-Sample* para garantir a ausencia de viés prospectivo
+(*Look-Ahead Bias*). A primeira dimensão avaliada diz respeito a acurácia estatistica do modelo, aplicada sobre
+as saídas do motor EGARCH-t. Foi utilizado o Teste de Proporção de Falhas (*POF - Proportion of Failures*) desenvolvido por 
+#cite(<kupiec1995techniques>, form: "prose"), que avalia se a frequência empírica de violações (quantidade de dias em que a perda
+real do ativo excedeu a perda máxima estimada pelo VaR) é estatisticamente compatível com o nível de confiança estipulado
+pelo modelo. Rejeitar a hipótese nula do teste indica que o motor de volatilidade subestima ou superestima
+sistematicamente as caudas pesadas observadas no mercado.
+
+A segunda dimensão avalia a qualidade preditiva do modelo no contexto do mercado de crédito corporativo brasileiro por meio
+de um *Backtest* financeiro, focado em avaliar a eficácia dos diferentes "Regimes de Risco" sugeridos pelos modelos apresentados.
+O *backtest* simula o impacto de diferentes estratégias de liquidação de portfólio baseadas nas pontuações de risco dos modelos
+(Verde, Amarelo ou Vermelho), comparando duas abordagens de liquidação para cada modelo:
+
+  - Venda Retardada: Estratégia reativa, onde a liquidação ocorre quando o modelo acusa um Regime de Risco Vermelho. Idealmente, 
+  caso o modelo seja capaz de prever o estado vermelho antes do choque, esse modelo deveria gerar rentabilidade superior, uma vez
+  que a venda ocorre antes ou no exato momento do choque, evitando assim perdas substanciais. Todavia, se o modelo não for capaz de
+  prever o estado vermelho antes do choque, essa estratégia tende a gerar perdas operacionais, uma vez que o choque já ocorreu
+  e a venda só será realizada após a materialização dos choques no preço dos ativos.
+  - Venda Preventiva: Estratégia ofensiva, onde a liquidação ocorre quando o modelo acusa um Regime de Risco Amarelo. Idealmente,
+  deveria ser superada pela venda retardada em caso de um modelo ideal, porém, na prática, em cenários onde o modelo pode demorar
+  a reagir na classificaçao para o regime vermelho, essa estratégia tende a gerar rentabilidade superior, uma vez que a venda 
+  ocorre assim que são observados os primeiros sinais de deterioração do ativo, antes da materialização completa do choque. Todavia,
+  caso hajam muitos falsos positivos, essa estratégia tende a gerar rentabilidade inferior à venda retardada, uma vez que gera custos
+  operacionais desnecessários e reduz o ganho em cenários de alta volatilidade.
+
+Para tornar a simulação o mais realista possível e capturar a penalidade financeira do *whipsaw* (falsos rompimentos que geram múltiplos sinais de entrada e saída), o *backtest* incorpora uma taxa de custo de transação de 0,5% (50 *bps*). No mercado secundário de crédito brasileiro, caracterizado por menor liquidez e *spreads* de *bid-ask* mais elásticos do que o mercado de ações, a inclusão desse custo é fundamental. Ele atua como um fator de desconto sobre estratégias excessivamente reativas (com alta rotatividade/*turnover*), testando assim o real valor econômico agregado pelos sinais preditivos contra os custos operacionais de executá-los na prática.
+
+O resultado das estratégias táticas é comparado contra o desempenho passivo de um portfólio *Buy-and-Hold*. Para assegurar o rigor técnico e a reprodutibilidade da simulação financeira, 
+o algoritmo do *backtest* foi estruturado sob as seguintes premissas operacionais:
+
+- *Carteira Inicial:* No primeiro dia útil da janela *Out-of-Sample*, o capital inicial é distribuído de forma equiponderada (*equal-weight*) entre todas as debêntures elegíveis disponíveis na base de dados naquela data.
+- *Regra de Venda (Liquidação):* A liquidação ocorre integralmente no momento em que o modelo classifica o ativo no regime de *stop* estipulado pela estratégia (seja "Vermelho" na estratégia retardada, ou "Amarelo/Vermelho" na preventiva). O capital obtido pela venda é deduzido do custo de transação de 0,5% e mantido em caixa.
+- *Remuneração de Caixa:* Qualquer montante não alocado em debêntures (caixa livre) é remunerado diariamente pela taxa DI (CDI) histórica real correspondente ao dia da simulação, refletindo o custo de oportunidade livre de risco (*risk-free*). E tentando simular o que ocorreria na realidade,
+porque um fundo ou uma pessoa fisica alocaria esse dinheiro em um CDB-DI com liquidez diária ou fundo de zeragem, por exemplo.
+- *Regra de Recompra:* Para evitar re-entradas prematuras (*dead cat bounces*) e a corrosão da rentabilidade pelo excesso de giro, o capital em caixa é redistribuído igualitariamente apenas entre ativos que 
+atendam simultaneamente aos três filtros:
+  1. *Quarentena Temporal:* O ativo não pode ter estado em um regime de alerta/crise nos últimos 180 dias (6 meses).
+  2. *Inércia de Estabilidade:* O ativo deve permanecer ininterruptamente no regime "Verde" por pelo menos 15 dias úteis, confirmando o fim da volatilidade.
+  3. *Filtro de Payback:* O prêmio de risco anualizado do ativo no instante da compra deve ser matematicamente suficiente para recuperar o pedágio do custo de transação em, no máximo, 3 meses. A condição de elegibilidade é formalizada pela seguinte restrição:
+
+  $ "Spread Mínimo" = c times 12 / M $ <eq_filtro_payback>
+
+  onde $c$ é a taxa do custo de transação (0,5%) e $M$ é o período máximo tolerado de *payback* em meses ($M=3$). Se a taxa (*spread*) ofertada pela debênture for inferior a este limite mínimo (neste caso, 2,0% ao ano), a compra é abortada, visto que o spread comprimido não justifica o risco operacional e financeiro do giro de portfólio.
+
+Essa arquitetura algorítmica de simulação garante que a performance do modelo preditivo não seja um mero artefato teórico, testando a viabilidade de seus sinais diretamente contra as restrições operacionais e os atritos do mercado corporativo brasileiro.
