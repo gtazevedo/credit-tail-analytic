@@ -348,7 +348,7 @@ onde $alpha$ é o fator de suavização, definido por $alpha = 2 / (N + 1)$. Par
 resulta em $alpha = 0.5$. Dessa forma, a "Pontuação Final" de risco absorve os choques recentes rapidamente, 
 mas preserva a memória de curto prazo para evitar que a volatilidade diária acione alarmes falsos de crise.
 
-== Protocolos de Validação (Kupiec POF e Backtest)
+== Protocolos de Validação (Kupiec POF e Backtest) <subcap_kupiec_backtest>
 
 Para testar a robustez e a aplicabilidade prática do modelo desenvolvido, a etapa de validação foi estruturada em duas 
 dimensões complementares, aplicadas sobre o período *Out-of-Sample* para garantir a ausencia de viés prospectivo
@@ -390,6 +390,7 @@ atendam simultaneamente aos três filtros:
   1. *Quarentena Temporal:* O ativo não pode ter estado em um regime de alerta/crise nos últimos 180 dias (6 meses).
   2. *Inércia de Estabilidade:* O ativo deve permanecer ininterruptamente no regime "Verde" por pelo menos 15 dias úteis, confirmando o fim da volatilidade.
   3. *Filtro de Payback:* O prêmio de risco anualizado do ativo no instante da compra deve ser matematicamente suficiente para recuperar o pedágio do custo de transação em, no máximo, 3 meses. A condição de elegibilidade é formalizada pela seguinte restrição:
+- *Tratamento para Vencimentos*: Caso um ativo vença, o caixa recebido na data do vencimento é reaplicado nas debentures da carteira, sendo que para as carteiras do modelo (a que não é nosso benchmark *Buy and Hold*), são consideradas as mesmas regras de recompra acima.
 
   $ "Spread Mínimo" = c times 12 / M $ <eq_filtro_payback>
 

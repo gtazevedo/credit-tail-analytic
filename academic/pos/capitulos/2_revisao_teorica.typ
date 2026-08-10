@@ -1,6 +1,4 @@
 = Revisão da Literatura <cap_revisao_lit>
-// TODO: Adicionar sobre Expected Shortfall e os testes utilizados e distruibcao t student
-// Falar tambem de RobustScaler, Sillhoutte Score, Indicide Davies BOuldin, Indice Calinski e Metodo de Borda
 
 A ideia central deste trabalho parte da modelagem de risco de crédito de debêntures. Mas o que é risco? Existem várias definições. #cite(<jorion2006>, form: "prose") talvez tenha uma das mais simples
 e intuitivas: risco é a volatilidade dos resultados inesperados, que podem representar o valor de ativos, patrimônios ou resultados. E esse risco pode ser originado de várias formas,
@@ -33,6 +31,18 @@ Onde:
 
 Se $gamma < 0$, choques negativos em $t-1$ aumentam a variância em $t$ mais do que choques positivos da mesma magnitude, diferentemente do modelo GARCH tradicional.
 
+Contudo, além da assimetria, os retornos de ativos de crédito exibem forte leptocurtose (caudas pesadas), onde perdas extremas ocorrem com frequência superior ao previsto pela distribuição normal. Para contornar este problema, a modelagem EGARCH deve ser acoplada a uma Distribuição T de Student condicional, que adiciona um parâmetro de graus de liberdade ($nu$) capaz de alargar as caudas da distribuição de probabilidade e modelar os choques anômalos com maior precisão.
+
+=== Expected Shortfall (ES) e Testes de Backtesting
+
+Apesar de sua ampla adoção, o VaR apresenta uma limitação matemática severa: ele não é uma medida de risco subaditiva e, consequentemente, não é uma métrica "coerente" de risco #cite(<artzner1999>, form: "prose"). Ele responde apenas à pergunta "Qual é a perda máxima esperada na fronteira dos 99% de confiança?", sendo cego em relação à gravidade estatística do que acontece na cauda extrema. 
+
+Para solucionar isso, a literatura e regulações como Basileia III têm migrado para o *Expected Shortfall* (ES) #cite(<acerbi2002>), que calcula a perda média esperada condicionada à quebra do VaR. Diferentemente do VaR, o ES é uma métrica de risco coerente e provê uma avaliação robusta da magnitude das perdas extremas.
+
+Adicionalmente, qualquer modelo de estimação de risco requer validação estatística formal (*Backtesting*). Os dois métodos basilares para a validação do VaR são:
+- *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995>): Um teste binomial que avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) é estatisticamente idêntica à proporção esperada.
+- *Teste de Independência e Teste Conjunto de Christoffersen* #cite(<christoffersen1998>): Vai muito além do teste de Kupiec ao avaliar a "Cobertura Condicional". Ele testa se as violações do VaR ocorrem de forma agrupada no tempo (*volatility clustering*). Se as violações forem estatisticamente independentes, o modelo prova que capturou e exauriu corretamente a dinâmica temporal da variância, resultando em um modelo validado no Teste Conjunto (que unifica e avalia simultaneamente a Cobertura Incondicional e a Independência).
+
 == A Hipótese de Mudança de Regimes (Regime-Switching)
 
 Porém, mesmo o modelo EGARCH que possui o tratamento da assimetria dos retornos possui limitações. A família GARCH, como explicado por #cite(<tsay2005analysis>, form: "prose"), assume que
@@ -44,10 +54,11 @@ dos ativos afetados. #cite(<hamilton1994time>, form: "prose") mostra que essas q
 suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (*Regime-Switching*). Segundo essa teoria, a economia e os mercados não têm um estado único. 
 Eles transitam entre diferentes estados, onde as equações que regem os preços mudam dependendo do regime atual. Para solucionar esse problema, foi proposto a utilização de Cadeias de Markov para modelar a transição entre diferentes estados da economia.
 
-== Aprendizado de Máquina Não Supervisionado: K-Means e HMM
+== Aprendizado de Máquina Não Supervisionado
 
-Enquanto alguns autores na literatura propõem a integração direta (como os modelos MS-GARCH unificados), neste trabalho adotam-se dois modelos tintos para agrupar e classificar os regimes de risco
-utilizando como variáveis de entrada o *spread* de crédito e a volatilidade extraída pelo modelo EGARCH. Esses modelos são:
+Enquanto alguns autores na literatura propõem a integração direta (como os modelos MS-GARCH unificados), neste trabalho adotam-se algoritmos não supervisionados para agrupar e classificar os regimes de risco latentes. 
+
+Algoritmos de clusterização baseados em distância espacial euclidiana são extremamente sensíveis a valores discrepantes (*outliers*) e grandezas numéricas não uniformes. No mercado de debêntures, onde os ativos apresentam distorções bruscas, a padronização dos dados (pré-processamento) é indispensável. Em vez de utilizar os escalonadores tradicionais, a literatura recomenda o uso de padronizadores robustos, como o `RobustScaler`. Este algoritmo subtrai a mediana e divide os dados pelo intervalo interquartil (IQR, ou seja, a diferença entre o 3º e o 1º quartil). Ao ancorar-se em quantis robustos, ele ignora estatisticamente as caudas anômalas (*outliers*) e permite que o agrupador avalie a matriz de características de forma justa e livre de distorções induzidas por anomalias momentâneas.
 
 === K-Means
 
@@ -100,3 +111,13 @@ no próximo dia, independentemente do rating que a empresa tinha ontem. O tempo 
 Dessa forma, o HMM não apenas agrupa os dados de forma estática com base nas emissões observadas (volatilidade e *spread*), mas também estima a matriz de transição estocástica $A$. 
 É justamente o uso das variáveis latentes $z_n$ e $z_{n-1}$ que permite ao modelo capturar a 
 inércia do mercado de debêntures e modelar a dinâmica de transições entre regimes.
+
+== Seleção de Atributos e Avaliação de Clusters
+
+Para que os algoritmos não-supervisionados (como o K-Means) convirjam para partições representativas, a escolha adequada das variáveis de entrada é crucial. Como não existem rótulos perfeitos da "verdade absoluta" (*ground truth*) de crises na natureza para guiar os modelos, a qualidade de um agrupamento geométrico deve ser mensurada analiticamente por meio de métricas de validação interna da geometria dos grupos gerados:
+
+1. *Silhouette Score* #cite(<rousseeuw1987>): Mensura quão similar um ponto é ao seu próprio *cluster* comparado aos demais. Ele varia no espectro de -1 a 1, onde pontuações mais altas sinalizam que as amostras estão perfeitamente coesas no seu grupo interno e substancialmente afastadas dos grupos externos.
+2. *Índice Davies-Bouldin* #cite(<davies1979>): Baseia-se em avaliar a pior similaridade mútua de cada *cluster*. Calcula a razão da dispersão média intra-cluster em relação à separação cartesiana entre os centróides. Valores numéricos reduzidos e próximos de zero representam grupos compactos e melhor delineados.
+3. *Índice Calinski-Harabasz* #cite(<calinski1974>) (Critério de Razão de Variância): Avalia a robustez do particionamento mediante a razão da variância calculada entre os clusters (variância inter-grupos) e a variância dos próprios clusters internamente (variância intra-grupos). Modelos com altíssimas pontuações caracterizam-se por grupos densos, esféricos e com pouca sobreposição topológica.
+
+Dado que não existe "bala de prata" no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações diametralmente opostas sobre qual o melhor conjunto de dados a utilizar. A solução matemática moderna repousa sobre as heurísticas de consenso. O *Método de Borda* (*Borda Count*) #cite(<borda1781>) desponta como um mecanismo imparcial: uma adaptação de sistemas de votação política em que são pontuados os conjuntos de variáveis (*features*) pela posição ordinal que alcançaram em cada métrica isolada. Somando-se as avaliações de Borda, o analista mitiga o viés puramente individual de cada índice e converge deterministicamente para o subconjunto de variáveis dimensionalmente mais democrático e robusto.

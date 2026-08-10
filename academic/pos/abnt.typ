@@ -29,7 +29,7 @@
     #v(1fr)
     #align(right)[
       #block(width: 50%)[
-        #text(size: 10pt)[Dissertação apresentada como requisito parcial para obtenção do grau de Mestre. \ Orientador: #orientador]
+        #text(size: 10pt)[Dissertação apresentada como requisito parcial para obtenção do grau de Especialista. \ Orientador: #orientador]
       ]
     ]
     #v(1fr)

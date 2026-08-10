@@ -118,6 +118,16 @@ class BacktestFinanceiro:
         # Carrega CDI histórico real
         self._cdi_map: Dict[pd.Timestamp, float] = _load_cdi_diario()
 
+        # Carrega vencimentos do cadastro
+        cad_path = dados_dir() / 'cadastro_debentures.csv'
+        self.vencimentos = {}
+        if cad_path.exists():
+            df_cad = pd.read_csv(cad_path, usecols=['Ticker', 'Data_Vencimento'])
+            df_cad['Data_Vencimento'] = pd.to_datetime(df_cad['Data_Vencimento'], errors='coerce')
+            self.vencimentos = df_cad.dropna(subset=['Data_Vencimento']).set_index('Ticker')['Data_Vencimento'].to_dict()
+        else:
+            logger.warning("cadastro_debentures.csv não encontrado. Vencimentos serão ignorados.")
+
         # Incorpora eventos financeiros apenas se o pipeline não os tiver fornecido
         if 'Valor_Evento' not in self.df.columns:
             df_ev = download_eventos_financeiros()
@@ -240,22 +250,43 @@ class BacktestFinanceiro:
         is_first_day = True
 
         for current_date, group in self.df.groupby('Data'):
-            cdi_dia  = self._get_cdi_diario(pd.Timestamp(current_date))
+            curr_ts = pd.Timestamp(current_date)
+            cdi_dia = self._get_cdi_diario(curr_ts)
             retornos = dict(zip(group['Ticker'], group['Retorno_Total']))
 
+            # 1. Liquidação por vencimento (Devolve valor bruto ao caixa, sem custo)
+            for t in list(capital_bnh.keys()):
+                if capital_bnh[t] > 0 and t in self.vencimentos:
+                    if curr_ts >= self.vencimentos[t]:
+                        cash_bnh += capital_bnh[t]
+                        capital_bnh[t] = 0.0
+
+            # 2. Mark-to-Market dos ativos na carteira
             for t in capital_bnh:
-                if t in retornos:
+                if t in retornos and capital_bnh[t] > 0:
                     capital_bnh[t] *= (1.0 + retornos[t])
+            
+            # 3. Caixa rende CDI
             cash_bnh *= (1.0 + cdi_dia)
 
+            # Define ativos vigentes (não vencidos)
+            ativos_dia = group['Ticker'].tolist()
+            ativos_elegiveis = [t for t in ativos_dia if t not in self.vencimentos or curr_ts < self.vencimentos[t]]
+
             if is_first_day:
-                ativos_dia = group['Ticker'].tolist()
-                if ativos_dia:
-                    aporte = cash_bnh / len(ativos_dia)
-                    for t in ativos_dia:
+                if ativos_elegiveis:
+                    aporte = cash_bnh / len(ativos_elegiveis)
+                    for t in ativos_elegiveis:
                         capital_bnh[t] += aporte * (1.0 - transaction_cost)
                     cash_bnh = 0.0
                 is_first_day = False
+            else:
+                # 4. Reaplicação de caixa gerado por vencimentos
+                if cash_bnh > 0.01 and ativos_elegiveis:
+                    aporte = cash_bnh / len(ativos_elegiveis)
+                    for t in ativos_elegiveis:
+                        capital_bnh[t] += aporte * (1.0 - transaction_cost)
+                    cash_bnh = 0.0
 
             history_bnh.append(sum(capital_bnh.values()) + cash_bnh)
 
@@ -287,32 +318,44 @@ class BacktestFinanceiro:
             is_first_day = True
 
             for current_date, group in self.df.groupby('Data'):
-                cdi_dia  = self._get_cdi_diario(pd.Timestamp(current_date))
+                curr_ts  = pd.Timestamp(current_date)
+                cdi_dia  = self._get_cdi_diario(curr_ts)
                 retornos = dict(zip(group['Ticker'], group['Retorno_Total']))
                 regimes  = dict(zip(group['Ticker'], group[col]))
                 taxas    = dict(zip(group['Ticker'], group['Taxa_Ativo'])) if 'Taxa_Ativo' in group.columns else {}
 
+                # 0. Liquidação por vencimento
+                for t in list(capital.keys()):
+                    if capital[t] > 0 and t in self.vencimentos:
+                        if curr_ts >= self.vencimentos[t]:
+                            cash += capital[t]
+                            capital[t] = 0.0
+                            dias_cura[t] = None
+                            dias_verde[t] = 0
+
                 # 1. Mark-to-Market dos ativos alocados
                 for t in capital:
-                    if t in retornos:
+                    if t in retornos and capital[t] > 0:
                         capital[t] *= (1.0 + retornos[t])
 
                 # 2. Caixa rende CDI real
                 cash *= (1.0 + cdi_dia)
 
+                ativos_dia = group['Ticker'].tolist()
+                ativos_vigentes = [t for t in ativos_dia if t not in self.vencimentos or curr_ts < self.vencimentos[t]]
+
                 if is_first_day:
-                    ativos_dia = group['Ticker'].tolist()
-                    if ativos_dia:
-                        aporte = initial_capital / len(ativos_dia)
-                        for t in ativos_dia:
+                    if ativos_vigentes:
+                        aporte = initial_capital / len(ativos_vigentes)
+                        for t in ativos_vigentes:
                             capital[t] += aporte * (1.0 - transaction_cost)
                         cash = 0.0
                     is_first_day = False
                 else:
-                    # 3. Stop (Venda) — regime Vermelho
+                    # 3. Stop (Venda) — regime Vermelho/Amarelo
                     cash_liberado = 0.0
                     for t, rgm in regimes.items():
-                        if rgm in stop_regimes:
+                        if rgm in stop_regimes and capital[t] > 0:
                             dias_cura[t] = 0
                             cash_liberado += capital[t] * (1.0 - transaction_cost)
                             capital[t] = 0.0
@@ -320,7 +363,6 @@ class BacktestFinanceiro:
                     # Atualiza dias de cura para todos os ativos
                     for t in dias_cura:
                         if dias_cura[t] is not None:
-                            # Se não está em stop_regime hoje (ou não tem regime hoje), incrementa
                             if t not in regimes or regimes[t] not in stop_regimes:
                                 dias_cura[t] += 1
 
@@ -337,7 +379,7 @@ class BacktestFinanceiro:
                     limite_spread = (transaction_cost * (12.0 / meses_payback)) * 100.0
                     elegiveis = []
                     for t, rgm in regimes.items():
-                        if rgm == 'Verde' and (dias_cura[t] is None or dias_cura[t] >= cure_days):
+                        if t in ativos_vigentes and rgm == 'Verde' and (dias_cura[t] is None or dias_cura[t] >= cure_days):
                             if dias_verde[t] >= 15:
                                 taxa = taxas.get(t, 0.0)
                                 if pd.notna(taxa) and taxa >= limite_spread:
