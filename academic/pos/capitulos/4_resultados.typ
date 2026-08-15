@@ -226,5 +226,49 @@ Por fim, o modelo *Ensemble* — desenvolvido com o intuito de harmonizar a reat
 ao da estratégia passiva (1,111 *vs.* 1,249), entregou o pior retorno total do período (16,37%), corroído quase integralmente pelo efeito *Whipsaw* (efeito chicote). 
 A mediação conflitante dos modelos fez com que o agente acionasse vendas quando o HMM indicava a transição de regime, para logo em seguida recomprar os mesmos ativos assim que a influência do K-Means puxava o *score* novamente para um regime de baixo risco. Conclui-se, portanto, que a modelagem mista falhou estruturalmente ao herdar os custos transacionais da sensibilidade do HMM sem se beneficiar de sua capacidade de proteção definitiva, sofrendo das piores características operacionais de seus precursores.
 
+=== Significância Estatística das Estratégias — Block Bootstrap
 
+A superioridade das estratégias ativas em termos de retorno absoluto não é, por si só, evidência científica suficiente de que os modelos adicionam valor. O período *Out-of-Sample* (2023–2026) foi marcado por eventos excepcionais de crédito, o que levanta a questão: os retornos superiores observados decorrem genuinamente da capacidade preditiva dos algoritmos, ou são produto do período amostral específico?
 
+Para responder a essa pergunta, aplicou-se o *Stationary Block Bootstrap* #cite(<politis1994stationary>) com $n = 10.000$ amostras e blocos de 20 dias úteis ($approx$ 1 mês), que preserva a estrutura de autocorrelação temporal dos retornos diários. A hipótese testada é:
+
+- *H0₃*: A estratégia ativa *não* supera o Buy-and-Hold em termos de retorno médio anualizado ($mu_("estratégia") <= mu_("BnH")$).
+- *H1₃*: A estratégia supera o Buy-and-Hold (teste unilateral à direita, $alpha = 5\%$).
+
+O p-valor reportado representa a proporção de amostras bootstrap em que o retorno médio da estratégia foi inferior ou igual ao do benchmark, de forma que valores abaixo de 0,05 levam à rejeição de H0₃.
+
+#figure(
+  table(
+    stroke: 0.5pt,
+    columns: (2fr, 1fr, 1fr, 1fr, 1fr, 1fr),
+    align: (left+horizon, center+horizon, center+horizon, center+horizon, center+horizon, center+horizon),
+    [*Estratégia*], [*Retorno\\n(%aa)*], [*BnH\\n(%aa)*], [*Diferença\\n(%aa)*], [*p-valor*], [*H0₃*],
+    [KMeans], [6,97%], [5,87%], [+1,10%], [0,134], [Não Rejeitada],
+    [HMM], [7,02%], [5,87%], [+1,15%], [0,225], [Não Rejeitada],
+    [Ensemble], [4,47%], [5,87%], [-1,41%], [0,868], [Não Rejeitada],
+    [*K-Means (Vende Amarelo)*], [*9,27%*], [*5,87%*], [*+3,40%*], [*0,015*], [*Rejeitada ✓*],
+    [HMM (Vende Amarelo)], [8,90%], [5,87%], [+3,03%], [0,059], [Não Rejeitada],
+    [Ensemble (Vende Amarelo)], [4,76%], [5,87%], [-1,11%], [0,808], [Não Rejeitada],
+  ),
+  caption: [Resultados do Block Bootstrap ($n=10.000$, $alpha=5\%$, bloco=20 dias) — Significância Estatística vs. Buy-and-Hold]
+) <tab_bootstrap>
+
+Os resultados do @tab_bootstrap revelam um achado central: *apenas a estratégia K-Means (Vende Amarelo) rejeita H0₃ ao nível de 5%* ($p = 0,015$, IC 95%: [+0,33%; +6,78%]). A estratégia HMM (Vende Amarelo) apresenta p-valor de 0,059, próximo ao limiar de significância, não rejeitando H0₃ sob o critério convencional de 5%, mas sugerindo evidência marginal de superioridade.
+
+Este resultado é coerente com o diagnóstico do *Paradoxo da Latência*: a inércia do K-Means, que aparentava ser uma deficiência preditiva (menor reatividade a mudanças de regime), transformou-se em vantagem financeira — ao evitar o excesso de giro e o efeito *Whipsaw* que corrói os demais modelos. A estratégia HMM puro e as estratégias Ensemble, a despeito de retornos nominais superiores ao benchmark, não apresentam superioridade estatisticamente comprovável, evidenciando que seus ganhos estão dentro do intervalo de incerteza esperado para o período amostral específico.
+
+#figure(
+  image("../imagens/bootstrap_significance.png", width: 90%),
+  caption: [Forest Plot — Diferença de Retorno vs. Buy-and-Hold com Intervalo de Confiança 95% (Block Bootstrap)]
+) <fig_bootstrap>
+
+=== Discussão sobre a Generalização dos Resultados
+
+Os resultados apresentados neste estudo foram obtidos a partir de um conjunto específico de condições empíricas que delimitam sua generalização direta:
+
+1. *Período amostral*: O período *Out-of-Sample* (2023–2026) engloba uma das maiores crises de crédito privado brasileiro da história recente (com colapsos sequenciais de Lojas Americanas, Light S.A. e incertezas em torno do Grupo Pão de Açúcar). A eficácia contundente das estratégias ativas, especialmente do K-Means (Vende Amarelo), foi alavancada pela necessidade extrema de mitigação de risco durante choques agudos. Em ciclos de expansão de crédito com baixa volatilidade, estratégias ativas podem apresentar performance marginal inferior ao carrego passivo, devido ao peso dos custos transacionais sem a contrapartida de grandes eventos de cauda.
+2. *Universo de ativos*: A amostra final se restringe a debêntures com liquidez mínima suficiente para permitir a convergência do motor de estimação EGARCH. Ativos de crédito marcadamente ilíquidos — que operam fora da curva Anbima ou não possuem fluxo de negociação regular em mercado secundário — não foram testados por essa metodologia estrutural. Estratégias aplicadas a essas carteiras podem sofrer distorções materiais.
+3. *Estrutura de custos operacionais*: A simulação assumiu um custo de transação de 0,5% por operação, considerado conservador e aderente à média do mercado secundário corporativo em tempos normais. Contudo, sob estresse extremo, a liquidez direcional do mercado seca e os *spreads* de compra-venda (*bid-ask spread*) podem expandir severamente, inviabilizando ou majorando exponencialmente as saídas defensivas executadas pelos algoritmos.
+4. *Qualidade da informação (Marcação a Mercado)*: Os indicadores preditivos dependem intimamente do reflexo primário dos *spreads* na curva indicativa (Anbima). O alisamento intrínseco aos processos de marcação a mercado no Brasil introduz latência que pode atrasar a identificação quantitativa de risco por parte dos motores bayesianos.
+
+Apesar dessas limitações inerentes à amostra brasileira, os alicerces metodológicos da arquitetura desenvolvida — notadamente a integração da volatilidade condicional leptocúrtica como *feature* para particionamento temporal dinâmico (*Time-Series Clustering*) — constituem um arcabouço inovador que pode ser adaptado e generalizado para outros mercados globais de crédito estruturado caracterizados por informações assimétricas e baixa liquidez.

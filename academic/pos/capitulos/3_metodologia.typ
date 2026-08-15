@@ -213,6 +213,40 @@ $ sigma_("est")(t) = sigma_("est")(t-1) quad "se" quad sigma_("est")(t) > v_("te
 onde $sigma_("est")(t)$ é a volatilidade estimada pelo modelo EGARCH(1,1,1) no dia $t$, e $v_("teto")$ é o limite superior definido como 20 vezes o percentil 99 da série in-sample. Para mais detalhes a respeito dessa implementação, consultar o script
 `volatility.py` e a classe `VolatilityEstimator`.
 
+=== Teste de Estacionáriedade dos Spreads
+
+A aplicação de modelos da família GARCH pressupõe que a série temporal analisada seja estacionária em covariância. Antes do ajuste do EGARCH-t, verificou-se, portanto, a estacionáriedade das séries de retorno 
+de spread utilizadas como insumo do motor de volatilidade.
+
+Para tanto, aplicou-se o Teste de Dickey-Fuller Aumentado (ADF) sobre as séries de primeiro incremento de spread (`Delta_Spread`) de todos os 622 ativos com observações suficientes. 
+O teste avalia a hipótese nula de raiz unitária (série não-estacionária):
+
+- *H0* (ADF): A série de `Delta_Spread` possui raiz unitária (não-estacionária).
+- *H1* (ADF): A série é estacionária (rejeita H0).
+
+A especificação adotada inclui constante sem tendência determinística (`regression='c'`), com seleção automática de defasagens por Critério de Informação de Akaike (AIC). Os resultados, reportados 
+na @tab_adf, demonstram que a série de spread bruto (`Taxa_Ativo`) é não-estacionária em 91% dos casos, como esperado (a nível de spread, as séries são integradas de ordem 1). Após a primeira 
+diferença (`Delta_Spread`), *96,6% das séries rejeitam H0 ao nível de 5%*, validando o pressuposto de estacionáriedade necessário para o EGARCH.
+
+#figure(
+  table(
+    stroke: 0.5pt,
+    columns: (1.5fr, 1fr, 1fr, 1.2fr, 1.2fr),
+    align: center + horizon,
+    [*Indexador*], [*Total*], [*Estacionárias\n(Delta_Spread)*], [*Taxa\n(%)*], [*Spread Bruto\n(Taxa_Ativo)*],
+    [IPCA], [355], [349], [98,3%], [não-estacionário],
+    [CDI Spread], [237], [223], [94,1%], [não-estacionário],
+    [CDI Percentual], [29], [28], [96,6%], [não-estacionário],
+    [PRE], [1], [1], [100,0%], [não-estacionário],
+    [*Total*], [*622*], [*601*], [*96,6%*], [—],
+  ),
+  caption: [Resultados do Teste ADF ($alpha = 5%$) — Estacionáriedade por Indexador]
+) <tab_adf>
+
+Os ativos que compõem os 3,4% restantes que não rejeitam H0 são, em sua maioria, papeis com histórico extremamente curto (entre 30 e 60 observações) e perfil de iliquidez estrutural, 
+nos quais a baixa frequência de negociação gera séries com longos períodos de retornos nulos que distorcem a convergência do teste. Para esses casos, o motor EGARCH produz estimativas de volatilidade 
+de menor confiança, conforme documentado na @subcap_egarch.
+
 === Seleção de variáveis
 
 Nas seções @subcap_processamento e @subcap_egarch foram listadas as variáveis calculadas: 
@@ -272,6 +306,22 @@ coerente, o que o torna uma métrica superior.
 Eleitas as variáveis de entrada do modelo (`Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`), o algoritmo K-Means atua como uma *baseline* atemporal.
 O processo é realizado iterativamente para cada grupo de indexador (ex: DI, IPCA), a fim de respeitar as dinâmicas particulares de cada mercado.
 
+==== Justificativa Empírica do Número de Clusters ($k=3$)
+
+A escolha de $k=3$ regimes — Verde (baixo risco), Amarelo (alerta) e Vermelho (crise) — foi motivada primariamente pela semântica financeira do sistema de alertas (à analogia dos semaforos de risco de crédito). 
+Contudo, para validar formalmente essa escolha, aplicou-se a análise de *Elbow Method* (inerçia da soma dos quadrados intra-cluster em função de $k$) e o *Silhouette Score* médio para $k \in \{2, 3, 4, 5, 6, 7\}$, 
+utilizando os dados padronizados do período *Out-of-Sample*.
+
+Os resultados, ilustrados na @fig_cluster_validation, mostram que para os indexadores IPCA e CDI Spread: 
+(i) a curva de inerçia exibe uma inflexão (*joelho*) em $k=3$, indicando redução marginal decrescente a partir deste ponto; 
+(ii) o *Silhouette Score* para $k=3$ é consistentemente superior ao de $k=2$ em ambos os grupos, ao mesmo tempo em que $k=4$ e 
+$k=5$ não oferecem ganho meaningful de separabilidade. Conclui-se, portanto, que $k=3$ é a escolha *parcimoniosa* que maximiza a interpretação econômica e a coerência geométrica dos regimes.
+
+#figure(
+  image("../imagens/cluster_val_elbow_silhouette.png", width: 90%),
+  caption: [Elbow Method e Silhouette Score por número de clusters $k$ — Dados IPCA e CDI Spread]
+) <fig_cluster_validation>
+
 O primeiro passo é a separação da amostra de treino e teste (*In-Sample* para treino, *Out-of-Sample* para teste), conforme detalhado em @subcap_processamento.
 Para garantir que *outliers* extremos (como casos que discutimos nas seções anteriores, em que ativos passam dias sem negociação e depois quando voltam a ser negociados
 apresentam saltos no spread), aplica-se uma Winsorização (clipagem) no 1º e 99º percentis utilizando os dados *In-Sample*. Esses limites são posteriormente aplicados aos dados
@@ -294,6 +344,13 @@ com base na distância euclidiana inversa de cada observação
 *Out-of-Sample* até o centróide Vermelho.
 
 === HMM <subcap_hmm>
+
+Para investigar o valor da memória latente no reconhecimento de padrões da série temporal, estabelecemos a segunda hipótese deste estudo:
+
+- *H0₂*: A inclusão da dependência temporal (matriz de transição markoviana) *não* melhora a capacidade de identificação precoce de eventos de estresse em relação ao particionamento geométrico atemporal (K-Means).
+- *H1₂*: O modelo HMM, ao modelar a inércia dos regimes de risco, antecipa a deterioração do crédito com maior *lead time* do que o K-Means para os eventos de crédito observados no período *Out-of-Sample*.
+
+Esta hipótese é avaliada qualitativamente por meio do estudo de caso do Grupo Pão de Açúcar (§ Resultados) e da comparação do primeiro alerta por modelo.
 
 O Modelo Oculto de Markov (HMM - *Hidden Markov Model*) acrescenta a dependência temporal que o K-Means ignora. O pré-processamento para o HMM segue as exatas mesmas premissas 
 de divisão, winsorização e padronização geométrica (piso de variância) descritas em @subcap_kmeans, adicionando apenas a restrição de que a massa de dados obedeça estritamente a 
@@ -325,6 +382,13 @@ e a probabilidade marginal instantânea de crise (`Prob_Crise_HMM`) é inferida 
 
 
 === Modelo Misto (Ensemble) <subcap_modelo_misto>
+
+A intuição de mesclar modelos conflitantes pode parecer promissora, mas exige verificação empírica. A quarta hipótese que permeia este trabalho contesta o benefício da modelagem mista:
+
+- *H0₄*: A combinação ponderada (Ensemble) dos modelos K-Means e HMM *não* produz uma estratégia de alocação inferior às estratégias individuais de cada componente, em termos de retorno ajustado ao risco.
+- *H1₄*: A ponderação dos sinais contraditórios dos modelos K-Means e HMM, sem calibração empírica dos pesos, induz ao efeito *whipsaw* e resulta em performance inferior às estratégias individuais.
+
+A avaliação é realizada pela comparação do Calmar Ratio e Retorno Total do Ensemble contra K-Means e HMM individuais nos resultados do Backtest.
 
 As predições individuais do K-Means (detalhada em @subcap_kmeans) e do HMM (detalhada em @subcap_hmm) são posteriormente combinadas em uma pontuação final, 
 buscando mesclar a estabilidade atemporal do particionamento geométrico (K-Means) com a agilidade e memória temporal do 

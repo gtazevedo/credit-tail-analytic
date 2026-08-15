@@ -1,4 +1,4 @@
-﻿"""
+"""
 clustering_validation.py
 ------------------------
 Funcoes para validacao e justificativa empirica do numero de clusters k.
@@ -65,13 +65,30 @@ def plot_elbow_silhouette(
     inertias = []
     silhouette_medias = []
 
+    from sklearn.model_selection import train_test_split
+
     logger.info(f'Calculando metricas para k em {ks}...')
     for k in ks:
         km = KMeans(n_clusters=k, random_state=random_state, n_init='auto')
         labels = km.fit_predict(X)
         inertias.append(km.inertia_)
         if k >= 2:
-            sil = silhouette_score(X, labels)
+            if len(X) > 10000:
+                try:
+                    _, X_sample, _, labels_sample = train_test_split(X, labels, test_size=10000, stratify=labels, random_state=random_state)
+                except ValueError:
+                    np.random.seed(random_state)
+                    indices = np.random.choice(len(X), 10000, replace=False)
+                    X_sample = X[indices]
+                    labels_sample = labels[indices]
+            else:
+                X_sample = X
+                labels_sample = labels
+                
+            try:
+                sil = silhouette_score(X_sample, labels_sample)
+            except ValueError:
+                sil = float('nan')
         else:
             sil = float('nan')
         silhouette_medias.append(sil)
@@ -108,7 +125,7 @@ def plot_elbow_silhouette(
         ]
         ax1_b.bar(ks[1:], delta_pct, alpha=0.2, color='steelblue', width=0.4, label='Reducao (%)')
         ax1_b.set_ylabel('Reducao de Inercia (%)', color='steelblue', alpha=0.7)
-        ax1_b.tick_params(axis='y', labelcolor='steelblue', alpha=0.7)
+        ax1_b.tick_params(axis='y', labelcolor='steelblue')
 
     # Silhouette Score medio
     ax2.plot(ks, silhouette_medias, 's-', color='darkgreen', linewidth=2, markersize=8)
@@ -135,14 +152,29 @@ def plot_elbow_silhouette(
     # ---------------------------------------------------------------
     km_chosen = KMeans(n_clusters=k_chosen, random_state=random_state, n_init='auto')
     labels_chosen = km_chosen.fit_predict(X)
-    sil_values = silhouette_samples(X, labels_chosen)
+    
+    from sklearn.model_selection import train_test_split
+    
+    if len(X) > 10000:
+        try:
+            _, X_sample, _, labels_sample = train_test_split(X, labels_chosen, test_size=10000, stratify=labels_chosen, random_state=random_state)
+        except ValueError:
+            np.random.seed(random_state)
+            indices = np.random.choice(len(X), 10000, replace=False)
+            X_sample = X[indices]
+            labels_sample = labels_chosen[indices]
+    else:
+        X_sample = X
+        labels_sample = labels_chosen
+        
+    sil_values = silhouette_samples(X_sample, labels_sample)
 
     fig2, ax3 = plt.subplots(figsize=(8, 5))
     y_lower = 10
     colors = cm.nipy_spectral(np.linspace(0.2, 0.85, k_chosen))
 
     for i, (c_idx, cor) in enumerate(zip(range(k_chosen), colors)):
-        cluster_sil = np.sort(sil_values[labels_chosen == c_idx])
+        cluster_sil = np.sort(sil_values[labels_sample == c_idx])
         size_cluster = len(cluster_sil)
         y_upper = y_lower + size_cluster
 

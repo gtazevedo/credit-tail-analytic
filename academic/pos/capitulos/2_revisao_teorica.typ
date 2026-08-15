@@ -10,6 +10,20 @@ se gerou a necessidade de limitar as perdas potenciais sem deixar de tomar risco
 próximas ao limite desejado; ao depender da sorte, podem ser maiores. A solução é o uso de modelos quantitativos *ex ante* que limitam a exposição a determinados ativos
 ou fatores de risco baseados em distribuições de probabilidade, como por exemplo os modelos de *Value at Risk*.
 
+== Modelos de Early Warning de Crédito
+
+Os primeiros sistemas formais de alerta precoce de distress corporativo remontam ao
+modelo de #cite(<altman1968>, form: "prose"), que utiliza combinações lineares de índices financeiros
+(Altman Z-Score) para prever insolvência. Desde então, a literatura evoluiu para
+abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>) e modelos de forma reduzida
+#cite(<duffie2003>), que modelam o spread de crédito diretamente.
+
+Contudo, esses modelos requerem dados contábeis de frequência trimestral ou anual
+e são inadequados para alertas de alta frequência em mercados secundários de baixa
+liquidez. Esta lacuna motiva a abordagem proposta neste trabalho, que utiliza
+exclusivamente dados de mercado (spread e volatilidade) para inferir o risco de
+crédito em tempo quase-real.
+
 == Value-at-Risk e Modelos da Família GARCH <subcap_vargarch>
 
 O *Value at Risk* (VaR) pode ser definido de forma intuitiva como a maior perda esperada de uma carteira em um determinado período de tempo, com um determinado nível de confiança. Ou,
@@ -43,6 +57,13 @@ Para solucionar isso, a literatura e regulações como Basileia III têm migrado
 Adicionalmente, qualquer modelo de estimação de risco requer validação estatística formal (*Backtesting*). Os dois métodos basilares para a validação do VaR são:
 - *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995techniques>): Um teste binomial que avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) é estatisticamente idêntica à proporção esperada.
 - *Teste de Independência e Teste Conjunto de Christoffersen* #cite(<christoffersen1998>): Vai muito além do teste de Kupiec ao avaliar a "Cobertura Condicional". Ele testa se as violações do VaR ocorrem de forma agrupada no tempo (*volatility clustering*). Se as violações forem estatisticamente independentes, o modelo prova que capturou e exauriu corretamente a dinâmica temporal da variância, resultando em um modelo validado no Teste Conjunto (que unifica e avalia simultaneamente a Cobertura Incondicional e a Independência).
+
+Para formalizar a validação empírica do motor de volatilidade frente às anomalias discutidas, este estudo adota a seguinte hipótese:
+
+- *H0₁*: O modelo EGARCH-t *não* produz uma taxa de falhas estatisticamente compatível com o nível de confiança de 99% estipulado, i.e., a frequência empírica de violações do VaR difere significativamente de 1% (Teste de Kupiec, Cobertura Incondicional).
+- *H1₁*: O modelo EGARCH-t produz uma taxa de falhas estatisticamente compatível com 1%, e as violações ocorrem de forma independente no tempo (Teste de Christoffersen, Cobertura Condicional).
+
+A rejeição generalizada de H0₁ no portfólio analisado indicaria inadequação estrutural do filtro de volatilidade para capturar as dinâmicas de cauda pesada no mercado secundário de debêntures.
 
 == A Hipótese de Mudança de Regimes (Regime-Switching)
 
