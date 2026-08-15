@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -270,7 +270,7 @@ class EnsembleSensitivity:
 
         # Log da tabela
         idx_best = df_grade['Calmar_Ratio'].idxmax()
-        logger.info(f'\nResultado Otimo (Calmar): w_HMM={df_grade.loc[idx_best, \"w_HMM\"]}, {df_grade.loc[idx_best].to_dict()}')
+        logger.info(f'\nResultado Otimo (Calmar): w_HMM={df_grade.loc[idx_best, "w_HMM"]}, {df_grade.loc[idx_best].to_dict()}')
         logger.info(f'\nTabela completa:\n{df_grade.to_string(index=False)}')
 
 

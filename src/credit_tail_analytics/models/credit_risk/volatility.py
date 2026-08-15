@@ -42,62 +42,74 @@ class VolatilityEstimator:
             return vol_series, var_series, es_series
 
         try:
-            model = arch_model(
-                returns_scaled,
-                mean='AR', lags=1,
-                vol='EGARCH', p=1, o=1, q=1,
-                dist='t',
-                rescale=False,
-            )
-            res_is  = model.fit(last_obs=split_idx, disp='off', show_warning=False)
-            res_oos = model.fix(res_is.params)
-
-            cond_vol  = res_oos.conditional_volatility
-            cond_mean = returns_scaled - res_oos.resid
-
-            nu      = res_is.params.get('nu', 5.0)
-            q_alpha = model.distribution.ppf(1 - alpha, nu)
-            var_99  = cond_mean + cond_vol * q_alpha
+            ticker_str = group_df['Ticker'].iloc[0] if 'Ticker' in group_df.columns else 'UNKNOWN'
+            cache_path = dados_dir() / 'egarch' / f"{ticker_str}_series.csv"
             
-            q_t = stats.t.ppf(1 - alpha, df=nu)
-            es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1)
-            
-            q_t = stats.t.ppf(1 - alpha, df=nu)
-            es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1) if nu > 1.01 else 0.0
-            
-            # Se nu <= 2, a variância teórica é infinita, e o ES diverge. 
-            # Para manter o sinal qualitativo (cauda pesadíssima) sem destruir o array com NaNs,
-            # ancoramos 'nu' marginalmente acima de 2 (2.05) para o cálculo do multiplicador de escala.
-            nu_es = max(nu, 2.05)
-            scale = np.sqrt(nu_es / (nu_es - 2))
-            es_t_padronizado = es_t / scale if nu > 1.01 else 5.0 # fallback multiplier for extreme tails
-            
-            cond_es = cond_mean + cond_vol * es_t_padronizado
+            if cache_path.exists():
+                df_cache = pd.read_csv(cache_path)
+                cond_vol = pd.Series(df_cache['Cond_Vol'].values, index=valid_idx)
+                var_99   = pd.Series(df_cache['VaR_99'].values, index=valid_idx)
+                cond_es  = pd.Series(df_cache['ES_99'].values, index=valid_idx)
+                
+                vol_series.loc[valid_idx] = cond_vol / 100
+                var_series.loc[valid_idx] = var_99  / 100
+                es_series.loc[valid_idx]  = cond_es / 100
+            else:
+                model = arch_model(
+                    returns_scaled,
+                    mean='AR', lags=1,
+                    vol='EGARCH', p=1, o=1, q=1,
+                    dist='t',
+                    rescale=False,
+                )
+                res_is  = model.fit(last_obs=split_idx, disp='off', show_warning=False)
+                res_oos = model.fix(res_is.params)
 
-            if self.save_egarch:
-                try:
-                    ticker = group_df['Ticker'].iloc[0] if 'Ticker' in group_df.columns else 'UNKNOWN'
-                    out_dir = dados_dir() / 'egarch'
-                    out_dir.mkdir(parents=True, exist_ok=True)
-                    
-                    with open(out_dir / f"{ticker}_params.txt", 'w') as f:
-                        f.write(res_is.summary().as_text())
-                    
-                    df_series = pd.DataFrame({
-                        'Data': datas_valid,
-                        'Returns_Scaled': returns_scaled,
-                        'Cond_Vol': cond_vol,
-                        'Cond_Mean': cond_mean,
-                        'VaR_99': var_99,
-                        'ES_99': cond_es
-                    })
-                    df_series.to_csv(out_dir / f"{ticker}_series.csv", index=False)
-                except Exception as e:
-                    logger.debug(f"Falha ao salvar egarch para {ticker}: {e}")
+                cond_vol  = res_oos.conditional_volatility
+                cond_mean = returns_scaled - res_oos.resid
 
-            vol_series.loc[valid_idx] = cond_vol / 100
-            var_series.loc[valid_idx] = var_99  / 100
-            es_series.loc[valid_idx]  = cond_es / 100
+                nu      = res_is.params.get('nu', 5.0)
+                q_alpha = model.distribution.ppf(1 - alpha, nu)
+                var_99  = cond_mean + cond_vol * q_alpha
+                
+                q_t = stats.t.ppf(1 - alpha, df=nu)
+                es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1)
+                
+                q_t = stats.t.ppf(1 - alpha, df=nu)
+                es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1) if nu > 1.01 else 0.0
+                
+                # Se nu <= 2, a variância teórica é infinita, e o ES diverge. 
+                # Para manter o sinal qualitativo (cauda pesadíssima) sem destruir o array com NaNs,
+                # ancoramos 'nu' marginalmente acima de 2 (2.05) para o cálculo do multiplicador de escala.
+                nu_es = max(nu, 2.05)
+                scale = np.sqrt(nu_es / (nu_es - 2))
+                es_t_padronizado = es_t / scale if nu > 1.01 else 5.0 # fallback multiplier for extreme tails
+                
+                cond_es = cond_mean + cond_vol * es_t_padronizado
+
+                if self.save_egarch:
+                    try:
+                        out_dir = dados_dir() / 'egarch'
+                        out_dir.mkdir(parents=True, exist_ok=True)
+                        
+                        with open(out_dir / f"{ticker_str}_params.txt", 'w') as f:
+                            f.write(res_is.summary().as_text())
+                        
+                        df_series = pd.DataFrame({
+                            'Data': datas_valid,
+                            'Returns_Scaled': returns_scaled,
+                            'Cond_Vol': cond_vol,
+                            'Cond_Mean': cond_mean,
+                            'VaR_99': var_99,
+                            'ES_99': cond_es
+                        })
+                        df_series.to_csv(out_dir / f"{ticker_str}_series.csv", index=False)
+                    except Exception as e:
+                        logger.debug(f"Falha ao salvar egarch para {ticker_str}: {e}")
+
+                vol_series.loc[valid_idx] = cond_vol / 100
+                var_series.loc[valid_idx] = var_99  / 100
+                es_series.loc[valid_idx]  = cond_es / 100
 
             # ------------------------------------------------------------------
             # Filtro de sanidade pós-EGARCH

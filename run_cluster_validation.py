@@ -12,6 +12,8 @@ from credit_tail_analytics.analysis.clustering_validation import plot_elbow_silh
 
 df = pd.read_csv(r'd:\projects\credit-tail-analytic\dados\resultado_frequentist_engine.csv')
 df['Data'] = pd.to_datetime(df['Data'])
+# Modificação Option 2: Validação APENAS no In-Sample para evitar Data Snooping
+df = df[df['Data'] < '2023-01-01']
 features = ['Taxa_ZScore', 'Volatilidade_EGARCH', 'Expected_Shortfall_99']
 
 all_results = {}

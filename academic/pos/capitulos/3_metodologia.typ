@@ -5,15 +5,15 @@ de capturar as nuances desejadas. Este capítulo detalha os procedimentos que fo
 aplicados neste estudo.
 
 Uma vez que o estudo será disponibilizado juntamente dos códigos-fonte utilizados para sua implementação, todos os procedimentos detalhados abaixo podem ser replicados pelo leitor
-de forma independente. Para facilitar a reprodução, as funções utilizadas em cada etapa serão citadas, a fim de auxiliar a coomprensão do leitor. Os detalhes sobre a utilização de
+de forma independente. Para facilitar a reprodução, as funções utilizadas em cada etapa serão citadas, a fim de auxiliar a compreensão do leitor. Os detalhes sobre a utilização de
 cada função e da ferramenta como um todo poderão ser encontrados na documentação do projeto disponível no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório do GitHub].
 
 == Coleta e Tratamento de Dados (ANBIMA) <subcap_coleta_dados>
 
 Os dados base de spread por debenture e dia, que alimentam essa pesquisa foram extraidos do site da ANBIMA, mais especificamente na seção de Prévias Públicas de Negociação de Instrumentos Financeiros,
-que pertence ao sistema REUNE. O período da amostra foi do segundo dia de janeiro de 2018 a 10 de julho de 2026. Os dados extraidos diários possuem as seguintes colunas:
+que pertence ao sistema REUNE. O período da amostra foi do segundo dia de janeiro de 2018 a 10 de julho de 2026. Os dados diários extraidos possuem as seguintes colunas:
 Codigo Cetip, Tipo, Agrupamento, Taxa Mínima, Taxa Média, Taxa Máxima, Preço Mínimo, Preço Médio, Preço Máximo e Faixa de Volume.
-O leitor pode replicar esse download por meio da classe `data.anbima_scraper.AnbimaScraper`; para maior comodide tambem se pode utilizar `data.run_scraper_full.rodar_extracao` e 
+O leitor pode replicar esse download por meio da classe `data.anbima_scraper.AnbimaScraper`; para maior comodidade tambem se pode utilizar `data.run_scraper_full.rodar_extracao` e 
 posteriormente `data.unify_csvs.unify_csvs`, uma vez que o download gera um arquivo csv por dia de consulta.
 
 Já as informações cadastrais foram obtidas na página #link("https://www.debentures.com.br")[Debentures.com.br] (que será substituida pelo #link("https://data.anbima.com.br/")[ANBIMA Data]) por meio de consulta utilizando o pacote `debentures_dot_com`. As informações 
@@ -43,20 +43,23 @@ devido aos seguintes fatores:
     - Em 05/12/2023 o ativo foi negociado com PU de 1001.77, sendo negociado novamente apenas em 20/03/2024 com PU de 1.40 e posterio em 21/03/2024 com PU de 0.000014. Voltando a ser negociado em 26/07/2024 com PU de 38.04 e em 28/02/2025 com PU de 754.31.
 - A empresa passou por eventos de reestruturação e recuperação judicial
 
-A principio, a empresa deveria ser um exemplo de evento que o modelo deveria prever, porém, devido ao espaçamento irregular de marcações e a falta de liquidez, ocorrem inconsistencias expurias, que serão mais detalhadas posteriormente. Também serão mostrados os 
-resultados obtidos quando o ativo é mantido na amostra, para efeitos de comparação.
+A princípio, a empresa deveria ser um exemplo natural de evento de *tail risk* que o modelo deveria prever. Contudo, devido ao espaçamento temporal irregular de marcações a mercado e à extrema escassez de liquidez, 
+as séries de retorno tornaram-se puramente espúrias, o que compromete severamente a convergência do estimador de máxima verossimilhança do motor EGARCH. Por esse motivo, a exclusão sumária deste ativo da amostra 
+final foi necessária para preservar a integridade estatística da modelagem.
 
 == O Pipeline de Risco (EGARCH, K-Means e HMM)
 
 Para a implementação dos modelos, foi criado um *pipeline* de risco, que, através de um fluxo linear estima as variáveis de maior impacto para o modelo, realiza o cálculo do volatilidade,
-VaR e *Expected Shortfall* (ES) por papel e, por fim, aplica o algoritmo K-Means e o Modelo Oculto de Markov (HMM). Uma vez obtdos os resultados do K-Means e HMM, se gera um modelo
-*Ensemble*, ponderando os resultados de cada modelo. Para mais detalhes sobre o funcionamento do *pipeline*, consultar a documentação do projeto disponível no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório do GitHub].
+VaR e *Expected Shortfall* (ES) por papel e, por fim, aplica o algoritmo K-Means e o Modelo Oculto de Markov (HMM). Uma vez obtidos os resultados do K-Means e HMM, se gera um modelo
+*Ensemble*, ponderando os resultados de cada modelo. Para mais detalhes sobre o funcionamento do *pipeline*, do ponto de vista de execução dos scripts listados, 
+consultar a documentação do projeto disponível no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório do GitHub].
 Abaixo será detalhada a metodologia aplicada em cada etapa. Para facilitar a compreensão sistêmica, a @fig_pipeline ilustra a arquitetura global do *pipeline*, desde a coleta de dados e divisão temporal até o processamento nos motores estocásticos e a simulação final (*Backtest*).
 
 #import "@preview/diagraph:0.3.2": raw-render
 
 #figure(
-  raw-render(
+  pad(bottom: 1.5em,
+    raw-render(
 ```dot
 digraph G {
     rankdir=TB;
@@ -65,29 +68,50 @@ digraph G {
     anbima [label="Dados ANBIMA"];
     macro [label="Dados Macro"];
     pre [label="Pré-Processamento\n& Filtro de Liquidez"];
-    is [label="Treinamento (IS)"];
-    oos [label="Backtest (OOS)"];
-    egarch [label="Motor EGARCH-t\n(Volatilidade)"];
-    kmeans [label="K-Means\n(Topológico)"];
-    hmm [label="HMM\n(Temporal)"];
-    ensemble [label="Ensemble Misto\n(EMA 3 dias)"];
-    backtest [label="Estratégias de Liquidação\n(Defesas de Re-entrada)"];
-    resultado [label="Performance vs BnH", shape=box, peripheries=2];
+    egarch [label="Motor EGARCH-t\n(Filtro de Volatilidade)"];
+    
+    is [label="Amostra In-Sample\n(2018 - 2022)"];
+    oos [label="Amostra Out-of-Sample\n(2023 - 2026)"];
+    
+    kmeans_train [label="Treino K-Means\n(Validação k=3)"];
+    hmm_train [label="Treino HMM\n(Gaussiano)"];
+    grid [label="Grid-Search Ensemble\n(Otimização de Pesos)"];
+    
+    kmeans_pred [label="Predição K-Means"];
+    hmm_pred [label="Predição HMM"];
+    ensemble [label="Ensemble Misto\n(70% HMM / 30% KMeans)"];
+    
+    backtest [label="Backtest Financeiro\n(Estratégias de Liquidação)"];
+    resultado [label="Performance vs BnH", peripheries=2];
 
     anbima -> pre;
     macro -> pre;
-    pre -> is [label=" In-Sample"];
-    pre -> oos [label=" Out-of-Sample"];
-    is -> egarch;
-    egarch -> kmeans;
-    egarch -> hmm;
-    kmeans -> ensemble;
-    hmm -> ensemble;
+    pre -> egarch [label=" Toda a Série"];
+    
+    egarch -> is;
+    egarch -> oos;
+    
+    is -> kmeans_train;
+    is -> hmm_train;
+    
+    kmeans_train -> grid [label=" Scores IS"];
+    hmm_train -> grid [label=" Probs IS"];
+    
+    oos -> kmeans_pred;
+    oos -> hmm_pred;
+    
+    kmeans_train -> kmeans_pred [label=" Centróides", style=dashed];
+    hmm_train -> hmm_pred [label=" Matrizes", style=dashed];
+    
+    grid -> ensemble [label=" Pesos Ótimos"];
+    kmeans_pred -> ensemble;
+    hmm_pred -> ensemble;
+    
     ensemble -> backtest;
-    oos -> backtest;
     backtest -> resultado;
 }
 ```
+    )
   ),
   caption: [Arquitetura do Pipeline de Risco e Backtest]
 ) <fig_pipeline>
@@ -213,9 +237,9 @@ $ sigma_("est")(t) = sigma_("est")(t-1) quad "se" quad sigma_("est")(t) > v_("te
 onde $sigma_("est")(t)$ é a volatilidade estimada pelo modelo EGARCH(1,1,1) no dia $t$, e $v_("teto")$ é o limite superior definido como 20 vezes o percentil 99 da série in-sample. Para mais detalhes a respeito dessa implementação, consultar o script
 `volatility.py` e a classe `VolatilityEstimator`.
 
-=== Teste de Estacionáriedade dos Spreads
+=== Teste de Estacionariedade dos Spreads
 
-A aplicação de modelos da família GARCH pressupõe que a série temporal analisada seja estacionária em covariância. Antes do ajuste do EGARCH-t, verificou-se, portanto, a estacionáriedade das séries de retorno 
+A aplicação de modelos da família GARCH pressupõe que a série temporal analisada seja estacionária em covariância. Antes do ajuste do EGARCH-t, verificou-se, portanto, a estacionariedade das séries de retorno 
 de spread utilizadas como insumo do motor de volatilidade.
 
 Para tanto, aplicou-se o Teste de Dickey-Fuller Aumentado (ADF) sobre as séries de primeiro incremento de spread (`Delta_Spread`) de todos os 622 ativos com observações suficientes. 
@@ -226,7 +250,7 @@ O teste avalia a hipótese nula de raiz unitária (série não-estacionária):
 
 A especificação adotada inclui constante sem tendência determinística (`regression='c'`), com seleção automática de defasagens por Critério de Informação de Akaike (AIC). Os resultados, reportados 
 na @tab_adf, demonstram que a série de spread bruto (`Taxa_Ativo`) é não-estacionária em 91% dos casos, como esperado (a nível de spread, as séries são integradas de ordem 1). Após a primeira 
-diferença (`Delta_Spread`), *96,6% das séries rejeitam H0 ao nível de 5%*, validando o pressuposto de estacionáriedade necessário para o EGARCH.
+diferença (`Delta_Spread`), *96,6% das séries rejeitam H0 ao nível de 5%*, validando o pressuposto de estacionariedade necessário para o EGARCH.
 
 #figure(
   table(
@@ -240,7 +264,7 @@ diferença (`Delta_Spread`), *96,6% das séries rejeitam H0 ao nível de 5%*, va
     [PRE], [1], [1], [100,0%], [não-estacionário],
     [*Total*], [*622*], [*601*], [*96,6%*], [—],
   ),
-  caption: [Resultados do Teste ADF ($alpha = 5%$) — Estacionáriedade por Indexador]
+  caption: [Resultados do Teste ADF ($alpha = 5%$) — Estacionariedade por Indexador]
 ) <tab_adf>
 
 Os ativos que compõem os 3,4% restantes que não rejeitam H0 são, em sua maioria, papeis com histórico extremamente curto (entre 30 e 60 observações) e perfil de iliquidez estrutural, 
@@ -303,14 +327,14 @@ coerente, o que o torna uma métrica superior.
 
 === K-Means <subcap_kmeans>
 
-Eleitas as variáveis de entrada do modelo (`Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`), o algoritmo K-Means atua como uma *baseline* atemporal.
+Eleitas as variáveis de entrada do modelo (`Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`), o algoritmo K-Means atua propositalmente como uma *baseline* ingênua (*naive*). Reconhece-se que a aplicação do K-Means em séries temporais financeiras viola o pressuposto de observações independentes e identicamente distribuídas (i.i.d.), visto que os retornos apresentam comprovada autocorrelação da variância. Contudo, essa violação metodológica é assumida de forma deliberada no desenho da pesquisa para servir como contraponto determinístico ao modelo markoviano (HMM). A intenção é provar empírica e quantitativamente o valor marginal preditivo que a memória temporal agrega sobre a classificação puramente estática.
 O processo é realizado iterativamente para cada grupo de indexador (ex: DI, IPCA), a fim de respeitar as dinâmicas particulares de cada mercado.
 
 ==== Justificativa Empírica do Número de Clusters ($k=3$)
 
 A escolha de $k=3$ regimes — Verde (baixo risco), Amarelo (alerta) e Vermelho (crise) — foi motivada primariamente pela semântica financeira do sistema de alertas (à analogia dos semaforos de risco de crédito). 
 Contudo, para validar formalmente essa escolha, aplicou-se a análise de *Elbow Method* (inerçia da soma dos quadrados intra-cluster em função de $k$) e o *Silhouette Score* médio para $k \in \{2, 3, 4, 5, 6, 7\}$, 
-utilizando os dados padronizados do período *Out-of-Sample*.
+utilizando rigorosamente os dados padronizados do período *In-Sample* para evitar viés prospectivo (*Data Snooping*).
 
 Os resultados, ilustrados na @fig_cluster_validation, mostram que para os indexadores IPCA e CDI Spread: 
 (i) a curva de inerçia exibe uma inflexão (*joelho*) em $k=3$, indicando redução marginal decrescente a partir deste ponto; 
@@ -354,11 +378,13 @@ Esta hipótese é avaliada qualitativamente por meio do estudo de caso do Grupo 
 
 O Modelo Oculto de Markov (HMM - *Hidden Markov Model*) acrescenta a dependência temporal que o K-Means ignora. O pré-processamento para o HMM segue as exatas mesmas premissas 
 de divisão, winsorização e padronização geométrica (piso de variância) descritas em @subcap_kmeans, adicionando apenas a restrição de que a massa de dados obedeça estritamente a 
-ordenação sequencial no tempo. Já que para o HMM, essa ordanação é de extrema importância para que o modelo consiga modelar as transições entre os estados latentes.
+ordenação sequencial no tempo. Já que para o HMM, essa ordenação é de extrema importância para que o modelo consiga modelar as transições entre os estados latentes.
 
 O treinamento *In-Sample* é realizado através de um HMM Gaussiano (`GaussianHMM`) de 3 estados latentes com matriz de covariância diagonal, aplicando o 
-algoritmo de otimização de *Baum-Welch*. Da mesma forma, os vetores de médias estimadas para as emissões Gaussianas sofrem a correção heurística de *Label Switching* 
-para rotular os estados como Verde, Amarelo e Vermelho.
+algoritmo de otimização de *Baum-Welch*. Apesar de ter sido demonstrado em @cap_revisao_lit que os retornos brutos da taxa exigem uma distribuição leptocúrtica (t-Student), as *features* alimentadas ao HMM neste estágio (`Taxa_ZScore` e `Volatilidade_EGARCH`) já foram previamente modeladas e padronizadas, com a volatilidade condicional já capturando o impacto da cauda pesada. 
+
+Para validar empiricamente esta premissa na modelagem, analisou-se o Excesso de Curtose (medida estatística de "peso da cauda") das séries temporais no período *In-Sample*. Foi constatado que os retornos brutos apresentaram um Excesso de Curtose de $2683,30$, indicando eventos extremos e caudas ultra-pesadas que inviabilizariam o uso de uma matriz Gaussiana. Todavia, a *feature* `Taxa_ZScore`, resultante do filtro estocástico do EGARCH-t, reduziu este Excesso de Curtose para apenas $1,17$. Em finanças quantitativas e modelagem multivariada, excessos de curtose localizados no intervalo de $-2$ a $+2$ (e mesmo sob critérios mais relaxados, até $+7$) são considerados comportados e largamente aceitáveis para a adoção de premissas de normalidade em estimações por Máxima Verossimilhança sem enviesamento grave dos estimadores @hair2010multivariate. Consequentemente, o espaço latente de emissão do HMM encontra-se num domínio estruturalmente mitigado de eventos extremos, o que atesta a escolha do modelo Gaussiano não apenas como estatisticamente aceitável, mas fundamental para assegurar a estabilidade numérica e convergência na calibração das matrizes.
+Da mesma forma, os vetores de médias estimadas para as emissões Gaussianas sofrem a correção heurística de *Label Switching* para rotular os estados como Verde, Amarelo e Vermelho.
 
 Uma alteração fundamental feita no HMM padrão diz respeito à calibração da Matriz de Transição de Estados ($A$). Em bases de dados com regimes muito duradouros, pode haver a total ausência empírica de transições entre estados extremos (como saltos diretos de Verde para Vermelho) na amostra de treinamento. 
 Isso gera probabilidades de transição iguais a zero, 
@@ -368,7 +394,7 @@ $ P'_{i j} = (C_{i j} + alpha) / ( sum_{k=1}^K C_{i k} + K alpha ) $ <eq_laplace
 
 onde $C_{i j}$ é a contagem empírica de transições do estado $i$ para o estado $j$ observadas na sequência latente decodificada do *In-Sample*, $K=3$ é o número de estados, e $alpha = 1$ atua como o pseudo-fator aditivo. 
 
-Complementarmente à equação @eq_laplace_hmm, para garantir matematicamente que o modelo permaneça reativo aos novos choques de mercado em tempo real e não dependa excessivamente da inércia do estado anterior, 
+Complementarmente à @eq_laplace_hmm, para garantir matematicamente que o modelo permaneça reativo aos novos choques de mercado em tempo real e não dependa excessivamente da inércia do estado anterior, 
 impôs-se um limiar (piso) arbitrário de 1% ($0.01$) sobre a matriz de probabilidade de transição, seguido por uma re-normalização linha a linha (para assegurar que o somatório das probabilidades convirja para 1):
 
 $ P''_{i j} = max(P'_{i j}, 0.01) $
@@ -394,11 +420,9 @@ As predições individuais do K-Means (detalhada em @subcap_kmeans) e do HMM (de
 buscando mesclar a estabilidade atemporal do particionamento geométrico (K-Means) com a agilidade e memória temporal do 
 filtro bayesiano (HMM).
 
-A combinação matemática é realizada através de uma média ponderada das probabilidades individuais de cada modelo,
-sendo os pesos definidos *a priori*. Atribui-se um peso de 70% a probabilidade do modelo HMM devido a premissa de que
-o mercado e os agentes nele inseridos possuem memoria e inercia, ou seja, conseguem reagir de forma mais rápida a choques
-que tragam informações sobre um possível evento de cauda. Os 30% restantes foram atribuidos ao modelo K-Means, atuando como uma
-âncora temporal de estabilidade, tentando reduzir as varias oscilações observadas no HMM. A equação do *Ensemble* no instante $t$ é dada por:
+A combinação matemática é realizada através de uma média ponderada das probabilidades individuais de cada modelo.
+Para determinar a alocação de pesos ótima e evitar decisões arbitrárias ou vieses prospectivos (*Data Snooping*), executou-se uma rotina de otimização de hiperparâmetros via *Grid-Search* de Força Bruta ($w_"HMM" \in [0.0, 1.0]$, em incrementos de 0.10) estritamente sobre as predições do período *In-Sample*. 
+A métrica alvo para a otimização foi o *Calmar Ratio* (retorno anualizado sobre rebaixamento máximo) gerado pelo simulador financeiro. O resultado empírico demonstrou que o melhor retorno ajustado ao risco na amostra de treinamento ocorreu com a proporção de 70% de peso para o HMM e 30% para o K-Means. A equação do *Ensemble* aplicada na fase preditiva (*Out-of-Sample*), no instante $t$, é dada por:
 
 $ "Probabilidade Sintética"_t = 0.70 times "Prob_Crise_HMM"_t + 0.30 times "Prob_Crise_KMeans"_t $ 
 

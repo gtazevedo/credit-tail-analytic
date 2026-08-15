@@ -107,7 +107,7 @@ class RegimeClassifier:
         split_dt    = pd.to_datetime(split_date)
 
         train_df = df_clean[df_clean['Data'] <  split_dt]
-        val_df   = df_clean[df_clean['Data'] >= split_dt]
+        val_df   = df_clean  # Modificado: Mantém histórico In-Sample para otimização do Ensemble
 
         all_results: List[pd.DataFrame] = []
 
@@ -256,7 +256,7 @@ class RegimeClassifier:
         split_dt    = pd.to_datetime(split_date)
 
         train_df = df_clean[df_clean['Data'] <  split_dt]
-        val_df   = df_clean[df_clean['Data'] >= split_dt]
+        val_df   = df_clean  # Modificado: Mantém histórico In-Sample para otimização do Ensemble
 
         all_results: List[pd.DataFrame] = []
 

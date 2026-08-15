@@ -40,5 +40,6 @@ prever flutuações contínuas, o modelo busca identificar eventos de mudança d
 debentures, um tempo hábil para tentar vender o papel antes que as perdas se materializem.  
 
 Para isso, serão utilizadas duas abordages de modelagem de risco, uma baseada em K-Means e outra em HMM, ambas utilizando como features a volatilidade e o spread das debentures, utilizando dados
-abertos divulgados pela Anbima. Além disso, toda a aplicação, feita em python, será disponibilizada para consulta pública no github, permitindo que qualquer interessado possa replicar os resultados,
+abertos divulgados pela Anbima. Além disso, toda a aplicação, feita em python, será disponibilizada para consulta pública no #link("https://github.com/gtazevedo/credit-tail-analytic")[GitHub], 
+permitindo que qualquer interessado possa replicar os resultados,
 incluindo o download das informações utilizadas no trabalho, já que os dados são públicos.

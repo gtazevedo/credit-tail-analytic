@@ -152,7 +152,7 @@ porém, em Fev/2026, com o salto de spread de 44% (de 45,7% para 100,0%, conform
 a debênture no regime de crise.
 
 A capacidade de reação do algoritmo HMM comprovam que a característica matricial de transições das Cadeias de Markov Ocultas é indispensável, para a identificação
-das alterações de regime e manutenção do estado enquanto não houverem alterações bruscas dos sinais de entrada.
+das alterações de regime e manutenção do estado enquanto não houver alterações bruscas dos sinais de entrada.
 
 #figure(
   image("../imagens/13_estudo_caso_pão_de_açúcar_(gpa)_hmm_prob.png", width: 90%),
