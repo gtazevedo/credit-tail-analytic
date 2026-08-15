@@ -10,12 +10,13 @@ se gerou a necessidade de limitar as perdas potenciais sem deixar de tomar risco
 próximas ao limite desejado; ao depender da sorte, podem ser maiores. A solução é o uso de modelos quantitativos *ex ante* que limitam a exposição a determinados ativos
 ou fatores de risco baseados em distribuições de probabilidade, como por exemplo os modelos de *Value at Risk*.
 
-== Value-at-Risk e Modelos da Família GARCH
+== Value-at-Risk e Modelos da Família GARCH <subcap_vargarch>
 
 O *Value at Risk* (VaR) pode ser definido de forma intuitiva como a maior perda esperada de uma carteira em um determinado período de tempo, com um determinado nível de confiança. Ou,
 de forma mais formal, é o quantil da distribuição de ganhos e perdas projetadas para um horizonte de tempo. Muitas vezes para séries temporais, essa projeção é feita por 
-meio de modelos como o GARCH, que apesar de ser amplamente utilizado, falha em choques assimétricos, como observamos nos eventos recentes envolvendo o Grupo Pão de Açúcar e Americanas.
-Para superar essa fraqueza do modelo GARCH, #cite(<nelson1991conditional>, form: "prose") propõe o modelo EGARCH, que captura assimetrias na volatilidade dos ativos financeiros.
+meio de modelos da família GARCH (*Generalized Autoregressive Conditional Heteroskedasticity*), cuja formulação fundamental foi introduzida por #cite(<engle1982autoregressive>, form: "prose")
+e posteriormente generalizada por #cite(<bollerslev1986generalized>, form: "prose"). Apesar de amplamente utilizado, o GARCH tradicional falha em choques assimétricos, como observamos nos eventos recentes envolvendo o Grupo Pão de Açúcar e Americanas.
+Para superar essa fraqueza, #cite(<nelson1991conditional>, form: "prose") propõe o modelo EGARCH, que captura assimetrias na volatilidade dos ativos financeiros.
 
 Matematicamente, a especificação da variância condicional do EGARCH(1,1) de #cite(<nelson1991conditional>, form: "prose") é dada por:
 
@@ -40,7 +41,7 @@ Apesar de sua ampla adoção, o VaR apresenta uma limitação matemática severa
 Para solucionar isso, a literatura e regulações como Basileia III têm migrado para o *Expected Shortfall* (ES) #cite(<acerbi2002>), que calcula a perda média esperada condicionada à quebra do VaR. Diferentemente do VaR, o ES é uma métrica de risco coerente e provê uma avaliação robusta da magnitude das perdas extremas.
 
 Adicionalmente, qualquer modelo de estimação de risco requer validação estatística formal (*Backtesting*). Os dois métodos basilares para a validação do VaR são:
-- *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995>): Um teste binomial que avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) é estatisticamente idêntica à proporção esperada.
+- *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995techniques>): Um teste binomial que avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) é estatisticamente idêntica à proporção esperada.
 - *Teste de Independência e Teste Conjunto de Christoffersen* #cite(<christoffersen1998>): Vai muito além do teste de Kupiec ao avaliar a "Cobertura Condicional". Ele testa se as violações do VaR ocorrem de forma agrupada no tempo (*volatility clustering*). Se as violações forem estatisticamente independentes, o modelo prova que capturou e exauriu corretamente a dinâmica temporal da variância, resultando em um modelo validado no Teste Conjunto (que unifica e avalia simultaneamente a Cobertura Incondicional e a Independência).
 
 == A Hipótese de Mudança de Regimes (Regime-Switching)
@@ -90,9 +91,10 @@ faz com seu tempo de reação seja mais lento, ou em alguns casos seja insensív
 
 === Hidden Markov Models (HMM)
 
-Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM, um modelo probabilístico ideal para utilização em dados sequenciais. 
-Conforme detalhado por #cite(<bishop2006pattern>, form: "prose"), o HMM parte do princípio de que os dados que medidos no mercado 
-(como, por exemplo, o *spread* e a volatilidade) são reflexos de um estado que não pode ser observado.
+Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM (*Hidden Markov Model*), um modelo probabilístico introduzido por #cite(<rabiner1989tutorial>, form: "prose") e amplamente
+adotado para modelagem de dados sequenciais com estados latentes. 
+Conforme detalhado por #cite(<bishop2006pattern>, form: "prose"), o HMM parte do princípio de que os dados medidos no mercado 
+(como, por exemplo, o *spread* e a volatilidade) são reflexos de um estado que não pode ser observado diretamente.
 Esse estado é a causa do comportamento dos preços, e é chamado de *variável latente* (ou _hidden state_).
 
 Seja $z_n$ a variável latente que representa o estado ou regime oculto do mercado no tempo $n$ . 
@@ -116,8 +118,8 @@ inércia do mercado de debêntures e modelar a dinâmica de transições entre r
 
 Para que os algoritmos não-supervisionados (como o K-Means) convirjam para partições representativas, a escolha adequada das variáveis de entrada é crucial. Como não existem rótulos perfeitos da "verdade absoluta" (*ground truth*) de crises na natureza para guiar os modelos, a qualidade de um agrupamento geométrico deve ser mensurada analiticamente por meio de métricas de validação interna da geometria dos grupos gerados:
 
-1. *Silhouette Score* #cite(<rousseeuw1987>): Mensura quão similar um ponto é ao seu próprio *cluster* comparado aos demais. Ele varia no espectro de -1 a 1, onde pontuações mais altas sinalizam que as amostras estão perfeitamente coesas no seu grupo interno e substancialmente afastadas dos grupos externos.
-2. *Índice Davies-Bouldin* #cite(<davies1979>): Baseia-se em avaliar a pior similaridade mútua de cada *cluster*. Calcula a razão da dispersão média intra-cluster em relação à separação cartesiana entre os centróides. Valores numéricos reduzidos e próximos de zero representam grupos compactos e melhor delineados.
-3. *Índice Calinski-Harabasz* #cite(<calinski1974>) (Critério de Razão de Variância): Avalia a robustez do particionamento mediante a razão da variância calculada entre os clusters (variância inter-grupos) e a variância dos próprios clusters internamente (variância intra-grupos). Modelos com altíssimas pontuações caracterizam-se por grupos densos, esféricos e com pouca sobreposição topológica.
+1. *Silhouette Score* #cite(<rousseeuw1987silhouettes>): Mensura quão similar um ponto é ao seu próprio *cluster* comparado aos demais. Ele varia no espectro de -1 a 1, onde pontuações mais altas sinalizam que as amostras estão perfeitamente coesas no seu grupo interno e substancialmente afastadas dos grupos externos.
+2. *Índice Davies-Bouldin* #cite(<davies1979cluster>): Baseia-se em avaliar a pior similaridade mútua de cada *cluster*. Calcula a razão da dispersão média intra-cluster em relação à separação cartesiana entre os centróides. Valores numéricos reduzidos e próximos de zero representam grupos compactos e melhor delineados.
+3. *Índice Calinski-Harabasz* #cite(<calinski1974dendrite>) (Critério de Razão de Variância): Avalia a robustez do particionamento mediante a razão da variância calculada entre os clusters (variância inter-grupos) e a variância dos próprios clusters internamente (variância intra-grupos). Modelos com altíssimas pontuações caracterizam-se por grupos densos, esféricos e com pouca sobreposição topológica.
 
 Dado que não existe "bala de prata" no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações diametralmente opostas sobre qual o melhor conjunto de dados a utilizar. A solução matemática moderna repousa sobre as heurísticas de consenso. O *Método de Borda* (*Borda Count*) #cite(<borda1781>) desponta como um mecanismo imparcial: uma adaptação de sistemas de votação política em que são pontuados os conjuntos de variáveis (*features*) pela posição ordinal que alcançaram em cada métrica isolada. Somando-se as avaliações de Borda, o analista mitiga o viés puramente individual de cada índice e converge deterministicamente para o subconjunto de variáveis dimensionalmente mais democrático e robusto.

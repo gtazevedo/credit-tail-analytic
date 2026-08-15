@@ -5,7 +5,7 @@ aos dados do mercado secundário de crédito corporativo brasileiro.
 A análise é construída de forma sequencial, iniciando pela validação estatística 
 rigorosa dos motores de volatilidade e culminando no impacto financeiro real gerado pelas estratégias táticas de alocação.
 
-== Validação Estatística dos Motores
+== Validação Estatística dos Motores <subcap_valest>
 
 A eficácia de um sistema de alerta preventivo (*Early Warning*) no mercado de crédito está atrelada à sua capacidade 
 de modelar as caudas pesadas da distribuição de retornos. Para testar a acurácia do motor 
@@ -138,7 +138,7 @@ descrito em @subcap_egarch.
 ) <fig_kmeans_gpa>
 
 
-=== HMM
+=== HMM <subcap_rhmm>
 
 Sob a mesma ótica do choque das debêntures do GPA, o Modelo Oculto de Markov provou-se superior ao integrar a dependência temporal inerente às 
 matrizes de transição ($A$). Para a emissão CBRDB8, sua taxa durante o período *In-Sample* era cerca de 1.7%, porém, com o evento das Lojas Americanas em
@@ -175,7 +175,7 @@ ao contrário do K-Means, porém de forma menos agressiva do que o HMM.
   caption: [Resultados do Ensemble para o Estudo de Caso do Grupo Pão de Açúcar (GPA)]
 ) <fig_ensemble_gpa>
 
-== Simulação de Portfólio (Backtest Financeiro)
+== Simulação de Portfólio (Backtest Financeiro) <subcap_resultadosbacktest>
 
 Para avaliação da utilidade econômica da modelagem desenvolvida, foi realizado um *backtest* financeiro para o período *Out-of-Sample*, conforme descrito na @subcap_kupiec_backtest.
 O objetivo da simulação não se limita a medir apenas o desempenho direcional dos modelos propostos contra uma estratégia passiva (*Buy-and-Hold*), mas também a avaliar como as diferentes

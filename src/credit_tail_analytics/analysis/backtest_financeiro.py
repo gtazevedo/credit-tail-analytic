@@ -430,6 +430,11 @@ class BacktestFinanceiro:
         df_metrics = self.compute_performance_metrics(df_pnl)
         logger.info(f"\n{df_metrics.to_string()}")
 
+        # Teste de significância estatística (Block Bootstrap automático)
+        logger.info("Iniciando Bootstrap de significância estatística...")
+        df_bootstrap = self.bootstrap_significance_test(df_pnl)
+        logger.info(f"\n{df_bootstrap.to_string()}")
+
         return df_pnl
 
     # ------------------------------------------------------------------
@@ -511,34 +516,196 @@ class BacktestFinanceiro:
         return df_metrics
 
     # ------------------------------------------------------------------
-    # Early Warning Score
+    # Significância Estatística — Stationary Block Bootstrap
     # ------------------------------------------------------------------
 
-    def generate_early_warning_score(self):
-        primeiro_vermelho = []
-        for ticker in self.df['Ticker'].unique():
-            df_t = self.df[self.df['Ticker'] == ticker]
+    def bootstrap_significance_test(
+        self,
+        df_pnl: pd.DataFrame,
+        benchmark_col: str = 'BnH_Cum',
+        n_bootstrap: int = 10_000,
+        block_size: int = 20,
+        alpha: float = 0.05,
+        random_state: int = 42,
+    ) -> pd.DataFrame:
+        """
+        Testa se o retorno das estratégias ativas é estatisticamente superior ao
+        Buy-and-Hold via Stationary Block Bootstrap (Politis & Romano, 1994).
 
-            d_km  = df_t[df_t['Cluster_KMeans']    == 'Vermelho']['Data'].min() if 'Cluster_KMeans'    in df_t.columns else pd.NaT
-            d_hmm = df_t[df_t['Cluster_HMM']       == 'Vermelho']['Data'].min() if 'Cluster_HMM'       in df_t.columns else pd.NaT
-            d_ens = df_t[df_t['Cluster_Ensemble']   == 'Vermelho']['Data'].min() if 'Cluster_Ensemble'  in df_t.columns else pd.NaT
+        Hipóteses
+        ---------
+        H0 : Retorno_Estrategia_Media <= Retorno_BnH_Media
+             (a estratégia não supera o benchmark)
+        H1 : Retorno_Estrategia_Media >  Retorno_BnH_Media
+             (a estratégia supera o benchmark — teste unilateral à direita)
 
-            vol_pre    = df_t['Volatilidade_EGARCH'].max() if 'Volatilidade_EGARCH' in df_t.columns else np.nan
-            spread_max = df_t['Taxa_Ativo'].max()          if 'Taxa_Ativo'          in df_t.columns else np.nan
+        O p-valor reportado é a proporção de amostras bootstrap em que o
+        retorno médio da estratégia é IGUAL OU MENOR que o do benchmark.
+        Rejeita-se H0 quando p-valor < alpha.
 
-            primeiro_vermelho.append({
-                'Ticker':             ticker,
-                '1o_Alerta_KMeans':   d_km,
-                '1o_Alerta_HMM':      d_hmm,
-                '1o_Alerta_Ensemble': d_ens,
-                'Max_Volatilidade':   vol_pre,
-                'Max_Spread':         spread_max,
+        Parâmetros
+        ----------
+        df_pnl        : pd.DataFrame — curvas de patrimônio acumulado
+        benchmark_col : str   — coluna do benchmark (padrão 'BnH_Cum')
+        n_bootstrap   : int   — número de amostras bootstrap (padrão 10.000)
+        block_size    : int   — tamanho médio dos blocos. Padrão 20 dias úteis
+                                (~1 mês), capturando autocorrelação de curto prazo.
+        alpha         : float — nível de significância (padrão 0.05)
+        random_state  : int   — semente para reprodutibilidade
+
+        Retorna
+        -------
+        pd.DataFrame com colunas:
+            Estrategia, Retorno_Obs_%, Retorno_BnH_%,
+            Diferenca_Obs_%, p_valor, Significativo,
+            IC_95_Inferior_%, IC_95_Superior_%
+        """
+        rng = np.random.default_rng(random_state)
+
+        if benchmark_col not in df_pnl.columns:
+            logger.warning(f"Coluna benchmark '{benchmark_col}' não encontrada. Pulando bootstrap.")
+            return pd.DataFrame()
+
+        # Retornos diários do benchmark
+        ret_bnh = df_pnl[benchmark_col].pct_change().dropna().values
+        n = len(ret_bnh)
+
+        if n < block_size * 2:
+            logger.warning("Série muito curta para o bootstrap. Pulando.")
+            return pd.DataFrame()
+
+        estrategias = [c for c in df_pnl.columns if c != benchmark_col]
+        resultados = []
+
+        for col in estrategias:
+            serie = df_pnl[col].dropna()
+            if len(serie) < 2:
+                continue
+
+            ret_estrategia = serie.pct_change().dropna().values
+            # Alinha com benchmark (trunca no mínimo)
+            min_len = min(len(ret_estrategia), len(ret_bnh))
+            r_e = ret_estrategia[:min_len]
+            r_b = ret_bnh[:min_len]
+
+            # Diferença observada de retorno médio diário (anualizada)
+            diff_obs = (r_e.mean() - r_b.mean()) * 252 * 100  # em % ao ano
+            ret_e_obs = r_e.mean() * 252 * 100
+            ret_b_obs = r_b.mean() * 252 * 100
+
+            # ----------------------------------------------------------
+            # Block Bootstrap: reamostrar blocos contíguos de retornos
+            # Preserva a estrutura de autocorrelação temporal (clustering)
+            # ----------------------------------------------------------
+            diffs_boot = []
+            n_blocos = int(np.ceil(min_len / block_size))
+
+            for _ in range(n_bootstrap):
+                # Índices de início de cada bloco (selecionados aleatoriamente)
+                starts = rng.integers(0, min_len - block_size + 1, size=n_blocos)
+                idx_boot = np.concatenate(
+                    [np.arange(s, min(s + block_size, min_len)) for s in starts]
+                )[:min_len]
+
+                r_e_boot = r_e[idx_boot]
+                r_b_boot = r_b[idx_boot]
+                diff_boot = (r_e_boot.mean() - r_b_boot.mean()) * 252 * 100
+                diffs_boot.append(diff_boot)
+
+            diffs_boot = np.array(diffs_boot)
+
+            # p-valor unilateral (H0: diff <= 0)
+            p_valor = float(np.mean(diffs_boot <= 0))
+
+            # Intervalo de confiança 95% (percentil)
+            ic_inf = float(np.percentile(diffs_boot, 2.5))
+            ic_sup = float(np.percentile(diffs_boot, 97.5))
+
+            significativo = p_valor < alpha
+            nome = col.replace('_Cum', '')
+
+            resultados.append({
+                'Estrategia':          nome,
+                'Retorno_Obs_%aa':     round(ret_e_obs, 2),
+                'Retorno_BnH_%aa':     round(ret_b_obs, 2),
+                'Diferenca_Obs_%aa':   round(diff_obs, 2),
+                'p_valor':             round(p_valor, 4),
+                'Significativo':       significativo,
+                'IC_95_Inferior_%aa':  round(ic_inf, 2),
+                'IC_95_Superior_%aa':  round(ic_sup, 2),
+                'H0':                  'Rejeitada' if significativo else 'Nao Rejeitada',
             })
 
-        df_ew = pd.DataFrame(primeiro_vermelho)
-        df_ew = df_ew.dropna(subset=['1o_Alerta_KMeans', '1o_Alerta_HMM'], how='all')
-        out_path = dados_dir() / 'tabela_early_warning.csv'
-        df_ew.to_csv(str(out_path), index=False)
+        df_boot = pd.DataFrame(resultados)
+
+        if df_boot.empty:
+            return df_boot
+
+        # Salva CSV
+        out_csv = dados_dir() / 'bootstrap_significance.csv'
+        df_boot.to_csv(out_csv, index=False)
+        logger.info(f"Resultados bootstrap salvos em {out_csv}")
+
+        # Gráfico de forest plot (diferença ± IC)
+        self._plot_bootstrap(df_boot, alpha=alpha)
+
+        return df_boot
+
+    def _plot_bootstrap(
+        self, df_boot: pd.DataFrame, alpha: float = 0.05
+    ) -> None:
+        """Gera forest plot das diferenças de retorno vs benchmark com IC 95%."""
+        df_plot = df_boot.copy().sort_values('Diferenca_Obs_%aa', ascending=True)
+
+        fig, ax = plt.subplots(figsize=(9, max(4, len(df_plot) * 0.55)))
+
+        cores = ['#27ae60' if sig else '#e74c3c' for sig in df_plot['Significativo']]
+        y_pos = np.arange(len(df_plot))
+
+        # Barras de erro (IC 95%)
+        ax.barh(
+            y_pos,
+            df_plot['Diferenca_Obs_%aa'],
+            xerr=[
+                df_plot['Diferenca_Obs_%aa'] - df_plot['IC_95_Inferior_%aa'],
+                df_plot['IC_95_Superior_%aa'] - df_plot['Diferenca_Obs_%aa']
+            ],
+            align='center',
+            color=cores,
+            alpha=0.8,
+            edgecolor='white',
+            capsize=4,
+            height=0.6,
+        )
+
+        # Linha de referência H0 = 0
+        ax.axvline(x=0, color='black', linewidth=1.5, linestyle='--', label='H0: Diferença = 0')
+
+        # Rótulos de p-valor
+        for i, (_, row) in enumerate(df_plot.iterrows()):
+            label = f"p={row['p_valor']:.3f}" + (" *" if row['Significativo'] else "")
+            ax.text(
+                row['IC_95_Superior_%aa'] + 0.05,
+                i, label, va='center', fontsize=8,
+                color='#27ae60' if row['Significativo'] else '#e74c3c'
+            )
+
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(df_plot['Estrategia'], fontsize=9)
+        ax.set_xlabel('Diferença de Retorno vs Buy-and-Hold (%aa)')
+        ax.set_title(
+            f'Significância Estatística — Block Bootstrap (n=10.000, α={alpha})\n'
+            f'Verde = Rejeita H0 (p < {alpha}) | Vermelho = Não Rejeita H0',
+            fontsize=10
+        )
+        ax.grid(axis='x', alpha=0.3)
+        ax.legend(loc='lower right', fontsize=9)
+        plt.tight_layout()
+
+        out_path = graficos_dir() / 'bootstrap_significance.png'
+        plt.savefig(str(out_path), dpi=180, bbox_inches='tight')
+        plt.close()
+        logger.info(f"Forest plot do bootstrap salvo em {out_path}")
 
 
 if __name__ == '__main__':

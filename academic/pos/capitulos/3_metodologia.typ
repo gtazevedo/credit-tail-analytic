@@ -232,7 +232,7 @@ variáveis de risco correlacionadas (como a volatilidade EGARCH e o VaR), o que 
 Para cada subconjunto testado, os dados foram padronizados utilizando  *RobustScaler* devido a sua capacidade de lidar com outliers, conforme apresentado em @cap_revisao_lit. Os subconjuntos foram então submetidos a uma clusterização primára utilizando K-Means
 com $k=3$ regimes. A qualidade de separabilidade de cada agrupamento foi mensurada através de três métricas:
 
-1. *Silhouette Score* (#cite(<rousseeuw1987>, form: "prose")): Mede a coesão intra-cluster frente à separabilidade inter-cluster, variando no intervalo $[-1, 1]$. Nesta métrica, valores maiores indicam melhor adequação, ou seja, valores próximos a 1 
+1. *Silhouette Score* (#cite(<rousseeuw1987silhouettes>, form: "prose")): Mede a coesão intra-cluster frente à separabilidade inter-cluster, variando no intervalo $[-1, 1]$. Nesta métrica, valores maiores indicam melhor adequação, ou seja, valores próximos a 1 
 sugerem clusters perfeitamente densos e bem separados, enquanto valores próximos a 0 ou negativos indicam forte sobreposição.
 2. *Índice Davies-Bouldin* (#cite(<davies1979cluster>, form: "prose")): Avalia a razão média da dispersão interna do cluster pela distância euclidiana entre os centróides, penalizando sobreposições. Diferente do Silhouette, nesta métrica valores menores indicam melhor adequação, pois 
 um índice menor (com limite inferior tendendo a zero) significa que os clusters são compactos internamente e distantes uns dos outros.

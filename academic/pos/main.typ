@@ -1,7 +1,7 @@
 #import "abnt.typ": abnt
 
 #show: abnt.with(
-  titulo: "Modelagem de Risco de Cauda no Mercado de Crédito Privado: Uma Abordagem via Markov-Switching GARCH (HMM)",
+  titulo: "Modelagem de Risco de Cauda no Mercado de Crédito Privado: Uma Abordagem Híbrida via EGARCH-t e Modelos Ocultos de Markov",
   autor: "Guilherme Tolotti Azevedo",
   orientador: "Nome do Orientador",
   instituicao: "Nome da Universidade / Instituição",
