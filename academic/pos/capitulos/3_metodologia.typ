@@ -126,7 +126,7 @@ Os dados coletados em @subcap_coleta_dados foram divididos em dois períodos *In
  este trabalho foi escrito.
 
  Além disso, as variáveis obtidas na etapa @subcap_coleta_dados foram utilizadas como base para o cálculo de outras métricas. Para papéis indexados a um percentual do CDI 
-(ex: 120% do DI), foi realizada uma conversão explícita baseada na taxa CDI anualizada (extraída via `python-bcb`). 
+(ex: 120% do DI), foi realizada uma conversão explícita baseada na taxa CDI anualizada (extraída via `python-bcb`, conforme a @subcap_coleta_dados). 
 A transformação anualiza o fator diário do título e extrai o prêmio absoluto sobre a taxa livre de risco, conforme abaixo:
 $ F_"cdi" = (1 + "CDI"_t / 100)^(1/252) $
 $ F_"titulo" = (F_"cdi" - 1) times ("Taxa do Ativo"_t / 100) + 1 $
@@ -242,7 +242,7 @@ onde $sigma_("est")(t)$ é a volatilidade estimada pelo modelo EGARCH(1,1,1) no 
 A aplicação de modelos da família GARCH pressupõe que a série temporal analisada seja estacionária em covariância. Antes do ajuste do EGARCH-t, verificou-se, portanto, a estacionariedade das séries de retorno 
 de spread utilizadas como insumo do motor de volatilidade.
 
-Para tanto, aplicou-se o Teste de Dickey-Fuller Aumentado (ADF) sobre as séries de primeiro incremento de spread (`Delta_Spread`) de todos os 622 ativos com observações suficientes. 
+Para tanto, aplicou-se o Teste de Dickey-Fuller Aumentado (ADF) sobre as séries de primeiro incremento de spread (`Delta_Spread`) dos 529 ativos selecionados para modelagem.
 O teste avalia a hipótese nula de raiz unitária (série não-estacionária):
 
 - *H0* (ADF): A série de `Delta_Spread` possui raiz unitária (não-estacionária).
@@ -250,19 +250,18 @@ O teste avalia a hipótese nula de raiz unitária (série não-estacionária):
 
 A especificação adotada inclui constante sem tendência determinística (`regression='c'`), com seleção automática de defasagens por Critério de Informação de Akaike (AIC). Os resultados, reportados 
 na @tab_adf, demonstram que a série de spread bruto (`Taxa_Ativo`) é não-estacionária em 91% dos casos, como esperado (a nível de spread, as séries são integradas de ordem 1). Após a primeira 
-diferença (`Delta_Spread`), *96,6% das séries rejeitam H0 ao nível de 5%*, validando o pressuposto de estacionariedade necessário para o EGARCH.
+diferença (`Delta_Spread`), *95,7% das séries rejeitam H0 ao nível de 5%*, validando o pressuposto de estacionariedade necessário para o EGARCH.
 
 #figure(
   table(
     stroke: 0.5pt,
     columns: (1.5fr, 1fr, 1fr, 1.2fr, 1.2fr),
     align: center + horizon,
-    [*Indexador*], [*Total*], [*Estacionárias\n(Delta_Spread)*], [*Taxa\n(%)*], [*Spread Bruto\n(Taxa_Ativo)*],
-    [IPCA], [355], [349], [98,3%], [não-estacionário],
-    [CDI Spread], [237], [223], [94,1%], [não-estacionário],
-    [CDI Percentual], [29], [28], [96,6%], [não-estacionário],
-    [PRE], [1], [1], [100,0%], [não-estacionário],
-    [*Total*], [*622*], [*601*], [*96,6%*], [—],
+    [*Indexador*], [*Total*], [*Estacionárias \ (Delta_Spread)*], [*Taxa \ (%)*], [*Spread Bruto \ (Taxa_Ativo)*],
+    [IPCA], [286], [275], [96,2%], [não-estacionário],
+    [CDI Spread], [239], [227], [95,0%], [não-estacionário],
+    [PRE], [4], [4], [100,0%], [não-estacionário],
+    [*Total*], [*529*], [*506*], [*95,7%*], [—],
   ),
   caption: [Resultados do Teste ADF ($alpha = 5%$) — Estacionariedade por Indexador]
 ) <tab_adf>
@@ -288,17 +287,11 @@ variáveis candidatas utilizando os dados de treinamento (*In-Sample*). Com intu
 variáveis de risco correlacionadas (como a volatilidade EGARCH e o VaR), o que não agregaria valor discriminatório aos clusters, devido a carencia da preficicação relativa ao spread de crédito.
 
 Para cada subconjunto testado, os dados foram padronizados utilizando  *RobustScaler* devido a sua capacidade de lidar com outliers, conforme apresentado em @cap_revisao_lit. Os subconjuntos foram então submetidos a uma clusterização primára utilizando K-Means
-com $k=3$ regimes. A qualidade de separabilidade de cada agrupamento foi mensurada através de três métricas:
-
-1. *Silhouette Score* (#cite(<rousseeuw1987silhouettes>, form: "prose")): Mede a coesão intra-cluster frente à separabilidade inter-cluster, variando no intervalo $[-1, 1]$. Nesta métrica, valores maiores indicam melhor adequação, ou seja, valores próximos a 1 
-sugerem clusters perfeitamente densos e bem separados, enquanto valores próximos a 0 ou negativos indicam forte sobreposição.
-2. *Índice Davies-Bouldin* (#cite(<davies1979cluster>, form: "prose")): Avalia a razão média da dispersão interna do cluster pela distância euclidiana entre os centróides, penalizando sobreposições. Diferente do Silhouette, nesta métrica valores menores indicam melhor adequação, pois 
-um índice menor (com limite inferior tendendo a zero) significa que os clusters são compactos internamente e distantes uns dos outros.
-3. *Índice Calinski-Harabasz* (#cite(<calinski1974dendrite>, form: "prose")): Mensura a razão entre a variância inter-cluster e a variância intra-cluster, ponderada pelos graus de liberdade do sistema. Para este índice, valores maiores indicam melhor adequação, 
-denotando que a distância entre os centros dos clusters é expressivamente maior que a dispersão dos pontos dentro de cada regime.
+com $k=3$ regimes (a escolha dos regimes é justificada empiricamente na @subcap_kmeans_k3). A qualidade de separabilidade dos agrupamentos foi mensurada através das três métricas listadas na @sub_cap_clusters ( *Silhouette Score* , *Índice Davies-Bouldin* e *Índice Calinski-Harabasz*).
 
 Uma vez que as métricas atuam em ordens de grandeza e domínios matemáticos distintos, o subconjunto vencedor não é escolhido por médias absolutas, mas sim pelo método de agregação de Ranks de Borda (*Borda Count*). 
-O algoritmo computa a posição de cada combinação no ranking individual de cada métrica. O *Borda Score* final é dado pela soma das posições invertidas, garantindo uma eleição ordinal, determinística e robusta às magnitudes isoladas de índices específicos.
+O algoritmo computa a posição de cada combinação no ranking individual de cada métrica. O *Borda Score* final é dado pela soma das posições invertidas, garantindo uma eleição ordinal, determinística e 
+robusta às magnitudes isoladas de índices específicos.
 
 Como resultado da otimização, o subconjunto eleito como vencedor combinou as variáveis `Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`. A @fig_feature_selection ilustra o Top 10 das combinações avaliadas, ordenadas pelo *Borda Score*, evidenciando o 
 desempenho superior do trio escolhido na capacidade de particionamento latente.
@@ -330,20 +323,25 @@ coerente, o que o torna uma métrica superior.
 Eleitas as variáveis de entrada do modelo (`Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`), o algoritmo K-Means atua propositalmente como uma *baseline* ingênua (*naive*). Reconhece-se que a aplicação do K-Means em séries temporais financeiras viola o pressuposto de observações independentes e identicamente distribuídas (i.i.d.), visto que os retornos apresentam comprovada autocorrelação da variância. Contudo, essa violação metodológica é assumida de forma deliberada no desenho da pesquisa para servir como contraponto determinístico ao modelo markoviano (HMM). A intenção é provar empírica e quantitativamente o valor marginal preditivo que a memória temporal agrega sobre a classificação puramente estática.
 O processo é realizado iterativamente para cada grupo de indexador (ex: DI, IPCA), a fim de respeitar as dinâmicas particulares de cada mercado.
 
-==== Justificativa Empírica do Número de Clusters ($k=3$)
+==== Justificativa Empírica do Número de Clusters ($k=3$) <subcap_kmeans_k3>
 
 A escolha de $k=3$ regimes — Verde (baixo risco), Amarelo (alerta) e Vermelho (crise) — foi motivada primariamente pela semântica financeira do sistema de alertas (à analogia dos semaforos de risco de crédito). 
-Contudo, para validar formalmente essa escolha, aplicou-se a análise de *Elbow Method* (inerçia da soma dos quadrados intra-cluster em função de $k$) e o *Silhouette Score* médio para $k \in \{2, 3, 4, 5, 6, 7\}$, 
+Contudo, para validar formalmente essa escolha, aplicou-se a análise de *Elbow Method* (inerçia da soma dos quadrados intra-cluster em função de $k$) e o *Silhouette Score* médio para $k in \{2, 3, 4, 5, 6, 7\}$, 
 utilizando rigorosamente os dados padronizados do período *In-Sample* para evitar viés prospectivo (*Data Snooping*).
 
 Os resultados, ilustrados na @fig_cluster_validation, mostram que para os indexadores IPCA e CDI Spread: 
-(i) a curva de inerçia exibe uma inflexão (*joelho*) em $k=3$, indicando redução marginal decrescente a partir deste ponto; 
+(i) a curva de inerçia exibe uma inflexão (*Elbow*) em $k=3$, indicando redução marginal decrescente a partir deste ponto; 
 (ii) o *Silhouette Score* para $k=3$ é consistentemente superior ao de $k=2$ em ambos os grupos, ao mesmo tempo em que $k=4$ e 
-$k=5$ não oferecem ganho meaningful de separabilidade. Conclui-se, portanto, que $k=3$ é a escolha *parcimoniosa* que maximiza a interpretação econômica e a coerência geométrica dos regimes.
+$k=5$ não oferecem ganho relevantes de separabilidade. Conclui-se, portanto, que $k=3$ é a escolha *parcimoniosa* que maximiza a interpretação econômica e a coerência geométrica dos regimes.
 
 #figure(
-  image("../imagens/cluster_val_elbow_silhouette.png", width: 90%),
-  caption: [Elbow Method e Silhouette Score por número de clusters $k$ — Dados IPCA e CDI Spread]
+  grid(
+    columns: 1,
+    gutter: 15pt,
+    image("../imagens/val_IPCA_elbow_silhouette.png", width: 90%),
+    image("../imagens/val_CDI_Spread_elbow_silhouette.png", width: 90%)
+  ),
+  caption: [Elbow Method e Silhouette Score por número de clusters $k$ — Superior: IPCA, Inferior: CDI Spread]
 ) <fig_cluster_validation>
 
 O primeiro passo é a separação da amostra de treino e teste (*In-Sample* para treino, *Out-of-Sample* para teste), conforme detalhado em @subcap_processamento.
@@ -422,7 +420,37 @@ filtro bayesiano (HMM).
 
 A combinação matemática é realizada através de uma média ponderada das probabilidades individuais de cada modelo.
 Para determinar a alocação de pesos ótima e evitar decisões arbitrárias ou vieses prospectivos (*Data Snooping*), executou-se uma rotina de otimização de hiperparâmetros via *Grid-Search* de Força Bruta ($w_"HMM" \in [0.0, 1.0]$, em incrementos de 0.10) estritamente sobre as predições do período *In-Sample*. 
-A métrica alvo para a otimização foi o *Calmar Ratio* (retorno anualizado sobre rebaixamento máximo) gerado pelo simulador financeiro. O resultado empírico demonstrou que o melhor retorno ajustado ao risco na amostra de treinamento ocorreu com a proporção de 70% de peso para o HMM e 30% para o K-Means. A equação do *Ensemble* aplicada na fase preditiva (*Out-of-Sample*), no instante $t$, é dada por:
+A métrica alvo para a otimização foi o *Calmar Ratio* (retorno anualizado sobre rebaixamento máximo) gerado pelo simulador financeiro. O resultado empírico demonstrou que o melhor retorno ajustado ao risco na amostra de treinamento ocorreu com a proporção de 70% de peso para o HMM e 30% para o K-Means. A @fig_ensemble_sensitivity ilustra as métricas financeiras obtidas para diferentes combinações de pesos no simulador tático *in-sample* (assumindo liquidação defensiva a partir do estágio de Alerta), ratificando o pico otimizado em $w_"HMM" = 0.70$.
+
+#figure(
+  image("../imagens/sensitivity_ensemble_amarelo.png", width: 90%),
+  caption: [Análise de Sensibilidade (*Grid-Search*) dos pesos do modelo Ensemble no período *In-Sample*.]
+) <fig_ensemble_sensitivity>
+
+A @tab_ensemble_weights detalha os resultados quantitativos extraídos da simulação estática, evidenciando como a alocação de 70% do peso para o motor probabilístico (HMM) minimizou o declínio e ofereceu o equilíbrio ótimo frente a estratégias puramente mono-modelo.
+
+#figure(
+  table(
+    stroke: 0.5pt,
+    columns: (1fr, 1fr, 1.2fr, 1.5fr, 1.2fr),
+    align: center + horizon,
+    [*w_HMM*], [*w_KMeans*], [*CAGR (%)*], [*Max Drawdown (%)*], [*Calmar Ratio*],
+    [0.0], [1.0], [-2.938], [-98.289], [-0.0299],
+    [0.1], [0.9], [-1.711], [-98.817], [-0.0173],
+    [0.2], [0.8], [-1.982], [-99.163], [-0.0200],
+    [0.3], [0.7], [-1.725], [-43.616], [-0.0396],
+    [0.4], [0.6], [-1.511], [-51.129], [-0.0296],
+    [0.5], [0.5], [-1.330], [-64.830], [-0.0205],
+    [0.6], [0.4], [-1.128], [-58.108], [-0.0194],
+    [*0.7*], [*0.3*], [*-1.097*], [*-64.392*], [*-0.0170*],
+    [0.8], [0.2], [-1.115], [-64.648], [-0.0173],
+    [0.9], [0.1], [-1.160], [-64.542], [-0.0180],
+    [1.0], [0.0], [-1.165], [-63.599], [-0.0183]
+  ),
+  caption: [Métricas da grade de sensibilidade (*In-Sample*) por par de pesos.]
+) <tab_ensemble_weights>
+
+A equação do *Ensemble* aplicada na fase preditiva (*Out-of-Sample*), no instante $t$, é dada por:
 
 $ "Probabilidade Sintética"_t = 0.70 times "Prob_Crise_HMM"_t + 0.30 times "Prob_Crise_KMeans"_t $ 
 

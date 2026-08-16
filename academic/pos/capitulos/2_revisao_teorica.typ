@@ -157,17 +157,17 @@ Na etapa de Maximização (*M-Step*), as matrizes $A$, $B$ e o vetor $pi$ são i
 Uma vez calibrado o HMM, a identificação do nível de risco no tempo $n$ é realizada filtrando a probabilidade condicional de cada regime, ou ainda, decodificando a 
 trajetória oculta mais provável via *Algoritmo de Viterbi*. Dessa forma, o HMM captura simultaneamente a topologia multivariada dos dados e a inércia estrutural das transições de crédito.
 
-== Seleção de Atributos e Avaliação de Clusters
+== Seleção de Atributos e Avaliação de Clusters <sub_cap_clusters>
 
 Para que os algoritmos não-supervisionados (como o K-Means) convirjam para partições representativas, a escolha adequada das variáveis de entrada é crucial. Como, diferentemente de algortímos supervisionados, não existem os rótulos esperados
 para guiar os modelos, a qualidade do agrupamento deve ser mensurada matematicamente por meio de métricas de validação interna da geometria dos grupos gerados:
 
-1. *Silhouette Score* #cite(<rousseeuw1987silhouettes>): Mensura quão similar um ponto é ao seu próprio *cluster* comparado aos demais. Ele varia no espectro de -1 a 1, onde pontuações mais altas sinalizam que as 
-amostras estão coesas no seu grupo interno e substancialmente afastadas dos grupos externos.
-2. *Índice Davies-Bouldin* #cite(<davies1979cluster>): Baseia-se em avaliar a pior similaridade mútua de cada *cluster*. Calcula a razão da dispersão média intra-cluster em relação à separação cartesiana entre os centróides. 
-Valores numéricos reduzidos e próximos de zero representam grupos compactos e melhor delineados.
-3. *Índice Calinski-Harabasz* #cite(<calinski1974dendrite>) (Critério de Razão de Variância): Avalia a robustez do particionamento mediante a razão da variância calculada entre os clusters (variância inter-grupos) e a variância dos próprios 
-clusters internamente (variância intra-grupos). Modelos com altas pontuações caracterizam-se por grupos densos, esféricos e com pouca sobreposição topológica.
+1. *Silhouette Score* (#cite(<rousseeuw1987silhouettes>, form: "prose")): Mede a coesão intra-cluster frente à separabilidade inter-cluster, variando no intervalo $[-1, 1]$. Nesta métrica, valores maiores indicam melhor adequação, ou seja, valores próximos a 1 
+sugerem clusters perfeitamente densos e bem separados, enquanto valores próximos a 0 ou negativos indicam forte sobreposição.
+2. *Índice Davies-Bouldin* (#cite(<davies1979cluster>, form: "prose")): Avalia a razão média da dispersão interna do cluster pela distância euclidiana entre os centróides, penalizando sobreposições. Diferente do Silhouette, nesta métrica valores menores indicam melhor adequação, pois 
+um índice menor (com limite inferior tendendo a zero) significa que os clusters são compactos internamente e distantes uns dos outros.
+3. *Índice Calinski-Harabasz* (#cite(<calinski1974dendrite>, form: "prose")): Mensura a razão entre a variância inter-cluster e a variância intra-cluster, ponderada pelos graus de liberdade do sistema. Para este índice, valores maiores indicam melhor adequação, 
+denotando que a distância entre os centros dos clusters é expressivamente maior que a dispersão dos pontos dentro de cada regime.
 
 Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento. A solução matemática moderna para este dilema repousa sobre as 
 heurísticas de consenso (ou *Ensembles*). O *Método de Borda* (*Borda Count*), tradicionalmente um sistema de votação, foi historicamente introduzido por #cite(<borda1781>), contudo, sua adaptação computacional moderna o torna um mecanismo imparcial 

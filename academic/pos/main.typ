@@ -10,6 +10,7 @@
 )
 
 // IMPORTAÇÃO DOS CAPÍTULOS
+#include "capitulos/0_pre_textual.typ"
 #include "capitulos/1_introducao.typ"
 #include "capitulos/2_revisao_teorica.typ"
 #include "capitulos/3_metodologia.typ"

@@ -248,16 +248,7 @@ class EnsembleSensitivity:
             ax.grid(axis='y', alpha=0.3)
 
             if col == 'Calmar_Ratio':
-                idx_opt = int(np.nanargmax(vals))
-                bars[idx_opt].set_color('gold')
-                bars[idx_opt].set_edgecolor('black')
-                bars[idx_opt].set_linewidth(2)
-                ax.text(idx_opt, vals[idx_opt], 'Otimo', ha='center', va='bottom', fontsize=8, fontweight='bold')
-
-                # Marcador para o peso da dissertacao (0.70)
-                if 0.70 in df_grade['w_HMM'].values:
-                    idx_70 = df_grade[df_grade['w_HMM'] == 0.70].index[0]
-                    ax.text(idx_70, vals[idx_70], '(dissertacao)', ha='center', va='top', fontsize=7, color='gray')
+                pass  # Removidas as anotacoes para deixar o grafico puro
 
         plt.tight_layout()
         # Salva no diretorio de graficos do projeto, se existir
