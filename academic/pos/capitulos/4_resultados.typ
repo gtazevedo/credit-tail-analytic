@@ -1,17 +1,17 @@
-= Resultados e Discussões
+= Resultados e Discussões <cap_resultados>
 
-Este capítulo apresenta os resultados empíricos obtidos a partir da aplicação da arquitetura de risco desenvolvida e apresentada em @cap_metodologia 
+Este capítulo apresenta os resultados empíricos obtidos a partir da aplicação da arquitetura de risco desenvolvida e apresentada na @cap_metodologia 
 aos dados do mercado secundário de crédito corporativo brasileiro. 
 A análise é construída de forma sequencial, iniciando pela validação estatística 
-rigorosa dos motores de volatilidade e culminando no impacto financeiro real gerado pelas estratégias táticas de alocação.
+dos motores de volatilidade e culminando no impacto financeiro gerado pelas estratégias táticas de alocação.
 
 == Validação Estatística dos Motores <subcap_valest>
 
 A eficácia de um sistema de alerta preventivo (_Early Warning_) no mercado de crédito está atrelada à sua capacidade 
 de modelar as caudas pesadas da distribuição de retornos. Para testar a acurácia do motor 
-EGARCH-t na estimação do _Value at Risk_ (VaR) a 99% de confiança, aplicou-se o Teste de Proporção de Falhas de Kupiec (POF) adotando um nível de significância de 5% ($alpha = 0,05$).
+EGARCH-t na estimação do _Value at Risk_ (VaR) a 99% de confiança, aplicou-se o Teste de Proporção de Falhas de Kupiec (POF)#footnote[Devido à volumetria da amostra, os resultados analíticos granulares do Teste de Kupiec, bem como os dados dos demais testes detalhados individualmente por debênture, foram consolidados e encontram-se disponíveis na pasta `anexos_digitais/` no repositório público desta pesquisa no GitHub.] adotando um nível de significância de 5% ($alpha = 0,05$).
 
-Os resultados agregados do backtest estatístico, agrupados por classe de indexador, evidenciam a proporção de ativos em que a Hipótese Nula ($H_0$) 
+Os resultados agregados do _backtest_ estatístico, agrupados por classe de indexador, evidenciam a proporção de ativos em que a Hipótese Nula ($H_0$) 
 do teste não foi rejeitada (ou seja, a taxa de falhas observada não diferiu estatisticamente da margem de 1% esperada pelo modelo).
 
 #figure(
@@ -19,7 +19,7 @@ do teste não foi rejeitada (ou seja, a taxa de falhas observada não diferiu es
     stroke: 0.5pt,
     columns: (1.5fr, 1fr, 1.5fr, 1.5fr, 1.5fr, 1.5fr),
     align: center + horizon,
-    [*Indexador*], [*Total*], [*Não-Rejeitados\n(POF)*], [*Não-Rejeitados\n(Conj. 90%)*], [*Não-Rejeitados\n(Conj. 95%)*], [*Não-Rejeitados\n(Conj. 99%)*],
+    [*Indexador*], [*Total*], [*Não-Rejeitados \ (POF)*], [*Não-Rejeitados \ (Conj. 90%)*], [*Não-Rejeitados \ (Conj. 95%)*], [*Não-Rejeitados \ (Conj. 99%)*],
     [CDI Percentual], [40], [21], [21 (52,5%)], [23 (57,5%)], [25 (62,5%)],
     [CDI Spread], [257], [63], [68 (26,4%)], [80 (31,1%)], [105 (40,8%)],
     [IPCA], [365], [133], [143 (39,1%)], [157 (43,0%)], [193 (52,8%)],
@@ -36,7 +36,7 @@ Para efeitos visuais e comparativos da eficácia do modelo, a figura abaixo exib
 ) <fig_kupiec>
 
 Embora as taxas de rejeição da Hipótese Nula possam parecer elevadas em primeiro momento, estes resultados devem ser interpretados sob a ótica da severidade da janela temporal analisada. 
-O backtest de Kupiec foi executado exclusivamente sobre o período _Out-of-Sample_ (2023 a 2026). Esta janela temporal 
+O _backtest_ de Kupiec foi executado exclusivamente sobre o período _Out-of-Sample_ (2023 a 2026). Esta janela temporal 
 engloba a maior crise de crédito privado da história recente do Brasil (marcada pelos colapsos sequenciais das Lojas Americanas e da Light S.A. além do mais recente evento do Grupo Pão de Açucar), que 
 introduziu choques exógenos severos e propiciou resgates em massa nos fundos de investimento. A sustentação de 57,5% de não-rejeição no grupo CDI Percentual (para um nível de significância de 5%), 
 prevendo o risco sem 
@@ -81,10 +81,10 @@ indexadas CDI+. Nas tabelas @tab_eventos_cbrda8 e @tab_eventos_cbrdb8 pode-se ve
     align: (center+horizon, center+horizon, center+horizon),
     [*Data*], [*Preço Unitário (PU)*], [*Spread (Taxa)*],
     [23/10/2025], [R\$ 512,13], [12,10%],
-    [*24/10/2025*], [*R\$ 453,59*], [*44,75% (Choque)*],
+    [*24/10/2025*], [*R\$ 453,59*], [*44,75%*],
     [27/10/2025], [R\$ 454,35], [44,28%],
     [25/02/2026], [R\$ 486,91], [45,74%],
-    [*26/02/2026*], [*R\$ 460,13*], [*100,01% (Choque)*],
+    [*26/02/2026*], [*R\$ 460,13*], [*100,01%*],
     [27/02/2026], [R\$ 413,24], [--]
   ),
   caption: [Histórico de Reprecificação e Perda de Capital em Eventos de Estresse - CBRDA8]
@@ -97,13 +97,13 @@ indexadas CDI+. Nas tabelas @tab_eventos_cbrda8 e @tab_eventos_cbrdb8 pode-se ve
     align: (center+horizon, center+horizon, center+horizon),
     [*Data*], [*Preço Unitário (PU)*], [*Spread (Taxa)*],
     [21/11/2025], [R\$ 764,80], [19,75%],
-    [*25/11/2025*], [*R\$ 630,22*], [*35,01% (Choque)*],
+    [*25/11/2025*], [*R\$ 630,22*], [*35,01%*],
     [26/11/2025], [R\$ 681,76], [28,73%],
     [23/02/2026], [R\$ 864,71], [16,04%],
-    [*24/02/2026*], [*R\$ 738,68*], [*30,11% (Choque)*],
+    [*24/02/2026*], [*R\$ 738,68*], [*30,11%*],
     [25/02/2026], [R\$ 793,33], [23,61%],
     [11/06/2026], [R\$ 456,53], [100,38%],
-    [*17/06/2026*], [*R\$ 312,66*], [*190,66% (Choque)*],
+    [*17/06/2026*], [*R\$ 312,66*], [*190,66%*],
     [06/07/2026], [R\$ 361,41], [166,10%]
   ),
   caption: [Histórico de Reprecificação e Perda de Capital em Eventos de Estresse - CBRDB8]
@@ -124,7 +124,7 @@ quando comparada a CBRDB8, possuía uma grande sensibilidade a mudanças na perc
 mantendo toda a história do ativo como um regime Verde (Baixo Risco). O exemplo demonstra que o K-Means falha em capturar a natureza sequencial dos dados, o que é crucial 
 para a gestão de risco de crédito.
 
-Além disso, durante o período de treino (período anterior a Jan/2023), o ativo CBRDA8 possuía 77 dias de negociação, com saltos no spread que levaram o algoritmo de 
+Além disso, durante o período de treino (período anterior a Jan/2023), o ativo CBRDA8 possuía 77 dias de negociação, com saltos no _spread_ que levaram o algoritmo de 
 máxima verossimilhança que ajustou o EGARCH falhar em convergir. Como houve problemas de convergência, o período _Out-of-Sample_ começou em uma escala irreal (volatilidade de 170%
 ao ano)
 e fez com que o K-Means fosse insensivel aos saltos observados. Já para CBRDB8, o período de treino possuía 65 observações, porém, sem saltos erráticos como no caso anterior,
@@ -148,7 +148,7 @@ período pelo motor HMM. Como se pode observar na @fig_hmm_gpa.
 
 Já para a CBRDA8, assim como foi dito na @subcap_rkmeans, o EGARCH falhou em convergir no período _In-Sample_, fazendo com que a distribuição do regime Verde
 ficasse larga e achatada. Ou seja, mesmo grandes variações para cima ou para baixo não eram suficientes para fazer o modelo sair do regime de baixo risco, 
-porém, em Fev/2026, com o salto de spread de 44% (de 45,7% para 100,0%, conforme a @tab_eventos_cbrda8), o motor HMM conseguiu identificar o choque e classificar 
+porém, em Fev/2026, com o salto de _spread_ de 44% (de 45,7% para 100,0%, conforme a @tab_eventos_cbrda8), o motor HMM conseguiu identificar o choque e classificar 
 a debênture no regime de crise.
 
 A capacidade de reação do algoritmo HMM comprovam que a característica matricial de transições das Cadeias de Markov Ocultas é indispensável, para a identificação
@@ -175,11 +175,78 @@ ao contrário do K-Means, porém de forma menos agressiva do que o HMM.
   caption: [Resultados do Ensemble para o Estudo de Caso do Grupo Pão de Açúcar (GPA)]
 ) <fig_ensemble_gpa>
 
+=== Antecipação de Eventos Sistêmicos (Lead Time)
+
+A fim de fornecer o rigor quantitativo, evitando a dependência excessiva em um único estudo de caso, expandiu-se a avaliação direcional dos modelos para um rol mais abrangente de eventos de crédito observados no mercado 
+corporativo brasileiro entre 2023 e 2026, porém, para evitar-se um detalhamento de todos os casos, que extenderiam em demasia este trabalho, optou-se pela seleção de alguns eventos específicos e análise menos detalhada 
+do que a observada no estudo de caso especifico (Grupo Pão de Açúcar). A premissa central de um modelo de alerta precoce (_Early Warning_) é a capacidade de emitir sinalizações quando se inicia um regime de risco elevado (Regime Vermelho) 
+com antecedência suficiente para permitir a liquidação defensiva do portfólio, métrica denominada _Lead Time_.
+
+Através de uma comparação entre eventos recentes de deterioração de créditos e os resultados resultados dessa pesquisa, foram analisados 9 grandes eventos corporativos cujos ativos mantiveram liquidez 
+secundária suficiente para a calibração *Out-of-Sample* dos modelos. A @tab_lead_time consolida a capacidade antecipatória de cada algoritmo ao registrar quantos dias antes do choque principal 
+o ativo foi ancorado definitivamente no Regime Vermelho. 
+
+#figure(
+  table(
+    stroke: 0.5pt,
+    columns: (1fr, 1fr, 1.2fr, 1fr, 1fr, 1fr, 1fr),
+    align: (left+horizon, left+horizon, center+horizon, center+horizon, center+horizon, center+horizon, center+horizon),
+    [*Empresa*], [*Evento*], [*Data*], [*Máx Spread*], [*K-Means*\ (dias)], [*HMM*\ (dias)], [*Ensemble*\ (dias)],
+    [Lojas Americanas], [RJ], [01/01/2023], [560,5%], [8 (AT)], [3 (AT)], [3 (AT)],
+    [Oi S.A.], [RJ], [01/03/2023], [11,8%], [50 (AT)], [1 (AT)], [1 (AT)],
+    [Light S.A.], [RJ], [01/05/2023], [120,9%], [3 (AN)], [5 (AN)], [5 (AN)],
+    [CVC Corp], [RP], [01/06/2023], [21,0%], [669 (AT)], [78 (AN)], [78 (AN)],
+    [Multilaser], [WV], [01/06/2023], [118,4%], [18 (AT)], [5 (AT)], [35 (AT)],
+    [Dasa], [RP], [01/06/2023], [163,8%], [19 (AT)], [1 (AT)], [4 (AT)],
+    [Unigel], [RE], [01/02/2024], [87,5%], [253 (AN)], [357 (AN)], [328 (AN)],
+    [Casas Bahia], [RE], [01/02/2024], [56,1%], [F], [F], [F],
+    [Pão de Açúcar], [RE], [01/03/2026], [190,7%], [129 (AT)], [2 (AN)], [2 (AN)]
+  ),
+  caption: [Resumo Comparativo: Antecipação (Lead Time) do Alerta de Crise por Modelo. \ *Nota*: Eventos: RJ = Rec. Judicial; RP = Reperfilamento; WV = Waiver; RE = Rec. Extrajudicial. Status: AN = Antecipado; AT = Atraso; F = Falhou.]
+) <tab_lead_time>
+
+A análise da @tab_lead_time, calculada sob a premissa de estado de alerta contínuo, ou seja, o modelo entrou no estado vermelho e permaneceu até a data do evento sem sair do estado vermelho no período, demonstra empiricamente o valor preditivo que a
+dependência temporal (matriz de Markov) adiciona à classificação. Ao desconsiderar períodos de instabilidade de regimes (uma vez que só consideramos períodos sem saídas do estado vermelho), o K-Means revelou-se ruidoso, demonstrando 
+atrasos efetivos (como observado nos casos da Oi, Dasa e Multilaser). Com exceção da fraude da Lojas Americanas e da Recuperação Extrajudicial da Casas Bahia (onde todos os algoritmos falharam em manter o alerta ininterrupto), o HMM apresentou 
+robustez preditiva superior. Para o caso da CVC Corp, o HMM foi capaz de sustentar o alerta de crise 78 dias antes do evento, enquanto o mapeamento geométrico (K-Means) sofreu de forte inércia, resultando em um atraso de 669 dias 
+alcançar o estado vermelho de forma ininterrupta.
+
+Adicionalmente, os resultados do _Ensemble_ demonstram que o K-Means frequentemente contamina a convicção do modelo. Conclui-se, portanto, que o HMM constitui veículo superior de proteção informacional para a liquidação defensiva de 
+carteiras, quando consideramos apenas a capacidade de antecipação de alertas de forma ininterrupta até a deflagração do choque financeiro. Contudo, se considerarmos as regras operacionais definidas na metodologia do _Backtest_ (@subcap_kupiec_backtest), 
+em que o portfólio adota um filtro de Quarentena Temporal: caso o modelo acuse Regime Vermelho, o ativo é sumariamente vendido e fica expressamente bloqueado para recompra por um período de 180 dias (6 meses), um sinal isolado (ainda que configure 
+instabilidade matemática e não se mantenha ininterrupto até o choque) é suficiente para identificar a necessidade de saída do ativo, desde que ocorra dentro da janela de 180 dias que antecede o evento. A @tab_lead_time_operacional avalia o _Lead Time_ sob 
+essa ótica puramente operacional: contabiliza-se a distância temporal entre o evento de crédito e o primeiro disparo vermelho registrado no semestre anterior.
+
+#figure(
+  table(
+    stroke: 0.5pt,
+    columns: (1fr, 1fr, 1.2fr, 1fr, 1fr, 1fr, 1fr),
+    align: (left+horizon, left+horizon, center+horizon, center+horizon, center+horizon, center+horizon, center+horizon),
+    [*Empresa*], [*Evento*], [*Data*], [*Máx Spread*], [*K-Means*\ (dias)], [*HMM*\ (dias)], [*Ensemble*\ (dias)],
+    [Lojas Americanas], [RJ], [01/01/2023], [560,5%], [8 (AT)], [3 (AT)], [3 (AT)],
+    [Oi S.A.], [RJ], [01/03/2023], [11,8%], [33 (AN)], [57 (AN)], [15 (AN)],
+    [Light S.A.], [RJ], [01/05/2023], [120,9%], [102 (AN)], [118 (AN)], [77 (AN)],
+    [CVC Corp], [RP], [01/06/2023], [21,0%], [669 (AT)], [149 (AN)], [149 (AN)],
+    [Multilaser], [WV], [01/06/2023], [118,4%], [148 (AN)], [148 (AN)], [120 (AN)],
+    [Dasa], [RP], [01/06/2023], [163,8%], [106 (AN)], [139 (AN)], [97 (AN)],
+    [Unigel], [RE], [01/02/2024], [87,5%], [169 (AN)], [169 (AN)], [169 (AN)],
+    [Casas Bahia], [RE], [01/02/2024], [56,1%], [F], [F], [F],
+    [Pão de Açúcar], [RE], [01/03/2026], [190,7%], [164 (AN)], [180 (AN)], [180 (AN)]
+  ),
+  caption: [Resumo Comparativo: Antecipação (Lead Time) considerando Quarentena de 180 dias. \ *Nota*: Eventos: RJ = Rec. Judicial; RP = Reperfilamento; WV = Waiver; RE = Rec. Extrajudicial. Status: AN = Antecipado; AT = Atraso; F = Falhou.]
+) <tab_lead_time_operacional>
+
+Ao se aplicar a trava temporal de 180 dias, os resultados operacionais do _Lead Time_ se mostram mais robustos. Casos como o da Light S.A., 
+onde a antecipação observada havia sido de poucos dias, passaram a contar com antecipação superior a 3 meses ao considerar-se as regras operacionais estabelecidas. O valor máximo de antecipação 
+dessa métrica fica matematicamente limitado ao teto da quarentena, o que explica os modelos empatarem em 169 dias e 180 dias (Unigel e Pão de Açúcar, respectivamente), configurando o disparo protetivo 
+na borda máxima do semestre. Independentemente da flexibilização operacional demonstrar a viabilidade dos alertas do K-Means e do Ensemble, o HMM manteve superioridade consistente — como evidenciado pela antecedência 
+superior na Oi S.A. (57 dias) e Dasa (139 dias), demonstrando a superioridade da memória temporal na antecipação de alterações de regime.
+
 == Simulação de Portfólio (Backtest Financeiro) <subcap_resultadosbacktest>
 
 Para avaliação da utilidade econômica da modelagem desenvolvida, foi realizado um _backtest_ financeiro para o período _Out-of-Sample_, conforme descrito na @subcap_kupiec_backtest.
-O objetivo da simulação não se limita a medir apenas o desempenho direcional dos modelos propostos contra uma estratégia passiva (_Buy-and-Hold_), mas também a avaliar como as diferentes
-formas de liquidação (preventiva no sinal amarelo _vs._ retardada no sinal vermelho) impactam a relação risco-retorno da carteira.
+O objetivo da simulação não se limita a medir apenas o desempenho dos modelos propostos contra uma estratégia passiva (_Buy-and-Hold_), mas também a avaliar como as diferentes
+formas de liquidação (preventiva no sinal amarelo _vs._ retardada no sinal vermelho) impactam a relação risco-retorno.
 
 #figure(
   image("../imagens/backtest_pnl_portfolio.png", width: 90%),
@@ -216,21 +283,26 @@ taxa de juros e volatilidade intrínseca artificialmente próxima a zero, o que 
 Apesar do retorno superior apresentado pelas estratégias ativas, elas também incorreram em maior volatilidade e _Drawdown_, sendo penalizadas quando avaliadas por métricas
 que ponderam risco e retorno. Em especial, a estratégia *HMM (Vende Amarelo)* apresentou um expressivo _drawdown_ de -9,74% em 2026, originado pela marcação simultânea de diversos ativos no estado de Alerta (Amarelo)
 em decorrência do contágio de crédito gerado pelo evento do grupo GPA. Por possuir uma regra agressiva de _stop loss_, o agente liquidou uma parcela relevante do portfólio
-no mercado secundário exatamente no momento de forte abertura de _spreads_. Esse comportamento evidencia os riscos da sensibilidade acentuada do filtro Bayesiano quando acoplado a uma execução automática.
+no mercado secundário exatamente no momento de forte abertura de _spreads_. Esse comportamento evidencia os riscos da sensibilidade acentuada do filtro Bayesiano quando combinado a uma execução automática.
 
 O portfólio _Buy-and-Hold_ apresentou um Calmar de 1,249, sendo superado exclusivamente pelos algoritmos K-Means, com índices de 1,711 (Padrão) e 1,603 (Vende Amarelo). 
-A superioridade ruidosa do K-Means neste aspecto advém justamente da sua latência: por reagir de forma mais lenta e instável aos choques do que o HMM, a estratégia apresentou um menor giro de ativos. 
-Dessa forma, ela evitou a realização maciça de prejuízos de marcação a mercado simultâneos (mitigando o _drawdown_), mas ainda assim conseguiu se desfazer tempestivamente de papéis que apresentavam deterioração irreversível, distanciando-se do _Buy-and-Hold_. Esse comportamento acidental poupou a carteira das severas punições transacionais que afetaram o HMM.
+A superioridade do K-Means neste aspecto advém justamente da sua latência: por reagir de forma mais lenta e instável aos choques do que o HMM, a estratégia apresentou um menor giro de ativos. 
+Dessa forma, ela evitou a realização maciça de prejuízos de marcação a mercado simultâneos (mitigando o _drawdown_), mas ainda assim conseguiu se desfazer tempestivamente de ativos que apresentavam deterioração irreversível, 
+distanciando-se do _Buy-and-Hold_. Esse comportamento poupou a carteira das punições transacionais que afetaram o HMM.
 
-Por fim, o modelo _Ensemble_ — desenvolvido com o intuito de harmonizar a reatividade do HMM com a inércia do K-Means — apresentou resultados amplamente negativos. Embora tenha sustentado um *Calmar Ratio* próximo
-ao da estratégia passiva (1,111 _vs._ 1,249), entregou o pior retorno total do período (16,37%), corroído quase integralmente pelo efeito _Whipsaw_ (efeito chicote). 
-A mediação conflitante dos modelos fez com que o agente acionasse vendas quando o HMM indicava a transição de regime, para logo em seguida recomprar os mesmos ativos assim que a influência do K-Means puxava o _score_ novamente para um regime de baixo risco. Conclui-se, portanto, que a modelagem mista falhou estruturalmente ao herdar os custos transacionais da sensibilidade do HMM sem se beneficiar de sua capacidade de proteção definitiva, sofrendo das piores características operacionais de seus precursores.
+Por fim, o modelo _Ensemble_ — desenvolvido com o intuito de harmonizar a reatividade do HMM com a inércia do K-Means — apresentou resultados negativos. Embora tenha sustentado um *Calmar Ratio* próximo
+ao da estratégia passiva (1,111 _vs._ 1,249), entregou o menor retorno total do período (16,37%), corroído em grande parte pelo efeito _Whipsaw_ (efeito chicote). 
+A mediação conflitante dos modelos fez com que o agente acionasse vendas quando o HMM indicava a transição de regime, para logo em seguida recomprar os mesmos ativos assim que a influência do K-Means puxava 
+o _score_ novamente para um regime de baixo risco. Conclui-se, portanto, que a modelagem mista falhou estruturalmente ao herdar os custos transacionais da sensibilidade do HMM sem se beneficiar de sua capacidade 
+de proteção definitiva, sofrendo das piores características operacionais de seus precursores.
 
 === Significância Estatística das Estratégias — Block Bootstrap
 
-A superioridade das estratégias ativas em termos de retorno absoluto não é, por si só, evidência científica suficiente de que os modelos adicionam valor. O período _Out-of-Sample_ (2023–2026) foi marcado por eventos excepcionais de crédito, o que levanta a questão: os retornos superiores observados decorrem genuinamente da capacidade preditiva dos algoritmos, ou são produto do período amostral específico?
+A superioridade das estratégias ativas em termos de retorno absoluto não é, por si só, evidência científica suficiente de que os modelos agregam valor. O período _Out-of-Sample_ (2023–2026) foi marcado por eventos excepcionais de crédito, 
+o que levanta a questão: os retornos superiores observados decorrem da capacidade preditiva dos algoritmos, ou são produto de um período amostral específico?
 
-Para responder a essa pergunta, aplicou-se o _Stationary Block Bootstrap_ #cite(<politis1994stationary>) com $n = 10.000$ amostras e blocos de 20 dias úteis ($approx$ 1 mês), que preserva a estrutura de autocorrelação temporal dos retornos diários. A hipótese testada é:
+Para responder a essa pergunta, aplicou-se o _Stationary Block Bootstrap_ #cite(<politis1994stationary>) com $n = 10.000$ amostras e blocos de 20 dias úteis (aproximadamente 1 mês), que preserva a estrutura de autocorrelação temporal 
+dos retornos diários. A hipótese testada é:
 
 - *H0₃*: A estratégia ativa *não* supera o Buy-and-Hold em termos de retorno médio anualizado ($mu_("estratégia") <= mu_("BnH")$).
 - *H1₃*: A estratégia supera o Buy-and-Hold (teste unilateral à direita, $alpha = 5\%$).
@@ -242,20 +314,24 @@ O p-valor reportado representa a proporção de amostras bootstrap em que o reto
     stroke: 0.5pt,
     columns: (2fr, 1fr, 1fr, 1fr, 1fr, 1fr),
     align: (left+horizon, center+horizon, center+horizon, center+horizon, center+horizon, center+horizon),
-    [*Estratégia*], [*Retorno\\n(%aa)*], [*BnH\\n(%aa)*], [*Diferença\\n(%aa)*], [*p-valor*], [*H0₃*],
-    [KMeans], [6,97%], [5,87%], [+1,10%], [0,134], [Não Rejeitada],
-    [HMM], [7,02%], [5,87%], [+1,15%], [0,225], [Não Rejeitada],
-    [Ensemble], [4,47%], [5,87%], [-1,41%], [0,868], [Não Rejeitada],
-    [*K-Means (Vende Amarelo)*], [*9,27%*], [*5,87%*], [*+3,40%*], [*0,015*], [*Rejeitada ✓*],
-    [HMM (Vende Amarelo)], [8,90%], [5,87%], [+3,03%], [0,059], [Não Rejeitada],
-    [Ensemble (Vende Amarelo)], [4,76%], [5,87%], [-1,11%], [0,808], [Não Rejeitada],
+    [*Estratégia*], [*Retorno\ (%aa)*], [*BnH\ (%aa)*], [*Diferença\ (%aa)*], [*p-valor*], [*H0₃*],
+    [KMeans], [6,97%], [5,87%], [+1,10%], [0,134], [NR],
+    [HMM], [7,02%], [5,87%], [+1,15%], [0,225], [NR],
+    [Ensemble], [4,47%], [5,87%], [-1,41%], [0,868], [NR],
+    [*K-Means (Vende Amarelo)*], [*9,27%*], [*5,87%*], [*+3,40%*], [*0,015*], [*R*],
+    [HMM (Vende Amarelo)], [8,90%], [5,87%], [+3,03%], [0,059], [NR],
+    [Ensemble (Vende Amarelo)], [4,76%], [5,87%], [-1,11%], [0,808], [NR],
   ),
-  caption: [Resultados do Block Bootstrap ($n=10.000$, $alpha=5\%$, bloco=20 dias) — Significância Estatística vs. Buy-and-Hold]
+  caption: [Resultados do Block Bootstrap ($n=10.000$, $alpha=5\%$, bloco=20 dias) — Significância Estatística vs. Buy-and-Hold. \ *Nota*: R = Rejeitada; NR = Não Rejeitada.]
 ) <tab_bootstrap>
 
-Os resultados do @tab_bootstrap revelam um achado central: *apenas a estratégia K-Means (Vende Amarelo) rejeita H0₃ ao nível de 5%* ($p = 0,015$, IC 95%: [+0,33%; +6,78%]). A estratégia HMM (Vende Amarelo) apresenta p-valor de 0,059, próximo ao limiar de significância, não rejeitando H0₃ sob o critério convencional de 5%, mas sugerindo evidência marginal de superioridade.
+Os resultados do @tab_bootstrap revelam um achado central: *apenas a estratégia K-Means (Vende Amarelo) rejeita H0₃ ao nível de 5%* ($p = 0,015$, IC 95%: [+0,33%; +6,78%]). A estratégia HMM (Vende Amarelo) 
+apresenta p-valor de 0,059, próximo ao limiar de significância, não rejeitando H0₃ sob o critério convencional de 5%, mas sugerindo evidência marginal de superioridade.
 
-Este resultado é coerente com o diagnóstico do *Paradoxo da Latência*: a inércia do K-Means, que aparentava ser uma deficiência preditiva (menor reatividade a mudanças de regime), transformou-se em vantagem financeira — ao evitar o excesso de giro e o efeito _Whipsaw_ que corrói os demais modelos. A estratégia HMM puro e as estratégias Ensemble, a despeito de retornos nominais superiores ao benchmark, não apresentam superioridade estatisticamente comprovável, evidenciando que seus ganhos estão dentro do intervalo de incerteza esperado para o período amostral específico.
+Este resultado é coerente com o diagnóstico do *Paradoxo da Latência*#footnote[Termo cunhado nesta pesquisa para descrever o fenômeno contra-intuitivo onde a menor sensibilidade reativa de um algoritmo (sua inércia na mudança de estado) atua como um filtro natural de ruídos de alta frequência. 
+No mercado de crédito corporativo, devido aos altos custos transacionais e restrições de liquidez, essa "lentidão" do modelo previne a execução de vendas pautadas em falsos positivos (_whipsaws_), resultando paradoxalmente em uma proteção de capital superior à entregue por modelos de alta reatividade.]:
+a inércia do K-Means, que aparentava ser uma deficiência preditiva (menor reatividade a mudanças de regime), transformou-se em vantagem financeira — ao evitar o excesso de giro e o efeito _Whipsaw_ que corrói os demais modelos. A estratégia HMM e as estratégias Ensemble, apesar dos retornos nominais 
+superiores ao benchmark, não apresentam superioridade estatisticamente comprovável, evidenciando que seus ganhos estão dentro do intervalo de incerteza esperado para o período amostral específico, podendo a superioridade dos retornos no período ser apenas fruto do acaso.
 
 #figure(
   image("../imagens/bootstrap_significance.png", width: 90%),
@@ -266,9 +342,14 @@ Este resultado é coerente com o diagnóstico do *Paradoxo da Latência*: a iné
 
 Os resultados apresentados neste estudo foram obtidos a partir de um conjunto específico de condições empíricas que delimitam sua generalização direta:
 
-1. *Período amostral*: O período _Out-of-Sample_ (2023–2026) engloba uma das maiores crises de crédito privado brasileiro da história recente (com colapsos sequenciais de Lojas Americanas, Light S.A. e incertezas em torno do Grupo Pão de Açúcar). A eficácia contundente das estratégias ativas, especialmente do K-Means (Vende Amarelo), foi alavancada pela necessidade extrema de mitigação de risco durante choques agudos. Em ciclos de expansão de crédito com baixa volatilidade, estratégias ativas podem apresentar performance marginal inferior ao carrego passivo, devido ao peso dos custos transacionais sem a contrapartida de grandes eventos de cauda.
-2. *Universo de ativos*: A amostra final se restringe a debêntures com liquidez mínima suficiente para permitir a convergência do motor de estimação EGARCH. Ativos de crédito marcadamente ilíquidos — que operam fora da curva Anbima ou não possuem fluxo de negociação regular em mercado secundário — não foram testados por essa metodologia estrutural. Estratégias aplicadas a essas carteiras podem sofrer distorções materiais.
-3. *Estrutura de custos operacionais*: A simulação assumiu um custo de transação de 0,5% por operação, considerado conservador e aderente à média do mercado secundário corporativo em tempos normais. Contudo, sob estresse extremo, a liquidez direcional do mercado seca e os _spreads_ de compra-venda (_bid-ask spread_) podem expandir severamente, inviabilizando ou majorando exponencialmente as saídas defensivas executadas pelos algoritmos.
-4. *Qualidade da informação (Marcação a Mercado)*: Os indicadores preditivos dependem intimamente do reflexo primário dos _spreads_ na curva indicativa (Anbima). O alisamento intrínseco aos processos de marcação a mercado no Brasil introduz latência que pode atrasar a identificação quantitativa de risco por parte dos motores bayesianos.
+1. *Período amostral*: O período _Out-of-Sample_ (2023–2026) engloba uma das maiores crises de crédito privado brasileiro da história recente (com colapsos sequenciais de Lojas Americanas, Light S.A. e incertezas em torno do Grupo Pão de Açúcar). A eficácia das estratégias ativas, 
+especialmente do K-Means (Vende Amarelo), foi alavancada pela necessidade de mitigação de risco no período. Em ciclos de expansão de crédito com baixa volatilidade, estratégias ativas, como as implementadas, podem apresentar performance inferior ao carrego passivo, devido ao peso dos 
+custos transacionais.
+2. *Universo de ativos*: A amostra final se restringe a debêntures com liquidez mínima suficiente para permitir a convergência do motor de estimação EGARCH. Ativos de crédito marcadamente ilíquidos — que operam fora da curva Anbima ou não possuem fluxo de negociação regular em mercado 
+secundário — não foram testados. Estratégias aplicadas a essas carteiras podem sofrer distorções materiais.
+3. *Estrutura de custos operacionais*: A simulação assumiu um custo de transação de 0,5% por operação, considerado aderente à média do mercado secundário corporativo. Contudo, em períodos de estresse extremo, o _bid-ask spread_ pode ser significativamente maior, inviabilizando as saídas 
+defensivas simuladas nesta pesquisa.
+4. *Frequência de Negociação*: Ao se utilizar dados de negócios realizados no mercado secundário (mitigando o viés de alisamento da marcação a mercado teórica), os indicadores preditivos tornam-se altamente dependentes do fluxo de liquidez.  Em momentos de estresse, a negociação de determinados ativos pode cessar, gerando indisponibilidade de dados do modelo no momento de maior necessidade.
 
-Apesar dessas limitações inerentes à amostra brasileira, os alicerces metodológicos da arquitetura desenvolvida — notadamente a integração da volatilidade condicional leptocúrtica como _feature_ para particionamento temporal dinâmico (_Time-Series Clustering_) — constituem um arcabouço inovador que pode ser adaptado e generalizado para outros mercados globais de crédito estruturado caracterizados por informações assimétricas e baixa liquidez.
+Apesar das limitações inerentes à amostra brasileira e as características intrisecas do mercado de crédito, os alicerces metodológicos da arquitetura desenvolvida — como a integração da volatilidade condicional leptocúrtica como _feature_ para particionamento
+ temporal dinâmico (_Time-Series Clustering_) — constituem um arcabouço que pode ser adaptado e generalizado para outros mercados globais de crédito privado caracterizados por informações assimétricas e baixa liquidez.

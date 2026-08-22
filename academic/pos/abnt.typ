@@ -68,6 +68,8 @@
       text(size: 12pt, weight: "bold")[#num#it.body]
     }
     v(1.5em)
+    // Força indentação do primeiro parágrafo
+    par(text(size:0pt)[])
   }
 
   // Legendas de figuras em tamanho 10pt (ABNT)

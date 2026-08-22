@@ -26,7 +26,7 @@ indica que as empresas têm conseguido alongar o perfil de suas dívidas, com as
 == O Problema de Pesquisa
 
 Apesar do crescimento e amadurecimento do mercado de crédito privado brasileiro, a baixa liquidez no mercado secundário representa um desafio para a precificação e acompanhamento de risco do papel.
-Estudos como #cite(<correa2010aprecamento>, form: "prose") focam em problemas de apreçamento do spread de crédito, enquanto estudos como #cite(<sheng2008liquidez>, form: "prose") analisam os fatores que afetam o prêmio de liquidez em debêntures. 
+Estudos como #cite(<correa2010aprecamento>, form: "prose") focam em problemas de apreçamento do _spread_ de crédito, enquanto estudos como #cite(<sheng2008liquidez>, form: "prose") analisam os fatores que afetam o prêmio de liquidez em debêntures. 
 Contudo, muitos modelos assumem situações normais de mercado, enquanto outros fazem suposições ainda mais fortes que não condizem com a realidade do mercado brasileiro. Bancos e assets muitas controlam o risco de cauda de debêntures 
 baseado em GARCH e VaR contínuos, que possuem suposições violadas quando ocorrem eventos extremos, e podem subestimar o risco observado.
 
@@ -42,7 +42,7 @@ A proposta desse trabalho é desenvolver e avaliar os resultados de uma modelage
 prever flutuações contínuas, o modelo busca identificar eventos de mudança de regime para disparar alertas de risco antes de que se observem grandes perdas, possibilitando ao detentor das
 debentures, um tempo hábil para tentar vender o papel antes que as perdas se materializem.  
 
-Para isso, serão utilizadas duas abordages de modelagem de risco, uma baseada em K-Means e outra em HMM, ambas utilizando as mesmas _features_ de entrada, derivadas de variaveis como a volatilidade e o spread das debentures,
+Para isso, serão utilizadas duas abordages de modelagem de risco, uma baseada em K-Means e outra em HMM, ambas utilizando as mesmas _features_ de entrada, derivadas de variaveis como a volatilidade e o _spread_ das debêntures,
 obtidas por meio de dados abertos divulgados pela Anbima. Além disso, toda a aplicação, feita em python, será disponibilizada para consulta pública no #link("https://github.com/gtazevedo/credit-tail-analytic")[GitHub], 
 juntmente da sua documentação de uso,
 permitindo que qualquer interessado possa replicar os resultados,

@@ -14,13 +14,12 @@ O estudo revelou achados importantes que conectam a modelagem teórica à aplica
 testes conjuntos de Christoffersen, conforme apresentado na @subcap_valest, confirmou que o modelo é capaz de absorver a heterocedasticidade condicional e evitar o agrupamento de violações (_volatility clustering_), 
 mesmo frente aos massivos choques de iliquidez do período _Out-of-Sample_, respondendo, assim, as falha dos modelos de VaR tradicionais citados na @subcap_vargarch.
 
-2. *O Paradoxo entre Acurácia Preditiva e Desempenho Financeiro:* Observou-se uma dicotomia entre o Modelo Oculto de Markov (HMM) e o particionamento geométrico (K-Means). O HMM demonstrou superioridade 
-analítica ao integrar a dependência temporal (matrizes de transição), conseguindo antecipar de forma ágil a deterioração de crédito em eventos como o do Grupo Pão de Açúcar, conforme 
-apresentado na @subcap_rkmeans e @subcap_rhmm. Contudo, 
-no _backtest_ financeiro, a estratégia baseada no K-Means (*Vende Amarelo*) entregou a melhor relação risco-retorno (*Calmar Ratio* de 1,603 contra 0,866 do HMM). 
-Conforme apresentado na @subcap_resultadosbacktest, a "lentidão" apresentada pelo K-Means para mudança de regimes funcionou como um filtro de ruído contra o efeito 
-contágio do mercado, poupando a carteira do excesso de giro e dos custos de transação (que conforme @subcap_kupiec_backtest, foi definido como 0,5% por operação) 
-que penalizaram o HMM com _drawdowns_ profundos gerados por alarmes falsos.
+2. *O Paradoxo entre Acurácia Preditiva e Desempenho Financeiro:* Observou-se uma dicotomia robusta e quantificada entre o Modelo Oculto de Markov (HMM) e o particionamento geométrico atemporal (K-Means). Conforme 
+demonstrado através da análise sistêmica de *Lead Time* (Antecipação de Alerta), o HMM demonstrou superioridade analítica preditiva ao integrar a dependência temporal via matrizes de transição, antecipando eventos de crédito 
+severos de forma significativamente mais ágil que as demais metodologias em múltiplos cenários corporativos independentes (como no caso da CVC Corp e do Grupo Pão de Açúcar). Contudo, no _backtest_ financeiro, a estratégia de liquidação 
+pautada pelo K-Means (*Vende Amarelo*) não apenas entregou a melhor relação risco-retorno (*Calmar Ratio* de 1,603), mas foi a *única* capaz de superar a estratégia passiva (_Buy-and-Hold_) com significância estatística comprovada por _Block Bootstrap_
+(p-valor < 0,05). Este fenômeno consolida empiricamente o que denominou-se de *Paradoxo da Latência*: a inércia do K-Means funcionou como um filtro de ruído contra a volatilidade secundária, poupando a carteira do excesso de giro 
+impulsionado pelas matrizes de transição do HMM. Em cenários de iliquidez e altos custos de transação (0,5% por operação), essa ineficiência preditiva transmuta-se, paradoxalmente, em proteção de capital.
 
 3. *A Armadilha da Combinação de Modelos:* O estudo documentou a falha do modelo _Ensemble_. Ao tentar fundir a reatividade do HMM com a estabilidade do K-Means, 
 a modelagem mista deixou a carteira vulnerável ao efeito chicote (_whipsaw_). O modelo realizava vendas impulsionadas pelo HMM e recompras tardias pelo K-Means, 
@@ -33,15 +32,17 @@ de operações em momentos inoportunos.
 Para a indústria de gestão de recursos, a metodologia desenvolvida oferece um arcabouço robusto e sistemático para a gestão tática em carteiras de crédito privado. Em um mercado caracterizado por baixa liquidez estrutural 
 e precificação ocasionalmente defasada, a adoção de gatilhos quantitativos pode substituir ou auxiliar o viés comportamental humano, que frequentemente leva gestores a reter posições perdedoras na esperança de uma reversão que muitas vezes não ocorre.
 
-A operacionalização desta pesquisa demonstra que o melhor modelo preditivo não é, necessariamente, a melhor estratégia de _trading_. A escolha do motor de decisão deve estar alinhada aos atritos do mercado e aos objetivos do portfólio. Os resultados observados
-foram frutos de simulações históricas baseado em regras fixadas e comparados contra uma estratégia buy-and-hold, durante uma atuação no mercado secundário para fechamento de posições devido a early warnings, outros fatores podem influenciar no preço e capacidade
-de liquidação das posições
+A operacionalização desta pesquisa demonstra que o melhor modelo preditivo não é, necessariamente, a melhor estratégia de _trading_. A escolha do motor de decisão deve estar alinhada aos atritos do mercado e às regras táticas de execução 
+(como, por exemplo, a regra de "quarentena de 180 dias", que atuou como ponte operacional para viabilizar os sinais do K-Means). Os resultados observados foram frutos de simulações históricas baseadas em parâmetros de 
+_Backtest_ (custo de 0,5% e liquidez plena); na prática real de tesouraria, o momento exato do _early warning_ sofrerá o impacto do secamento do _bid-ask spread_, reiterando que o alerta não garante, por si só, 
+o sucesso da liquidação em mercados de crédito ilíquidos.
 
 == Limitações e Recomendações para Trabalhos Futuros
 
-Apesar dos resultados promissores, o presente estudo possui limitações inerentes à estrutura e à qualidade dos dados financeiros brasileiros. A principal limitação concentrou-se na convergência da volatilidade condicional (EGARCH) para ativos extremos, 
-onde longos históricos de ausência de negociação distorceram a estimação dos parâmetros de risco no período _In-Sample_. Além disso, a dependência exclusiva da curva de apreçamento divulgada pela Anbima impõe que o modelo herde a possível ineficiência 
-temporal ou "suavização" de preços inerente ao fechamento indicativo da associação.
+Apesar dos resultados promissores, o presente estudo possui limitações inerentes à estrutura e à qualidade dos dados financeiros brasileiros. A principal limitação concentrou-se na convergência da volatilidade condicional (EGARCH) 
+para ativos extremos, onde longos históricos de ausência de negociação distorceram a estimação dos parâmetros de risco no período _In-Sample_. Adicionalmente, ao pautar a modelagem em dados de negócios efetivamente realizados 
+(mitigando o viés da marcação a mercado teórica), o sistema herda uma dependência do fluxo contínuo de liquidez secundária, o que significa que o modelo pode ficar "cego" nos momentos de maior estresse, quando o mercado 
+cessa suas negociações.
 
 Para trabalhos futuros, recomenda-se a exploração das seguintes frentes: 
 - A incorporação de modelos de aprendizado profundo focados em sequências temporais não-lineares, como Redes Neurais Recorrentes (LSTMs) ou _Transformers_, 
