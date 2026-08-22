@@ -35,8 +35,8 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/seu-usuario/credit-tail-analytics"
-"Bug Tracker" = "https://github.com/seu-usuario/credit-tail-analytics/issues"
+"Homepage" = "https://github.com/gtazevedo/credit-tail-analytic"
+"Bug Tracker" = "https://github.com/gtazevedo/credit-tail-analytic/issues"
 
 [project.scripts]
 credit-risk-engine = "credit_tail_analytics.models.credit_risk.run_frequentist_engine:_cli_main"

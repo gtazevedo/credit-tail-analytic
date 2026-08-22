@@ -35,11 +35,19 @@ src/credit_tail_analytics/
 ├── analysis/              # Validação de Performance e Testes Estatísticos
 │   ├── selecao_modelos.py       # Torneio de Critérios de Informação (AIC/BIC)
 │   ├── kupiec_validation.py     # Validação de aderência da cauda
-│   └── backtest_financeiro.py   # Motor de simulação de carteira e PnL tático
+│   ├── backtest_financeiro.py   # Motor de simulação de carteira e PnL tático
+│   ├── run_cluster_validation.py# Elbow Method e Silhouette Score (k=3)
+│   ├── run_ensemble_sensitivity.py # Grid Search do Calmar Ratio
+│   ├── run_bootstrap.py         # Teste de Hipótese (H0_3) vs Buy-and-Hold
+│   ├── gerar_resumo_kupiec.py   # Extração de Tabela de H0_1 (VaR)
+│   └── check_anomalies.py       # Diagnóstico de Curtose/Normalidade
 │
 ├── visualization/         # Geração dos Painéis de Defesa Acadêmica
 │   ├── frequentist_defense_visuals.py # Gráficos de Casos Empíricos (GPA, Light)
-│   └── kupiec_visuals.py              # Matrizes de Aceitação/Rejeição do VaR
+│   ├── kupiec_visuals.py              # Matrizes de Aceitação/Rejeição do VaR
+│   ├── plot_feature_selection.py      # Gráfico Borda Count
+│   ├── plot_borda_radar.py            # Radar Multidimensional de Separação
+│   └── plot_early_warning.py          # Comparação de Lead Time (HMM vs KMeans)
 │
 └── utils.py               # Auxiliares e gerenciadores de Path
 ```
@@ -101,6 +109,26 @@ Por fim, esta rotina consome as predições estocásticas e traça a "autópsia"
 python src/credit_tail_analytics/visualization/frequentist_defense_visuals.py
 ```
 *Nota:* A rotina apaga automaticamente gráficos antigos da pasta `graficos/` antes de salvar os novos estudos de caso.
+
+---
+
+### Passo 7: Validações Acadêmicas e Feature Selection (Opcional)
+Se você desejar replicar os exatos testes de hipótese e validações matriciais (como o Borda Count e o Silhouette Score) documentados na Dissertação/TCC, você pode acionar os scripts isolados:
+
+**Validação de Clusters (K-Means)**
+```bash
+python src/credit_tail_analytics/analysis/run_cluster_validation.py
+```
+**Análise Multidimensional de Variáveis (Borda Count)**
+```bash
+python src/credit_tail_analytics/visualization/plot_feature_selection.py
+python src/credit_tail_analytics/visualization/plot_borda_radar.py
+```
+**Otimização do Ensemble e Bootstrap de Rentabilidade**
+```bash
+python src/credit_tail_analytics/analysis/run_ensemble_sensitivity.py
+python src/credit_tail_analytics/analysis/run_bootstrap.py
+```
 
 ---
 
