@@ -13,16 +13,15 @@ cada função e da ferramenta como um todo poderão ser encontrados na documenta
 Os dados base de spread por debenture e dia, que alimentam essa pesquisa foram extraidos do site da ANBIMA, mais especificamente na seção de Prévias Públicas de Negociação de Instrumentos Financeiros,
 que pertence ao sistema REUNE. O período da amostra foi do segundo dia de janeiro de 2018 a 10 de julho de 2026. Os dados diários extraidos possuem as seguintes colunas:
 Codigo Cetip, Tipo, Agrupamento, Taxa Mínima, Taxa Média, Taxa Máxima, Preço Mínimo, Preço Médio, Preço Máximo e Faixa de Volume.
-O leitor pode replicar esse download por meio da classe `data.anbima_scraper.AnbimaScraper`; para maior comodidade tambem se pode utilizar `data.run_scraper_full.rodar_extracao` e 
-posteriormente `data.unify_csvs.unify_csvs`, uma vez que o download gera um arquivo csv por dia de consulta.
+O leitor interessado em reproduzir esta coleta de dados pode consultar as rotinas de raspagem de dados (_web scraping_) e os *scripts* de unificação disponibilizados no repositório público desta pesquisa no GitHub, uma vez que o download gera um arquivo csv por dia de consulta.
 
 Já as informações cadastrais foram obtidas na página #link("https://www.debentures.com.br")[Debentures.com.br] (que será substituida pelo #link("https://data.anbima.com.br/")[ANBIMA Data]) por meio de consulta utilizando o pacote `debentures_dot_com`. As informações 
 obtidas são referentes a emissão das debentures e incluem informações como: Ticker, Indexador, Data de Emissão, Data Vencimento, Empresa, CNPJ, Emissão, Situação, Classe, Garantia, Quantidade Emitida,
 Quantidade Mercado, Taxa Emissão, Motivo de Saida, entre outras; para mais informações sobre os campos citados ou campos disponíveis consultar a página do #link("https://data.anbima.com.br/")[ANBIMA Data] e/ou o
-pacote `debentures_dot_com`. O leitor pode replicar esse download por meio da função `data.build_cadastro.build_cadastro_mestre`.
+pacote `debentures_dot_com`. A rotina automatizada para o cruzamento destas informações cadastrais também encontra-se documentada no repositório do projeto.
 
 As informações macroeconomicas (CDI, Selic, IPCA Mensal e 12M e IGPM Mensal) foram extraidas utilizando o pacote `python-bcb`. O leitor pode replicar esse download por meio
-da função `data.download_macro.download_macro_data`, que é uma aplicação direta do pacote de #cite(<freitaspythonbcb>, form: "prose") para as variaveis de interesse para a pesquisa.
+da extração automatizada, que consiste em uma aplicação direta do pacote de #cite(<freitaspythonbcb>, form: "prose") para as variaveis de interesse, cujos *scripts* constam no código-fonte do estudo.
 
 Na etapa de pré-processamento, mais detalhada em @subcap_processamento, foi realizada a normalização e tratamento das variáveis. Como a base de dados extraída da ANBIMA abrange múltiplos indexadores (como IPCA+, DI+ e % do CDI), 
 foi necessário separar esse grupos treinar e aplicar o modelo de forma independente,
@@ -32,7 +31,7 @@ uma vez que os papéis de diferentes indexadores possuem comportamento de risco 
 
 Como citado em @cap_introducao, um desafio inerente ao mercado secundário de crédito privado brasileiro é a baixa liquidez dos ativos, inclusive com alguns chegando a possuir
 dias sem negociação. A ANBIMA classifica o volume de negociação em faixas, sendo a faixa mais baixa dada por "Até 1MM", e portanto, dado as informações possuídas na realização dessa pesquisa,
-esses são os ativos definidos como ilíquidos. No código implementado, desenvolveu-se uma rotina de tratamento governada pela flag `filter_low_liquidity`. Quando habilitada, 
+esses são os ativos definidos como ilíquidos. Para lidar com essa característica, desenvolveu-se uma rotina algorítmica de tratamento no código-fonte que, quando habilitada, 
 essa rotina remove da base de dados para treinamento (que será detalhada posteriormente), os ativos que permaneceram como iliquidos durante um período igual ou superior a 95% da amostra.
 O propósito dessa funcionalidade é impedir que, caso sejam observados
 eventos de variação de spread expurios, devido a baixa liquidez, eles não sejam propagados para o modelo EGARCH, o que poderia corromper a estimação da persistência e dos choques 
@@ -151,7 +150,7 @@ $S_("range") = "Taxa do Ativo"_"max" - "Taxa do Ativo"_"min"$
 
 $S_("skew") = ("Taxa do Ativo" - "Taxa do Ativo"_"min") / (S_("range") + epsilon)$
 
-Sendo $epsilon = 1e-6$ para evitar divisão por zero. A implementação desses cálculos é realizada de maneira estruturada na classe `DataPreprocessor`.
+Sendo $epsilon = 1e-6$ para evitar divisão por zero. A implementação padronizada desses cálculos e engenharia de *features* também é garantida pelas rotinas de pré-processamento abertas no código do projeto.
 
 === EGARCH <subcap_egarch>
 
@@ -219,7 +218,7 @@ A aprovação no teste ARCH-LM evidencia que o modelo EGARCH é adequado para a 
   caption: [Taxa de aprovação dos testes de diagnóstico nos resíduos padronizados do EGARCH(1,1,1) t-Student para 529 debêntures.]
 ) <fig_diagnostico_residuos>
 
-Para mais detalhes a respeito dessa implementação, consultar o script `diagnostico_residuos.py` e a classe `ValidadorEconometrico`.
+Para mais detalhes a respeito da aplicação dessa bateria de testes estatísticos, consultar o repositório público do projeto.
 
 Uma vez definido e implementado o modelo EGARCH(1,1,1) com distribuição t-Student, a distribuição estimada para cada ativo foi utilizada também para o cálculo do Valor em Risco (VaR) e Expected Shortfall (ES) (com percentil de
 99%, que foram atribuidos as variaveis `VaR_99` e `Expected_Shortfall_99`, respectivamente) como forma de precificar o risco das debentures
@@ -234,8 +233,7 @@ observada do ativo, estimada pelo desvio padrão, o valor é removido da amostra
 
 $ sigma_("est")(t) = sigma_("est")(t-1) quad "se" quad sigma_("est")(t) > v_("teto") $
 
-onde $sigma_("est")(t)$ é a volatilidade estimada pelo modelo EGARCH(1,1,1) no dia $t$, e $v_("teto")$ é o limite superior definido como 20 vezes o percentil 99 da série in-sample. Para mais detalhes a respeito dessa implementação, consultar o script
-`volatility.py` e a classe `VolatilityEstimator`.
+onde $sigma_("est")(t)$ é a volatilidade estimada pelo modelo EGARCH(1,1,1) no dia $t$, e $v_("teto")$ é o limite superior definido como 20 vezes o percentil 99 da série in-sample. Para maiores detalhes a respeito dessa implementação algorítmica e dos limites estocásticos aplicados, o leitor deve reportar-se ao código-fonte do estudo.
 
 === Teste de Estacionariedade dos Spreads
 

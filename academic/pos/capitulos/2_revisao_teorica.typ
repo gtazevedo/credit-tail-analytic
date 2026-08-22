@@ -123,8 +123,9 @@ $mu_k$ mais próximo seja minimizada. Ou de forma mais formal:
 
 $ J = sum_{n=1}^N sum_{k=1}^K r_(n k) || x_n - mu_k ||^2 $ <eq_kmeans>
 
-Nesta equação, $r_(n k) in \{0, 1\}$ é uma variável indicadora binária, tal que $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao _cluster_ $k$, e $r_(n j) = 0$ caso contrário (para $j != k$). Por sua vez, $mu_k$ representa o vetor centroide do _cluster_ $k$. O objetivo é encontrar as atribuições $r_(n k)$ e os centroides $mu_k$ que minimizam a função $J$. Isso é comumente realizado por meio de um
-algoritmo iterativo dividido em duas etapas, conhecido como Algoritmo de Lloyd (um caso específico da família de algoritmos de Maximização de Expectativa, ou algoritmo EM).
+Onde $r_(n k) in \{0, 1\}$ é uma variável indicadora binária, tal que $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao _cluster_ $k$, e $r_(n j) = 0$, caso contrário (para $j != k$). Por sua vez, 
+$mu_k$ representa o vetor centroide do _cluster_ $k$. O objetivo é encontrar os valores de $r_(n k)$ e os centroides $mu_k$ que minimizam a função $J$. Isso é comumente realizado por meio de um
+algoritmo iterativo dividido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algoritmo de maximimização de espectativa (EM)).
 
 O modelo, por vezes apresenta um problema conhecido como _Label Switching_, no qual os centróides gerados recebem rótulos arbitrários, 
 isso ocorre porque o algoritmo inicializa os centróides ($mu_k$) de forma aleatória e busca minimizar a soma das distancias quadráticas (conforme a @eq_kmeans), 
@@ -132,14 +133,14 @@ independentemente dos rótulos atribuídos aos centróides. Porém, existem muit
 mas envolve a aplicação de um vetor de polaridade de risco para fixar os rótulos nos regimes Verde (baixo risco), Amarelo (alerta) e Vermelho (crise).
 
 Apesar de sua eficiência em separar os períodos de forma estática, minimizando $J$, 
-o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro, e como será analisado posteriormente, isso dá maior estabilidade aos resultados, porém,
-faz com seu tempo de reação seja mais lento, ou em alguns casos seja insensível devido a uma quebra de regime abrupta.
+o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro, e como será analisado posteriormente, isso confere maior estabilidade aos resultados, porém,
+faz com seu tempo de reação seja mais lento, ou em alguns casos seja insensível a uma quebra de regime abrupta.
 
 === Hidden Markov Models (HMM)
 
-Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM (_Hidden Markov Model_), um modelo probabilístico estruturado classicamente por #cite(<rabiner1989tutorial>, form: "prose") e amplamente
+Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM (_Hidden Markov Model_), um modelo probabilístico estruturado classicamente por #cite(<rabiner1989tutorial>, form: "prose") e 
 adotado para modelagem de dados sequenciais com estados latentes. 
-Conforme detalhado por #cite(<bishop2006pattern>, form: "prose"), o HMM parte do princípio de que os dados medidos no mercado 
+Conforme detalhado por #cite(<bishop2006pattern>, form: "prose"), o HMM parte do princípio de que os dados observados
 (como o _spread_ e a volatilidade) são reflexos de um estado que não pode ser observado diretamente.
 Esse estado é a causa do comportamento dos preços, e é chamado de *variável latente* (ou _hidden state_).
 
@@ -147,21 +148,22 @@ Seja $z_n$ a variável latente que representa o regime oculto do mercado no temp
 No HMM, a dinâmica temporal é regida por um processo de Markov onde a probabilidade do estado atual $z_n$ 
 depende estritamente do estado imediatamente anterior $z_{n-1}$, denotado por $p(z_n | z_{n-1})$.
 
-Como as variáveis latentes assumem $K$ regimes categóricos (neste estudo, 3 níveis de risco), 
+Como as variáveis latentes assumem $K$ regimes categóricos (neste estudo, 3 níveis de risco, detalhados em @subcap_kmeans_k3), 
 essa distribuição corresponde matematicamente à matriz de transição de estados $A$. Adicionalmente, o modelo é governado 
 pelas probabilidades de emissão $B$, que descrevem a distribuição contínua das observações $x_n$ dado o estado $z_n$ (modeladas aqui 
 por distribuições Gaussianas), e pelo vetor de probabilidades iniciais $pi$. Em conjunto, o modelo é parametrizado por $theta = \{A, B, pi\}$.
 
-Segundo #cite(<rabiner1989tutorial>, form: "prose"), a viabilidade do HMM depende da solução matemática de dois problemas fundamentais 
+Segundo #cite(<rabiner1989tutorial>, form: "prose"), a viabilidade do HMM depende da solução matemática de dois problemas  
 presentes na arquitetura do motor de risco: a calibração dos parâmetros $theta$ e a decodificação da sequência ótima de regimes.
 
-Para calibrar o HMM sem possuir os rótulos originais de crise, utiliza-se o algoritmo de *Baum-Welch*, um caso especial do algoritmo de _Expectation-Maximization_ (EM). 
-Na etapa de Expectativa (*E-Step*), estimam-se as probabilidades de cada estado usando o procedimento _Forward-Backward_ formalizado por #cite(<baum1970maximization>, form: "prose"). A etapa _Forward_ calcula as probabilidades observando o histórico até $n$, 
+Para calibração do HMM de forma não supervisionada, utiliza-se o algoritmo de *Baum-Welch*, um caso especial do algoritmo de _Expectation-Maximization_ (EM). 
+Na etapa de Expectativa (*E-Step*), estimam-se as probabilidades de cada estado usando o procedimento _Forward-Backward_ formalizado por 
+#cite(<baum1970maximization>, form: "prose"). A etapa _Forward_ calcula as probabilidades observando o histórico até $n$, 
 denotado por $alpha(z_n)$, enquanto a etapa _Backward_ 
 condensa a probabilidade sob a ótica do futuro de $n$ em diante, denotado por $beta(z_n)$.
 
 Na etapa de Maximização (*M-Step*), as matrizes $A$, $B$ e o vetor $pi$ são iterativamente atualizados por Máxima Verossimilhança até a convergência. 
-Uma vez calibrado o HMM, a identificação do nível de risco no tempo $n$ é realizada filtrando a probabilidade condicional de cada regime, ou ainda, decodificando a 
+Uma vez calibrado o HMM, a identificação do nível de risco no tempo $n$ é realizada filtrando a probabilidade condicional de cada regime, decodificando a 
 trajetória oculta mais provável via *Algoritmo de Viterbi*. Dessa forma, o HMM captura simultaneamente a topologia multivariada dos dados e a inércia estrutural das transições de crédito.
 
 == Seleção de Atributos e Avaliação de Clusters <sub_cap_clusters>
@@ -176,9 +178,9 @@ um índice menor (com limite inferior tendendo a zero) significa que os clusters
 3. *Índice Calinski-Harabasz* (#cite(<calinski1974dendrite>, form: "prose")): Mensura a razão entre a variância inter-cluster e a variância intra-cluster, ponderada pelos graus de liberdade do sistema. Para este índice, valores maiores indicam melhor adequação, 
 denotando que a distância entre os centros dos clusters é expressivamente maior que a dispersão dos pontos dentro de cada regime.
 
-Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento. A solução matemática moderna para este dilema repousa sobre as 
-heurísticas de consenso (ou _Ensembles_). O *Método de Borda* (*Borda Count*), tradicionalmente um sistema de votação, foi historicamente introduzido por #cite(<borda1781>), contudo, sua adaptação computacional moderna o torna um mecanismo imparcial 
-e poderoso para consolidar múltiplos sistemas de classificação e validação multivariada. Esse método foi amplamente estendido na literatura moderna de Aprendizado de Máquina, sendo validado na construção de classificadores de consenso por 
+Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento. A solução matemática para este problema repousa sobre as 
+heurísticas de consenso, combinando os resultados de cada métrica. O *Método de Borda* (*Borda Count*), tradicionalmente um sistema de votação, foi introduzido por #cite(<borda1781>), contudo, sua adaptação computacional
+moderna o torna um mecanismo imparcial e poderoso para consolidar múltiplos sistemas de classificação e validação multivariada. Esse método foi amplamente estendido na 
+literatura moderna de Aprendizado de Máquina, sendo validado na construção de classificadores de consenso por 
 #cite(<ho1994decision>, form: "prose") e #cite(<kittler1998combining>, form: "prose"), bem como na seleção robusta de atributos (_ensembles_) por #cite(<saeys2008robust>, form: "prose"). No contexto deste trabalho, 
-as partições (_features_) são pontuadas pela posição ordinal que alcançaram em cada métrica isolada. Somando-se as avaliações de Borda, o analista 
-mitiga o viés puramente individual de cada índice e converge deterministicamente para o subconjunto dimensionalmente mais democrático e robusto.
+as _features_ são pontuadas pela posição ordinal que alcançaram em cada métrica isolada. Somando-se as avaliações de Borda, mitiga-se o viés individual de cada métrica e se converge para o subconjunto dimensionalmente mais robusto.
