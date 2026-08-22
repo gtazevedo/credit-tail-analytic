@@ -64,13 +64,13 @@ este problema, a modelagem EGARCH pode ser combinada a uma distribuição T de S
 
 Apesar de sua ampla adoção, o VaR apresenta uma limitação matemática: ele não é uma medida de risco subaditiva e, consequentemente, não é uma métrica "coerente" 
 de risco, conforme #cite(<artzner1999>, form: "prose"). Em outras palavras, ele responde apenas à pergunta "Qual é a perda máxima esperada com 99% de confiança?", 
-sendo cego em relação ao que ocorre na cauda extrema, ou seja, ele desconsidera os 1% da distribuição e os impactos de um possível evento dessa cauda.
+sendo cego em relação ao que ocorre na cauda extrema, ou seja, ele desconsidera, no nosso exemplo (supundo um VaR a 99%), os 1% da distribuição e os impactos de um possível evento dessa cauda.
 
 Para solucionar essa limitação, a literatura e regulações como Basileia III têm migrado para o _Expected Shortfall_ (ES) #cite(<acerbi2002>), que calcula a perda média esperada condicionada 
-ao nível de confiança. Diferentemente do VaR, o ES é uma métrica de risco coerente e provê uma avaliação robusta da magnitude das perdas extremas. Ou seja, enquanto o VaR nos diz qual a perda máxima esperada,
-por exemplo, para um dia com 99% de confiança, o ES nos informa que a perda média esperada, caso ocorra um evento de quebra do VaR (os piores 1% dos cenários). 
+ao nível de confiança. Diferentemente do VaR, o ES é uma métrica de risco coerente e possibilita uma avaliação mais robusta da magnitude das perdas extremas, porque, enquanto o VaR nos diz qual a perda máxima esperada,
+por exemplo, para um dia com 99% de confiança, o ES nos informa qual a perda média esperada, caso ocorra um evento de quebra do VaR (ou seja, considerando os piores 1% dos cenários). 
 
-Adicionalmente, modelos de estimação de risco requerem validação estatística formal (_Backtesting_). Os dois métodos utilizados para validação do VaR são:
+Adicionalmente, modelos de estimação de risco requerem validação estatística (_Backtesting_). Os dois métodos tradicionalmente utilizados para a validação do VaR são:
 - *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995techniques>): Avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) 
 é estatisticamente idêntica à proporção esperada.
 - *Teste de Independência e Teste Conjunto de Christoffersen* #cite(<christoffersen1998>): Avalia a "Cobertura Condicional". Testa se as violações do VaR ocorrem de forma agrupada no tempo 
@@ -79,7 +79,7 @@ resultando em um modelo validado no Teste Conjunto (que unifica e avalia simulta
 
 Para formalizar a validação empírica do motor de volatilidade frente às anomalias discutidas, este estudo adota a seguinte hipótese:
 
-- *H0₁*: O modelo EGARCH-t *não* produz uma taxa de falhas estatisticamente compatível com o nível de confiança de 99% estipulado, i.e., a frequência empírica de violações 
+- *H0₁*: O modelo EGARCH-t *não* produz uma taxa de falhas estatisticamente compatível com o nível de confiança de 99% estipulado, ou seja, a frequência empírica de violações 
 do VaR difere significativamente de 1%.
 - *H1₁*: O modelo EGARCH-t produz uma taxa de falhas estatisticamente compatível com 1%, e as violações ocorrem de forma independente no tempo.
 
@@ -87,13 +87,13 @@ A rejeição generalizada de H0₁ no portfólio analisado indicaria inadequaç�
 
 == A Hipótese de Mudança de Regimes (Regime-Switching)
 
-Porém, mesmo o modelo EGARCH que possui o tratamento da assimetria dos retornos possui limitações. A família GARCH, como explicado por #cite(<tsay2005analysis>, form: "prose"), assume que
+Porém, mesmo o modelo EGARCH que possui o tratamento da assimetria dos retornos, possui limitações. A família GARCH, como explicado por #cite(<tsay2005analysis>, form: "prose"), assume que
 os parâmetros do modelo (ou seja, os pesos $omega$, $alpha$, $gamma$ e $beta$ da @eq_egarch) e a "variância incondicional" não mudam ao longo do tempo. Eles são constantes, 
 baseados em uma única média do comportamento global da série.
 
 Devido a essa constância, esses modelos tem dificuldade em se adaptarem quando existe uma quebra de regime, como os eventos de crédito que foram comentados acima, que uma vez divulgados,
-alteram a dinâmica de negociação e preço dos papéis. As informações observadas antes do evento não deixam de possuir a mesma relevância para prever o comportamento futuro
-dos ativos afetados. #cite(<hamilton1994time>, form: "prose") mostra que essas quebras estruturais ocorrem na maioria das series macroeconomicas ou financeiras que possuem um período
+alteram a dinâmica de negociação e preço dos papéis. As informações observadas antes do evento deixam de possuir a mesma relevância para prever o comportamento futuro
+dos ativos afetados. #cite(<hamilton1994time>, form: "prose") mostra que tais quebras estruturais ocorrem na maioria das series macroeconomicas ou financeiras que possuem um período
 suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (_Regime-Switching_). Segundo essa teoria, a economia e os mercados não têm um estado único. 
 Eles transitam entre diferentes estados, onde as equações que regem os preços mudam dependendo do regime atual. Para solucionar esse problema, foi proposto a utilização 
 de Cadeias de Markov para modelar a transição entre diferentes estados da economia.
@@ -112,8 +112,8 @@ livre de distorções induzidas por anomalias momentâneas.
 === K-Means
 
 Um algoritmo popular para problemas de clusterização é o _K-means_ que particiona os dados em $K$ grupos distintos, minimizando a variância intra-cluster. Para utilizá-lo no problema
-em questão, foram criados três clusters de acordo com o nível de risco do papel, de forma que o esperado é que conforme um papel começa apresentar durante o seu período de negociação
-uma variação mais errática do seu spread ele vá migrando do cluster de baixo ao cluster de alto risco.
+em questão, foram criados três clusters de acordo com o nível de risco do papel, de forma que o esperado é que, conforme um papel começa apresentar, durante o seu período de negociação,
+uma variação mais errática do seu _spread_, ou seja, um aumento da volatilidade do _spread_, ele vá migrando do cluster de baixo ao cluster de alto risco.
 
 Para entender melhor essa aplicação vamos tomar como base #cite(<bishop2006pattern>, form: "prose"), em nosso problema temos que identificar grupos ou _clusters_ de dados em um espaço multidimensional.
 Suponha que esse espaço seja dado por $\{x_1, x_2, dots, x_N\}$ onde cada um dos $N$ pontos no espaço multidimensional é um vetor de dimensão $D$.
@@ -123,9 +123,8 @@ $mu_k$ mais próximo seja minimizada. Ou de forma mais formal:
 
 $ J = sum_{n=1}^N sum_{k=1}^K r_(n k) || x_n - mu_k ||^2 $ <eq_kmeans>
 
-Onde $r_(n k) in \{0, 1\}$ é uma variável indicadora, onde $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao _cluster_ $k$ e $r_(n j) = 0$ para $j != k$, 
-enquanto $mu_k$ representa o vetor centroide do _cluster_ $k$. O objetivo é encontrar os valores de $r_(n k)$ e $mu_k$ que minimizam $J$. Isso pode ser realizado por meio de um
-algoritmo iterativo, divido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algortimo de maximimização de expectativa (EM)).
+Nesta equação, $r_(n k) in \{0, 1\}$ é uma variável indicadora binária, tal que $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao _cluster_ $k$, e $r_(n j) = 0$ caso contrário (para $j != k$). Por sua vez, $mu_k$ representa o vetor centroide do _cluster_ $k$. O objetivo é encontrar as atribuições $r_(n k)$ e os centroides $mu_k$ que minimizam a função $J$. Isso é comumente realizado por meio de um
+algoritmo iterativo dividido em duas etapas, conhecido como Algoritmo de Lloyd (um caso específico da família de algoritmos de Maximização de Expectativa, ou algoritmo EM).
 
 O modelo, por vezes apresenta um problema conhecido como _Label Switching_, no qual os centróides gerados recebem rótulos arbitrários, 
 isso ocorre porque o algoritmo inicializa os centróides ($mu_k$) de forma aleatória e busca minimizar a soma das distancias quadráticas (conforme a @eq_kmeans), 
