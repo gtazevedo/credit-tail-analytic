@@ -1,30 +1,33 @@
 = Revisão da Literatura <cap_revisao_lit>
 
-A ideia central deste trabalho parte da modelagem de risco de crédito de debêntures. Mas, para entender esse conceito, é ncessario entender primeiramente, 
+A ideia central deste trabalho parte da modelagem de risco de crédito de debêntures. Mas, para entender esse conceito, é necessario entender primeiramente, 
 "O que é risco?". Existem várias definições, #cite(<jorion2006>, form: "prose") possui uma das mais simples
 e intuitivas, na qual afirma que risco é a volatilidade dos resultados inesperados, seja no valor de ativos, patrimônio ou resultados. E esse risco pode ser originado de várias formas,
-criados pelos humanos, como ciclos de negócios, inflação, mudanças políticas, guerras, etc., ou pode ocorrer devido a fenômenos naturais como terremotos, tsunamis, etc. É na tentativa de 
-combater esses riscos que a economia cresce e as tecnologias se desenvolvem. 
+criados pelos humanos, por meio de ciclos de negócios, inflação, mudanças políticas, guerras, etc., ou pode ocorrer devido a fenômenos naturais como terremotos, tsunamis, etc. É na tentativa de 
+combater e mitigar esses riscos que a economia cresce e as tecnologias se desenvolvem. 
 
 Parte significativa do mercado financeiro atual foi desenvolvida na tentativa de lidar ou compartilhar esses riscos. Ao mesmo tempo que o mercado se desenvolveu,
-foi gerada a necessidade de limitar as perdas potenciais sem deixar de tomar risco. Existem controles *ex post*, mas esses não conseguem garantir que as perdas sejam 
+foi gerada a necessidade de limitar as perdas potenciais das operações realizadas, sem deixar de tomar risco. Existem controles *ex post*, mas esses não conseguem garantir que as perdas sejam 
 próximas ao limite desejado, ao depender da sorte, podem ser maiores. A solução é o uso de modelos quantitativos *ex ante* que limitam a exposição a determinados ativos
 ou fatores de risco baseados em distribuições de probabilidade, como por exemplo os modelos de *Value at Risk*.
 
 == Modelos de Early Warning de Crédito
 
-Os primeiros sistemas formais de alerta precoce de *distress* corporativo remontam ao
-modelo de #cite(<altman1968>, form: "prose"), que utiliza combinações lineares de índices financeiros
-(Altman Z-Score) para prever insolvência. Desde então, a literatura evoluiu para
-abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>) e modelos de forma reduzida
-conforme apresentado por #cite(<duffie2003>), que modelam o spread de crédito diretamente.
+Os primeiros sistemas formais de alerta de *distress* corporativo remontam ao
+modelo de #cite(<altman1968>, form: "prose"), que utiliza combinações lineares de indicadores 
+fundamentais (Altman Z-Score) para prever insolvência. Desde então, a literatura evoluiu para
+abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>). Contudo, essas abordagens 
+tradicionais baseadas em fundamentos requerem dados contábeis de frequência trimestral ou anual e são 
+inadequadas para alertas de alta frequência.
 
-Contudo, esses modelos requerem dados contábeis de frequência trimestral ou anual
-e são inadequados para alertas de alta frequência em mercados secundários de baixa
-liquidez. Esta lacuna motiva a abordagem proposta neste trabalho, que utiliza
-exclusivamente dados de mercado (spread e volatilidade) para inferir o risco de
-crédito de forma diária, ou, se permitido pela capacidade de obtenção de informações,
-de forma intradiária.
+Para superar a dependência de demonstrações financeiras, surgiram os modelos de forma reduzida (*reduced-form models*), 
+conforme consolidado por #cite(<duffie2003>, form: "prose", supplement: [Cap. 5]), que modelam o risco de 
+crédito diretamente através de dados de mercado (modelando a intensidade de *default* estocástica). 
+Apesar de mitigarem a defasagem contábil, a modelagem contínua de intensidade exige mercados altamente 
+líquidos para estimações precisas. Esta limitação estrutural no mercado brasileiro de debêntures motiva 
+a abordagem proposta neste trabalho: utilizar dados de mercado secundário (spread e volatilidade) não 
+para estimar o risco continuamente, mas sim para inferir quebras de regimes discretos de risco de crédito 
+através de aprendizado de máquina, de forma diária.
 
 == Value-at-Risk e Modelos da Família GARCH <subcap_vargarch>
 
