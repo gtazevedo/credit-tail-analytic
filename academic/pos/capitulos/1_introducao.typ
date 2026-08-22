@@ -33,7 +33,7 @@ baseado em GARCH e VaR contínuos, que possuem suposições violadas quando ocor
 Como demonstrado por #cite(<bao2011illiquidity>, form: "prose"), o mercado de crédito corporativo apresenta fricções de liquidez que impedem o ajuste contínuo dos preços, eventos recentes envolvendo o Grupo Pão de Açucar e Americanas são exemplos dos 
 saltos observados nos precos das debêntures desses emissores; No caso das Americanas, houve uma queda de 50% no valor das debentures em um dia, acumulando perdas de cerca de 90% em uma semana; Já no caso do Grupo Pão de Açucar,
 foram observados deságios de até cerca de 70%. Nessas situações, modelos GARCH e VaR tradicionais falham em capturar o risco de cauda, uma vez que segundo #cite(<jorion2006>, form: "prose"), assumem que a liquidação será instantanea a preço de tela.
-Para corrigir essas suposições e capturar quebras estruturais, a literatura mais moderna defende a transição para modelos baseados em mudanças de regime (*Markov-Switching*), conforme proposto por #cite(<haas2004new>, form: "prose") 
+Para corrigir essas suposições e capturar quebras estruturais, a literatura mais moderna defende a transição para modelos baseados em mudanças de regime (_Markov-Switching_), conforme proposto por #cite(<haas2004new>, form: "prose") 
 e #cite(<ardia2019markov>, form: "prose").
 
 == Objetivos (Geral e Específicos)
@@ -42,8 +42,8 @@ A proposta desse trabalho é desenvolver e avaliar os resultados de uma modelage
 prever flutuações contínuas, o modelo busca identificar eventos de mudança de regime para disparar alertas de risco antes de que se observem grandes perdas, possibilitando ao detentor das
 debentures, um tempo hábil para tentar vender o papel antes que as perdas se materializem.  
 
-Para isso, serão utilizadas duas abordages de modelagem de risco, uma baseada em K-Means e outra em HMM, ambas utilizando as mesmas *features* de entrada, derivadas de variaveis como a volatilidade e o spread das debentures,
+Para isso, serão utilizadas duas abordages de modelagem de risco, uma baseada em K-Means e outra em HMM, ambas utilizando as mesmas _features_ de entrada, derivadas de variaveis como a volatilidade e o spread das debentures,
 obtidas por meio de dados abertos divulgados pela Anbima. Além disso, toda a aplicação, feita em python, será disponibilizada para consulta pública no #link("https://github.com/gtazevedo/credit-tail-analytic")[GitHub], 
 juntmente da sua documentação de uso,
 permitindo que qualquer interessado possa replicar os resultados,
-incluindo o *download* das informações utilizadas no trabalho, uma vez que os dados são públicos.
+incluindo o _download_ das informações utilizadas no trabalho, uma vez que os dados são públicos.

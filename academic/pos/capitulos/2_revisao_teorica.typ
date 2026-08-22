@@ -7,33 +7,38 @@ criados pelos humanos, por meio de ciclos de negócios, inflação, mudanças po
 combater e mitigar esses riscos que a economia cresce e as tecnologias se desenvolvem. 
 
 Parte significativa do mercado financeiro atual foi desenvolvida na tentativa de lidar ou compartilhar esses riscos. Ao mesmo tempo que o mercado se desenvolveu,
-foi gerada a necessidade de limitar as perdas potenciais das operações realizadas, sem deixar de tomar risco. Existem controles *ex post*, mas esses não conseguem garantir que as perdas sejam 
-próximas ao limite desejado, ao depender da sorte, podem ser maiores. A solução é o uso de modelos quantitativos *ex ante* que limitam a exposição a determinados ativos
-ou fatores de risco baseados em distribuições de probabilidade, como por exemplo os modelos de *Value at Risk*.
+foi gerada a necessidade de limitar as perdas potenciais das operações realizadas, sem deixar de tomar risco. Existem controles _ex post_, mas esses não conseguem garantir que as perdas sejam 
+próximas ao limite desejado, ao depender da sorte, podem ser maiores. A solução é o uso de modelos quantitativos _ex ante_ que limitam a exposição a determinados ativos
+ou fatores de risco baseados em distribuições de probabilidade, como por exemplo os modelos de _Value at Risk_.
 
 == Modelos de Early Warning de Crédito
 
-Os primeiros sistemas formais de alerta de *distress* corporativo remontam ao
+Os primeiros sistemas formais de alerta de _distress_ corporativo remontam ao
 modelo de #cite(<altman1968>, form: "prose"), que utiliza combinações lineares de indicadores 
 fundamentais (Altman Z-Score) para prever insolvência. Desde então, a literatura evoluiu para
-abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>). Contudo, essas abordagens 
-tradicionais baseadas em fundamentos requerem dados contábeis de frequência trimestral ou anual e são 
-inadequadas para alertas de alta frequência.
+abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>). Contudo, as obordagens 
+tradicionais baseadas em fundamentos, obtidos em balanços e informações contábeis, geralmente divulgados
+em frequência trimestral ou anual, são inadequados para sistemas de alerta em tempo real (ou com poucos dias
+de defasagem) devido a frequencia de divulgação dessas informações.
 
-Para superar a dependência de demonstrações financeiras, surgiram os modelos de forma reduzida (*reduced-form models*), 
-conforme consolidado por #cite(<duffie2003>, form: "prose", supplement: [Cap. 5]), que modelam o risco de 
-crédito diretamente através de dados de mercado (modelando a intensidade de *default* estocástica). 
-Apesar de mitigarem a defasagem contábil, a modelagem contínua de intensidade exige mercados altamente 
-líquidos para estimações precisas. Esta limitação estrutural no mercado brasileiro de debêntures motiva 
-a abordagem proposta neste trabalho: utilizar dados de mercado secundário (spread e volatilidade) não 
-para estimar o risco continuamente, mas sim para inferir quebras de regimes discretos de risco de crédito 
-através de aprendizado de máquina, de forma diária.
+Para superar a dependência de demonstrações financeiras, surgiram os modelos de forma reduzida, 
+conforme consolidado por #cite(<duffie2003>, form: "prose"), que modelam o risco de 
+crédito diretamente através de dados de mercado. Porém, apesar de serem capazes de mitigar a
+defesagem da informação contábil, a modelagem contínua exige mercados liquidos, uma vez que é 
+amplamente dependende dos dados observados. No mercado de debêntures brasileiro, onde se observa
+baixa liquidez e baixa atividade, essa abordagem se mostra frágil. 
+
+Na tentativa de mitigar este problema, este trabalho propõe uma abordagem alternativa. Ao invés de mensurar o risco 
+dos papéis e estimar possíveis perdas, busca-se apenas identificar momentos em que ocorrem mudanças de regime, através 
+do uso de algorítmos de aprendizado de máquina, para gerar alertas antecipados sobre a possibilidade de grandes perdas (
+    apesar de possuir a limitação de não ser capaz de estimá-las.
+). 
 
 == Value-at-Risk e Modelos da Família GARCH <subcap_vargarch>
 
-O *Value at Risk* (VaR) pode ser definido de forma intuitiva como a maior perda esperada de uma carteira em um determinado período de tempo, com um determinado nível de confiança. Ou,
+O _Value at Risk_ (VaR) pode ser definido de forma intuitiva como a maior perda esperada de uma carteira em um determinado período de tempo, com um determinado nível de confiança. Ou,
 de forma mais formal, é o quantil da distribuição de ganhos e perdas projetadas para um horizonte de tempo. Muitas vezes para séries temporais, essa projeção é feita por 
-meio de modelos da família GARCH (*Generalized Autoregressive Conditional Heteroskedasticity*), cuja formulação fundamental foi introduzida por #cite(<engle1982autoregressive>, form: "prose")
+meio de modelos da família GARCH (_Generalized Autoregressive Conditional Heteroskedasticity_), cuja formulação fundamental foi introduzida por #cite(<engle1982autoregressive>, form: "prose")
 e posteriormente generalizada por #cite(<bollerslev1986generalized>, form: "prose"). Apesar de amplamente utilizado, o GARCH tradicional falha em choques assimétricos, como observamos nos 
 eventos recentes envolvendo o Grupo Pão de Açúcar e Americanas.
 Para superar essa fraqueza, #cite(<nelson1991conditional>, form: "prose") propõe o modelo EGARCH, que captura assimetrias na volatilidade dos ativos financeiros.
@@ -61,15 +66,15 @@ Apesar de sua ampla adoção, o VaR apresenta uma limitação matemática: ele n
 de risco, conforme #cite(<artzner1999>, form: "prose"). Em outras palavras, ele responde apenas à pergunta "Qual é a perda máxima esperada com 99% de confiança?", 
 sendo cego em relação ao que ocorre na cauda extrema, ou seja, ele desconsidera os 1% da distribuição e os impactos de um possível evento dessa cauda.
 
-Para solucionar essa limitação, a literatura e regulações como Basileia III têm migrado para o *Expected Shortfall* (ES) #cite(<acerbi2002>), que calcula a perda média esperada condicionada 
+Para solucionar essa limitação, a literatura e regulações como Basileia III têm migrado para o _Expected Shortfall_ (ES) #cite(<acerbi2002>), que calcula a perda média esperada condicionada 
 ao nível de confiança. Diferentemente do VaR, o ES é uma métrica de risco coerente e provê uma avaliação robusta da magnitude das perdas extremas. Ou seja, enquanto o VaR nos diz qual a perda máxima esperada,
 por exemplo, para um dia com 99% de confiança, o ES nos informa que a perda média esperada, caso ocorra um evento de quebra do VaR (os piores 1% dos cenários). 
 
-Adicionalmente, modelos de estimação de risco requerem validação estatística formal (*Backtesting*). Os dois métodos utilizados para validação do VaR são:
+Adicionalmente, modelos de estimação de risco requerem validação estatística formal (_Backtesting_). Os dois métodos utilizados para validação do VaR são:
 - *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995techniques>): Avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) 
 é estatisticamente idêntica à proporção esperada.
 - *Teste de Independência e Teste Conjunto de Christoffersen* #cite(<christoffersen1998>): Avalia a "Cobertura Condicional". Testa se as violações do VaR ocorrem de forma agrupada no tempo 
-(*volatility clustering*). Se as violações forem estatisticamente independentes, o modelo prova que capturou e exauriu corretamente a dinâmica temporal da variância, 
+(_volatility clustering_). Se as violações forem estatisticamente independentes, o modelo prova que capturou e exauriu corretamente a dinâmica temporal da variância, 
 resultando em um modelo validado no Teste Conjunto (que unifica e avalia simultaneamente a Cobertura Incondicional e a Independência).
 
 Para formalizar a validação empírica do motor de volatilidade frente às anomalias discutidas, este estudo adota a seguinte hipótese:
@@ -89,7 +94,7 @@ baseados em uma única média do comportamento global da série.
 Devido a essa constância, esses modelos tem dificuldade em se adaptarem quando existe uma quebra de regime, como os eventos de crédito que foram comentados acima, que uma vez divulgados,
 alteram a dinâmica de negociação e preço dos papéis. As informações observadas antes do evento não deixam de possuir a mesma relevância para prever o comportamento futuro
 dos ativos afetados. #cite(<hamilton1994time>, form: "prose") mostra que essas quebras estruturais ocorrem na maioria das series macroeconomicas ou financeiras que possuem um período
-suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (*Regime-Switching*). Segundo essa teoria, a economia e os mercados não têm um estado único. 
+suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (_Regime-Switching_). Segundo essa teoria, a economia e os mercados não têm um estado único. 
 Eles transitam entre diferentes estados, onde as equações que regem os preços mudam dependendo do regime atual. Para solucionar esse problema, foi proposto a utilização 
 de Cadeias de Markov para modelar a transição entre diferentes estados da economia.
 
@@ -98,19 +103,19 @@ de Cadeias de Markov para modelar a transição entre diferentes estados da econ
 Enquanto alguns autores na literatura propõem a integração direta (como os modelos MS-GARCH unificados), neste trabalho adotam-se algoritmos não supervisionados para agrupar e classificar os regimes 
 de risco latentes. 
 
-Algoritmos de clusterização baseados em distância espacial euclidiana são extremamente sensíveis a valores discrepantes (*outliers*) e grandezas numéricas não uniformes. No mercado de debêntures, 
+Algoritmos de clusterização baseados em distância espacial euclidiana são extremamente sensíveis a valores discrepantes (_outliers_) e grandezas numéricas não uniformes. No mercado de debêntures, 
 onde os ativos apresentam distorções bruscas, a padronização dos dados (pré-processamento) é indispensável. Em vez de utilizar os escalonadores tradicionais, a literatura recomenda o uso de 
 padronizadores robustos, como o `RobustScaler`. Este algoritmo subtrai a mediana e divide os dados pelo intervalo interquartil (IQR, ou seja, a diferença entre o 3º e o 1º quartil). Ao 
-ancorar-se em quantis robustos, ele mitiga estatisticamente o peso das caudas anômalas (*outliers*) e permite que o agrupador avalie a matriz de características 
+ancorar-se em quantis robustos, ele mitiga estatisticamente o peso das caudas anômalas (_outliers_) e permite que o agrupador avalie a matriz de características 
 livre de distorções induzidas por anomalias momentâneas.
 
 === K-Means
 
-Um algoritmo popular para problemas de clusterização é o *K-means* que particiona os dados em $K$ grupos distintos, minimizando a variância intra-cluster. Para utilizá-lo no problema
+Um algoritmo popular para problemas de clusterização é o _K-means_ que particiona os dados em $K$ grupos distintos, minimizando a variância intra-cluster. Para utilizá-lo no problema
 em questão, foram criados três clusters de acordo com o nível de risco do papel, de forma que o esperado é que conforme um papel começa apresentar durante o seu período de negociação
 uma variação mais errática do seu spread ele vá migrando do cluster de baixo ao cluster de alto risco.
 
-Para entender melhor essa aplicação vamos tomar como base #cite(<bishop2006pattern>, form: "prose"), em nosso problema temos que identificar grupos ou *clusters* de dados em um espaço multidimensional.
+Para entender melhor essa aplicação vamos tomar como base #cite(<bishop2006pattern>, form: "prose"), em nosso problema temos que identificar grupos ou _clusters_ de dados em um espaço multidimensional.
 Suponha que esse espaço seja dado por $\{x_1, x_2, dots, x_N\}$ onde cada um dos $N$ pontos no espaço multidimensional é um vetor de dimensão $D$.
 
 O objetivo do algoritmo de K-means é particionar os dados em $K$ grupos distintos, de forma que a soma do quadrado das distancias de cada ponto com o vetor
@@ -118,11 +123,11 @@ $mu_k$ mais próximo seja minimizada. Ou de forma mais formal:
 
 $ J = sum_{n=1}^N sum_{k=1}^K r_(n k) || x_n - mu_k ||^2 $ <eq_kmeans>
 
-Onde $r_(n k) in \{0, 1\}$ é uma variável indicadora, onde $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao *cluster* $k$ e $r_(n j) = 0$ para $j != k$, 
-enquanto $mu_k$ representa o vetor centroide do *cluster* $k$. O objetivo é encontrar os valores de $r_(n k)$ e $mu_k$ que minimizam $J$. Isso pode ser realizado por meio de um
+Onde $r_(n k) in \{0, 1\}$ é uma variável indicadora, onde $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao _cluster_ $k$ e $r_(n j) = 0$ para $j != k$, 
+enquanto $mu_k$ representa o vetor centroide do _cluster_ $k$. O objetivo é encontrar os valores de $r_(n k)$ e $mu_k$ que minimizam $J$. Isso pode ser realizado por meio de um
 algoritmo iterativo, divido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algortimo de maximimização de expectativa (EM)).
 
-O modelo, por vezes apresenta um problema conhecido como *Label Switching*, no qual os centróides gerados recebem rótulos arbitrários, 
+O modelo, por vezes apresenta um problema conhecido como _Label Switching_, no qual os centróides gerados recebem rótulos arbitrários, 
 isso ocorre porque o algoritmo inicializa os centróides ($mu_k$) de forma aleatória e busca minimizar a soma das distancias quadráticas (conforme a @eq_kmeans), 
 independentemente dos rótulos atribuídos aos centróides. Porém, existem muitas formas conhecidas de tratar esse problema. A forma adotada nesse trabalho será detalhada em @subcap_kmeans, 
 mas envolve a aplicação de um vetor de polaridade de risco para fixar os rótulos nos regimes Verde (baixo risco), Amarelo (alerta) e Vermelho (crise).
@@ -133,10 +138,10 @@ faz com seu tempo de reação seja mais lento, ou em alguns casos seja insensív
 
 === Hidden Markov Models (HMM)
 
-Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM (*Hidden Markov Model*), um modelo probabilístico estruturado classicamente por #cite(<rabiner1989tutorial>, form: "prose") e amplamente
+Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM (_Hidden Markov Model_), um modelo probabilístico estruturado classicamente por #cite(<rabiner1989tutorial>, form: "prose") e amplamente
 adotado para modelagem de dados sequenciais com estados latentes. 
 Conforme detalhado por #cite(<bishop2006pattern>, form: "prose"), o HMM parte do princípio de que os dados medidos no mercado 
-(como o *spread* e a volatilidade) são reflexos de um estado que não pode ser observado diretamente.
+(como o _spread_ e a volatilidade) são reflexos de um estado que não pode ser observado diretamente.
 Esse estado é a causa do comportamento dos preços, e é chamado de *variável latente* (ou _hidden state_).
 
 Seja $z_n$ a variável latente que representa o regime oculto do mercado no tempo $n$. 
@@ -151,9 +156,9 @@ por distribuições Gaussianas), e pelo vetor de probabilidades iniciais $pi$. E
 Segundo #cite(<rabiner1989tutorial>, form: "prose"), a viabilidade do HMM depende da solução matemática de dois problemas fundamentais 
 presentes na arquitetura do motor de risco: a calibração dos parâmetros $theta$ e a decodificação da sequência ótima de regimes.
 
-Para calibrar o HMM sem possuir os rótulos originais de crise, utiliza-se o algoritmo de *Baum-Welch*, um caso especial do algoritmo de *Expectation-Maximization* (EM). 
-Na etapa de Expectativa (*E-Step*), estimam-se as probabilidades de cada estado usando o procedimento *Forward-Backward* formalizado por #cite(<baum1970maximization>, form: "prose"). A etapa *Forward* calcula as probabilidades observando o histórico até $n$, 
-denotado por $alpha(z_n)$, enquanto a etapa *Backward* 
+Para calibrar o HMM sem possuir os rótulos originais de crise, utiliza-se o algoritmo de *Baum-Welch*, um caso especial do algoritmo de _Expectation-Maximization_ (EM). 
+Na etapa de Expectativa (*E-Step*), estimam-se as probabilidades de cada estado usando o procedimento _Forward-Backward_ formalizado por #cite(<baum1970maximization>, form: "prose"). A etapa _Forward_ calcula as probabilidades observando o histórico até $n$, 
+denotado por $alpha(z_n)$, enquanto a etapa _Backward_ 
 condensa a probabilidade sob a ótica do futuro de $n$ em diante, denotado por $beta(z_n)$.
 
 Na etapa de Maximização (*M-Step*), as matrizes $A$, $B$ e o vetor $pi$ são iterativamente atualizados por Máxima Verossimilhança até a convergência. 
@@ -165,7 +170,7 @@ trajetória oculta mais provável via *Algoritmo de Viterbi*. Dessa forma, o HMM
 Para que os algoritmos não-supervisionados (como o K-Means) convirjam para partições representativas, a escolha adequada das variáveis de entrada é crucial. Como, diferentemente de algortímos supervisionados, não existem os rótulos esperados
 para guiar os modelos, a qualidade do agrupamento deve ser mensurada matematicamente por meio de métricas de validação interna da geometria dos grupos gerados:
 
-1. *Silhouette Score* (#cite(<rousseeuw1987silhouettes>, form: "prose")): Mede a coesão intra-cluster frente à separabilidade inter-cluster, variando no intervalo $[-1, 1]$. Nesta métrica, valores maiores indicam melhor adequação, ou seja, valores próximos a 1 
+1. _Silhouette Score_ (#cite(<rousseeuw1987silhouettes>, form: "prose")): Mede a coesão intra-cluster frente à separabilidade inter-cluster, variando no intervalo $[-1, 1]$. Nesta métrica, valores maiores indicam melhor adequação, ou seja, valores próximos a 1 
 sugerem clusters perfeitamente densos e bem separados, enquanto valores próximos a 0 ou negativos indicam forte sobreposição.
 2. *Índice Davies-Bouldin* (#cite(<davies1979cluster>, form: "prose")): Avalia a razão média da dispersão interna do cluster pela distância euclidiana entre os centróides, penalizando sobreposições. Diferente do Silhouette, nesta métrica valores menores indicam melhor adequação, pois 
 um índice menor (com limite inferior tendendo a zero) significa que os clusters são compactos internamente e distantes uns dos outros.
@@ -173,8 +178,8 @@ um índice menor (com limite inferior tendendo a zero) significa que os clusters
 denotando que a distância entre os centros dos clusters é expressivamente maior que a dispersão dos pontos dentro de cada regime.
 
 Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento. A solução matemática moderna para este dilema repousa sobre as 
-heurísticas de consenso (ou *Ensembles*). O *Método de Borda* (*Borda Count*), tradicionalmente um sistema de votação, foi historicamente introduzido por #cite(<borda1781>), contudo, sua adaptação computacional moderna o torna um mecanismo imparcial 
+heurísticas de consenso (ou _Ensembles_). O *Método de Borda* (*Borda Count*), tradicionalmente um sistema de votação, foi historicamente introduzido por #cite(<borda1781>), contudo, sua adaptação computacional moderna o torna um mecanismo imparcial 
 e poderoso para consolidar múltiplos sistemas de classificação e validação multivariada. Esse método foi amplamente estendido na literatura moderna de Aprendizado de Máquina, sendo validado na construção de classificadores de consenso por 
-#cite(<ho1994decision>, form: "prose") e #cite(<kittler1998combining>, form: "prose"), bem como na seleção robusta de atributos (*ensembles*) por #cite(<saeys2008robust>, form: "prose"). No contexto deste trabalho, 
-as partições (*features*) são pontuadas pela posição ordinal que alcançaram em cada métrica isolada. Somando-se as avaliações de Borda, o analista 
+#cite(<ho1994decision>, form: "prose") e #cite(<kittler1998combining>, form: "prose"), bem como na seleção robusta de atributos (_ensembles_) por #cite(<saeys2008robust>, form: "prose"). No contexto deste trabalho, 
+as partições (_features_) são pontuadas pela posição ordinal que alcançaram em cada métrica isolada. Somando-se as avaliações de Borda, o analista 
 mitiga o viés puramente individual de cada índice e converge deterministicamente para o subconjunto dimensionalmente mais democrático e robusto.
