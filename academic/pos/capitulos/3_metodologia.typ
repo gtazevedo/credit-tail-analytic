@@ -1,6 +1,6 @@
 = Metodologia e Dados <cap_metodologia>
 
-A análise do risco de crédito das debentures requer uma coleta extensa de dados e analise rigorosa de sua qualidade para que o modelo implementado seja acurado e capaz
+A análise do risco de crédito das debêntures requer uma coleta extensa de dados e análise rigorosa de sua qualidade para que o modelo implementado seja acurado e capaz
 de capturar as nuances desejadas. Este capítulo detalha os procedimentos que foram adotados para a coleta, tratamento e análise dos dados. Além dos modelos e validações
 aplicados neste estudo.
 
@@ -10,44 +10,44 @@ cada função e da ferramenta como um todo poderão ser encontrados na documenta
 
 == Coleta e Tratamento de Dados (ANBIMA) <subcap_coleta_dados>
 
-Os dados base de _spread_ por debênture e dia de negociação, que alimentam essa pesquisa foram extraidos do site da ANBIMA, mais especificamente na seção de Prévias Públicas de Negociação de Instrumentos Financeiros,
-que pertence ao sistema REUNE. O período da amostra foi do segundo dia de janeiro de 2018 a 10 de julho de 2026. Os dados diários extraidos possuem as seguintes colunas:
+Os dados base de _spread_ por debênture e dia de negociação, que alimentam essa pesquisa foram extraídos do site da ANBIMA, mais especificamente na seção de Prévias Públicas de Negociação de Instrumentos Financeiros,
+que pertence ao sistema REUNE. O período da amostra foi do segundo dia de janeiro de 2018 a 10 de julho de 2026. Os dados diários extraídos possuem as seguintes colunas:
 Codigo Cetip, Tipo, Agrupamento, Taxa Mínima, Taxa Média, Taxa Máxima, Preço Mínimo, Preço Médio, Preço Máximo e Faixa de Volume.
 O leitor interessado em reproduzir esta coleta de dados pode consultar as rotinas de raspagem de dados (_web scraping_) e os _scripts_ de unificação disponibilizados no repositório público desta pesquisa no #link("https://github.com/gtazevedo/credit-tail-analytic")[GitHub], 
 uma vez que o download gera um arquivo csv por dia de consulta.
 
-Já as informações cadastrais foram obtidas na página #link("https://www.debentures.com.br")[Debentures.com.br] (que será substituida pelo #link("https://data.anbima.com.br/")[ANBIMA Data]) por meio de consulta utilizando o pacote `debentures_dot_com`
+Já as informações cadastrais foram obtidas na página #link("https://www.debentures.com.br")[Debentures.com.br] (que será substituída pelo #link("https://data.anbima.com.br/")[ANBIMA Data]) por meio de consulta utilizando o pacote `debentures_dot_com`
 (mantido pelo autor desse trabalho). As informações 
-obtidas são referentes a emissão das debentures e incluem informações como: Ticker, Indexador, Data de Emissão, Data Vencimento, Empresa, CNPJ, Emissão, Situação, Classe, Garantia, Quantidade Emitida,
+obtidas são referentes à emissão das debêntures e incluem informações como: Ticker, Indexador, Data de Emissão, Data Vencimento, Empresa, CNPJ, Emissão, Situação, Classe, Garantia, Quantidade Emitida,
 Quantidade Mercado, Taxa Emissão, Motivo de Saida, entre outras; para mais informações sobre os campos citados ou campos disponíveis consultar a página do #link("https://data.anbima.com.br/")[ANBIMA Data] e/ou o
 pacote `debentures_dot_com`. A rotina automatizada para o cruzamento destas informações cadastrais também encontra-se documentada no repositório do projeto.
 
-As informações macroeconomicas (CDI, Selic, IPCA Mensal e 12M e IGPM Mensal) foram extraidas utilizando o pacote `python-bcb`. O leitor pode replicar esse download por meio
+As informações macroeconômicas (CDI, Selic, IPCA Mensal e 12M e IGPM Mensal) foram extraídas utilizando o pacote `python-bcb`. O leitor pode replicar esse download por meio
 da aplicação direta do pacote de #cite(<freitaspythonbcb>, form: "prose") para as variaveis de interesse, cujos _scripts_ constam no repositório do projeto.
 
 Na etapa de pré-processamento, mais detalhada na @subcap_processamento, foi realizada a normalização e tratamento das variáveis. Como a base de dados extraída da ANBIMA abrange múltiplos indexadores (como IPCA+, DI+ e % do CDI), 
 foi necessário separar esses grupos para treinar e aplicar o modelo de forma independente,
 criando uma instância de modelagem por indexador, 
 conforme será detalhado nas sessões seguintes,
-uma vez que os papéis de diferentes indexadores possuem comportamento de risco distintos, assim como distinta sensibilidade a variação da taxa. 
+uma vez que os papéis de diferentes indexadores possuem comportamento de risco distintos, assim como distinta sensibilidade à variação da taxa. 
 
 Como citado na @cap_introducao, um desafio inerente ao mercado secundário de crédito privado brasileiro é a baixa liquidez dos ativos, inclusive com alguns chegando a possuir
 dias sem negociação. A ANBIMA classifica o volume de negociação, no sistema de informações consultado, em faixas, sendo a faixa mais baixa dada por "Até 1MM", e portanto, dado as informações possuídas na realização dessa pesquisa,
 esses são os ativos definidos como ilíquidos. Para lidar com essa característica, desenvolveu-se uma rotina algorítmica de tratamento, que, quando habilitada, 
-remove da base de dados para treinamento (que será detalhada posteriormente em @subcap_processamento), os ativos que permaneceram como iliquidos durante um período igual ou superior a 95% da amostra.
+remove da base de dados para treinamento (que será detalhada posteriormente em @subcap_processamento), os ativos que permaneceram como ilíquidos durante um período igual ou superior a 95% da amostra.
 O propósito dessa funcionalidade é impedir que, caso sejam observados
 eventos de variação de _spread_ espúrios, devido a baixa liquidez, eles não sejam propagados para o modelo EGARCH, o que poderia corromper a estimação da persistência e dos choques 
 (parâmetros $alpha$ e $beta$) da variância condicional. É importante notar que esses ativos foram removidos apenas da amostra de teste, com a exceção de RDVT11, que foi removido manualmente da amostra
 devido aos seguintes fatores:
-- O ativo não tinha dados de negociação durante a etapa de treinamento, então seria considerado posteriormente, mesmo iliquido.
+- O ativo não tinha dados de negociação durante a etapa de treinamento, então seria considerado posteriormente, mesmo ilíquido.
 - A série de preços do ativo apresenta grandes variações, com um espaçamento elevado entre os dados, o que pode introduzir vieses na estimação.
-    - Em 05/12/2023 o ativo foi negociado com PU de 1001.77, sendo negociado novamente apenas em 20/03/2024 com PU de 1.40 e posterio em 21/03/2024 com PU de 0.000014. Voltando a ser negociado em 26/07/2024 com PU de 38.04 e em 28/02/2025 com PU de 754.31.
+    - Em 05/12/2023 o ativo foi negociado com PU de 1001.77, sendo negociado novamente apenas em 20/03/2024 com PU de 1.40 e posterior em 21/03/2024 com PU de 0.000014. Voltando a ser negociado em 26/07/2024 com PU de 38.04 e em 28/02/2025 com PU de 754.31.
 - A empresa passou por eventos de reestruturação e recuperação judicial
 
 A princípio, a empresa deveria ser um exemplo natural de evento de _tail risk_ que o modelo deveria prever. Contudo, devido ao espaçamento temporal irregular de marcações a mercado e à extrema escassez de liquidez, 
 as séries de retorno tornaram-se puramente espúrias, o que pode comprometer severamente a convergência do estimador de máxima verossimilhança do motor EGARCH, além disso, como o ativo permanece durante o periodo
-_Out-of-Sample_, ele seria considerado no _backtest_, gerando PnLs espurios. Por esse motivo, a exclusão sumária deste ativo da amostra 
-final foi necessária para preservar a integridade estatística da modelagem e coerencia dos resultados observados.
+_Out-of-Sample_, ele seria considerado no _backtest_, gerando PnLs espúrios. Por esse motivo, a exclusão sumária deste ativo da amostra 
+final foi necessária para preservar a integridade estatística da modelagem e coerência dos resultados observados.
 
 == O Pipeline de Risco (EGARCH, K-Means e HMM)
 
@@ -220,7 +220,7 @@ A aprovação no teste ARCH-LM evidencia que o modelo EGARCH é adequado para a 
 ) <fig_diagnostico_residuos>
 
 Uma vez definido e implementado o modelo EGARCH(1,1,1) com distribuição t-Student, a distribuição estimada para cada ativo foi utilizada também para o cálculo do Valor em Risco (VaR) e Expected Shortfall (ES) (com percentil de
-99%, que foram atribuidos as variaveis `VaR_99` e `Expected_Shortfall_99`, respectivamente) como forma de precificar o risco das debentures
+99%, que foram atribuídos às variáveis `VaR_99` e `Expected_Shortfall_99`, respectivamente) como forma de precificar o risco das debêntures
 analisadas baseado na série de volatilidade estimada. Como a distribuição escolhida para os resíduos foi a t-student, se $nu <= 2$ então a variancia da distribuição se torna infinita, levando a erros numericos no python quando se tenta calcular o VaR e ES,
 para evitar tais erros, foi aplicado um limite nos graus de liberdade, de forma que $nu$ sempre será maior que 2.05, matematicamente, temos que o tratamento aplicado foi:
 
@@ -280,10 +280,10 @@ Nas seções @subcap_processamento e @subcap_egarch foram listadas as variáveis
   - Spread_Skew_Intraday
 
 
-Elas foram utilizadas como um input para um processo de seleção de variáveis, que eligiu as mais relevantes para utilização nos modelos propostos. Devido a natureza não supervisionada desses modelos, a determinação da relevância dessas variáveis
+Elas foram utilizadas como um input para um processo de seleção de variáveis, que elegeu as mais relevantes para utilização nos modelos propostos. Devido a natureza não supervisionada desses modelos, a determinação da relevância dessas variáveis
 não pode ser realizada através dos métodos usuais que são utilizados para os processos de aprendizado supervisionado. Por essa razão, a seleção implementada realiza combinações iterativas por meio de um _Grid Search_ sobre subconjuntos das 
 variáveis candidatas utilizando os dados de treinamento (_In-Sample_). Com intuito de garantir significado econômico aos clusters, a variável `Taxa_ZScore` foi mantida como obrigatória em todas as combinações. Impedindo que o algoritmo selecione apenas
-variáveis de risco correlacionadas (como a volatilidade EGARCH e o VaR), o que não agregaria valor discriminatório aos _clusters_, devido a carencia da preficicação relativa ao _spread_ de crédito.
+variáveis de risco correlacionadas (como a volatilidade EGARCH e o VaR), o que não agregaria valor discriminatório aos _clusters_, devido a carência da precificação relativa ao _spread_ de crédito.
 
 Para cada subconjunto testado, os dados foram padronizados utilizando  _RobustScaler_ devido a sua capacidade de lidar com outliers, conforme apresentado em @cap_revisao_lit. Os subconjuntos foram então submetidos a uma clusterização primára utilizando K-Means
 com $k=3$ regimes (a escolha dos regimes é justificada empiricamente na @subcap_kmeans_k3). A qualidade de separabilidade dos agrupamentos foi mensurada através das três métricas listadas na @sub_cap_clusters ( *_Silhouette Score_* , *Índice Davies-Bouldin* e *Índice Calinski-Harabasz*).
@@ -329,11 +329,11 @@ O processo é realizado iterativamente para cada grupo de indexador (ex: DI, IPC
 ==== Justificativa Empírica do Número de Clusters ($k=3$) <subcap_kmeans_k3>
 
 A escolha de $k=3$ regimes — Verde (baixo risco), Amarelo (alerta) e Vermelho (crise) — foi motivada, primariamente, pela semântica financeira do sistema de alertas (analoga aos semaforos, comumente utilizados em risco de crédito). 
-Contudo, para validar formalmente essa escolha, aplicou-se a análise de _Elbow Method_ (inerçia da soma dos quadrados intra-_cluster_ em função de $k$) e o _Silhouette Score_ médio para $k in \{2, 3, 4, 5, 6, 7\}$, 
+Contudo, para validar formalmente essa escolha, aplicou-se a análise de _Elbow Method_ (inércia da soma dos quadrados intra-_cluster_ em função de $k$) e o _Silhouette Score_ médio para $k in \{2, 3, 4, 5, 6, 7\}$, 
 utilizando rigorosamente os dados padronizados do período _In-Sample_ para evitar viés prospectivo (_Data Snooping_).
 
 Os resultados, ilustrados na @fig_cluster_validation, mostram que para os indexadores IPCA e DI _Spread_: 
-(i) a curva de inerçia exibe uma inflexão (_Elbow_) em $k=3$, indicando redução marginal decrescente a partir deste ponto; 
+(i) a curva de inércia exibe uma inflexão (_Elbow_) em $k=3$, indicando redução marginal decrescente a partir deste ponto; 
 (ii) o _Silhouette Score_ para $k=3$ é consistentemente superior ao de $k=2$ em ambos os grupos, ao mesmo tempo em que $k=4$ e 
 $k=5$ não oferecem ganho relevantes de separabilidade. Conclui-se, portanto, que $k=3$ é a escolha *parcimoniosa* que maximiza a interpretação econômica e a coerência geométrica dos regimes.
 

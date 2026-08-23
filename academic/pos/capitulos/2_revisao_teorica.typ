@@ -1,6 +1,6 @@
 = Revisão da Literatura <cap_revisao_lit>
 
-A ideia central deste trabalho parte da modelagem de risco de crédito de debêntures. Mas, para entender esse conceito, é necessario entender primeiramente, 
+A ideia central deste trabalho parte da modelagem de risco de crédito de debêntures. Mas, para entender esse conceito, é necessário entender primeiramente, 
 "O que é risco?". Existem várias definições, #cite(<jorion2006>, form: "prose") possui uma das mais simples
 e intuitivas, na qual afirma que risco é a volatilidade dos resultados inesperados, seja no valor de ativos, patrimônio ou resultados. E esse risco pode ser originado de várias formas,
 criados pelos humanos, por meio de ciclos de negócios, inflação, mudanças políticas, guerras, etc., ou pode ocorrer devido a fenômenos naturais como terremotos, tsunamis, etc. É na tentativa de 
@@ -16,21 +16,21 @@ ou fatores de risco baseados em distribuições de probabilidade, como por exemp
 Os primeiros sistemas formais de alerta de _distress_ corporativo remontam ao
 modelo de #cite(<altman1968>, form: "prose"), que utiliza combinações lineares de indicadores 
 fundamentais (Altman Z-Score) para prever insolvência. Desde então, a literatura evoluiu para
-abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>). Contudo, as obordagens 
+abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>). Contudo, as abordagens 
 tradicionais baseadas em fundamentos, obtidos em balanços e informações contábeis, geralmente divulgados
 em frequência trimestral ou anual, são inadequados para sistemas de alerta em tempo real (ou com poucos dias
-de defasagem) devido a frequencia de divulgação dessas informações.
+de defasagem) devido à frequência de divulgação dessas informações.
 
 Para superar a dependência de demonstrações financeiras, surgiram os modelos de forma reduzida, 
 conforme consolidado por #cite(<duffie2003>, form: "prose"), que modelam o risco de 
 crédito diretamente através de dados de mercado. Porém, apesar de serem capazes de mitigar a
-defesagem da informação contábil, a modelagem contínua exige mercados liquidos, uma vez que é 
-amplamente dependende dos dados observados. No mercado de debêntures brasileiro, onde se observa
+defasagem da informação contábil, a modelagem contínua exige mercados líquidos, uma vez que é 
+amplamente dependente dos dados observados. No mercado de debêntures brasileiro, onde se observa
 baixa liquidez e baixa atividade, essa abordagem se mostra frágil. 
 
 Na tentativa de mitigar este problema, este trabalho propõe uma abordagem alternativa. Ao invés de mensurar o risco 
 dos papéis e estimar possíveis perdas, busca-se apenas identificar momentos em que ocorrem mudanças de regime, através 
-do uso de algorítmos de aprendizado de máquina, para gerar alertas antecipados sobre a possibilidade de grandes perdas (
+do uso de algoritmos de aprendizado de máquina, para gerar alertas antecipados sobre a possibilidade de grandes perdas (
     apesar de possuir a limitação de não ser capaz de estimá-las.
 ). 
 
@@ -64,7 +64,7 @@ este problema, a modelagem EGARCH pode ser combinada a uma distribuição T de S
 
 Apesar de sua ampla adoção, o VaR apresenta uma limitação matemática: ele não é uma medida de risco subaditiva e, consequentemente, não é uma métrica "coerente" 
 de risco, conforme #cite(<artzner1999>, form: "prose"). Em outras palavras, ele responde apenas à pergunta "Qual é a perda máxima esperada com 99% de confiança?", 
-sendo cego em relação ao que ocorre na cauda extrema, ou seja, ele desconsidera, no nosso exemplo (supundo um VaR a 99%), os 1% da distribuição e os impactos de um possível evento dessa cauda.
+sendo cego em relação ao que ocorre na cauda extrema, ou seja, ele desconsidera, no nosso exemplo (supondo um VaR a 99%), os 1% da distribuição e os impactos de um possível evento dessa cauda.
 
 Para solucionar essa limitação, a literatura e regulações como Basileia III têm migrado para o _Expected Shortfall_ (ES) #cite(<acerbi2002>), que calcula a perda média esperada condicionada 
 ao nível de confiança. Diferentemente do VaR, o ES é uma métrica de risco coerente e possibilita uma avaliação mais robusta da magnitude das perdas extremas, porque, enquanto o VaR nos diz qual a perda máxima esperada,
@@ -91,11 +91,11 @@ Porém, mesmo o modelo EGARCH que possui o tratamento da assimetria dos retornos
 os parâmetros do modelo (ou seja, os pesos $omega$, $alpha$, $gamma$ e $beta$ da @eq_egarch) e a "variância incondicional" não mudam ao longo do tempo. Eles são constantes, 
 baseados em uma única média do comportamento global da série.
 
-Devido a essa constância, esses modelos tem dificuldade em se adaptarem quando existe uma quebra de regime, como os eventos de crédito que foram comentados acima, que uma vez divulgados,
+Devido a essa constância, esses modelos têm dificuldade em se adaptarem quando existe uma quebra de regime, como os eventos de crédito que foram comentados acima, que uma vez divulgados,
 alteram a dinâmica de negociação e preço dos papéis. As informações observadas antes do evento deixam de possuir a mesma relevância para prever o comportamento futuro
-dos ativos afetados. #cite(<hamilton1994time>, form: "prose") mostra que tais quebras estruturais ocorrem na maioria das series macroeconomicas ou financeiras que possuem um período
+dos ativos afetados. #cite(<hamilton1994time>, form: "prose") mostra que tais quebras estruturais ocorrem na maioria das séries macroeconômicas ou financeiras que possuem um período
 suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (_Regime-Switching_). Segundo essa teoria, a economia e os mercados não têm um estado único. 
-Eles transitam entre diferentes estados, onde as equações que regem os preços mudam dependendo do regime atual. Para solucionar esse problema, foi proposto a utilização 
+Eles transitam entre diferentes estados, onde as equações que regem os preços mudam dependendo do regime atual. Para solucionar esse problema, foi proposta a utilização 
 de Cadeias de Markov para modelar a transição entre diferentes estados da economia.
 
 == Aprendizado de Máquina Não Supervisionado
@@ -112,29 +112,29 @@ livre de distorções induzidas por anomalias momentâneas.
 === K-Means
 
 Um algoritmo popular para problemas de clusterização é o _K-means_ que particiona os dados em $K$ grupos distintos, minimizando a variância intra-cluster. Para utilizá-lo no problema
-em questão, foram criados três clusters de acordo com o nível de risco do papel, de forma que o esperado é que, conforme um papel começa apresentar, durante o seu período de negociação,
+em questão, foram criados três clusters de acordo com o nível de risco do papel, de forma que o esperado é que, conforme um papel começa a apresentar, durante o seu período de negociação,
 uma variação mais errática do seu _spread_, ou seja, um aumento da volatilidade do _spread_, ele vá migrando do cluster de baixo ao cluster de alto risco.
 
 Para entender melhor essa aplicação vamos tomar como base #cite(<bishop2006pattern>, form: "prose"), em nosso problema temos que identificar grupos ou _clusters_ de dados em um espaço multidimensional.
 Suponha que esse espaço seja dado por $\{x_1, x_2, dots, x_N\}$ onde cada um dos $N$ pontos no espaço multidimensional é um vetor de dimensão $D$.
 
-O objetivo do algoritmo de K-means é particionar os dados em $K$ grupos distintos, de forma que a soma do quadrado das distancias de cada ponto com o vetor
+O objetivo do algoritmo de K-means é particionar os dados em $K$ grupos distintos, de forma que a soma do quadrado das distâncias de cada ponto com o vetor
 $mu_k$ mais próximo seja minimizada. Ou de forma mais formal: 
 
 $ J = sum_{n=1}^N sum_{k=1}^K r_(n k) || x_n - mu_k ||^2 $ <eq_kmeans>
 
 Onde $r_(n k) in \{0, 1\}$ é uma variável indicadora binária, tal que $r_(n k) = 1$ se o ponto $x_n$ foi alocado ao _cluster_ $k$, e $r_(n j) = 0$, caso contrário (para $j != k$). Por sua vez, 
 $mu_k$ representa o vetor centroide do _cluster_ $k$. O objetivo é encontrar os valores de $r_(n k)$ e os centroides $mu_k$ que minimizam a função $J$. Isso é comumente realizado por meio de um
-algoritmo iterativo dividido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algoritmo de maximimização de espectativa (EM)).
+algoritmo iterativo dividido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algoritmo de maximização de expectativa (EM)).
 
-O modelo, por vezes apresenta um problema conhecido como _Label Switching_, no qual os centróides gerados recebem rótulos arbitrários, 
-isso ocorre porque o algoritmo inicializa os centróides ($mu_k$) de forma aleatória e busca minimizar a soma das distancias quadráticas (conforme a @eq_kmeans), 
+O modelo, por vezes apresenta um problema conhecido como _Label Switching_, no qual os centroides gerados recebem rótulos arbitrários, 
+isso ocorre porque o algoritmo inicializa os centroides ($mu_k$) de forma aleatória e busca minimizar a soma das distancias quadráticas (conforme a @eq_kmeans), 
 independentemente dos rótulos atribuídos aos centróides. Porém, existem muitas formas conhecidas de tratar esse problema. A forma adotada nesse trabalho será detalhada em @subcap_kmeans, 
 mas envolve a aplicação de um vetor de polaridade de risco para fixar os rótulos nos regimes Verde (baixo risco), Amarelo (alerta) e Vermelho (crise).
 
 Apesar de sua eficiência em separar os períodos de forma estática, minimizando $J$, 
 o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro, e como será analisado posteriormente, isso confere maior estabilidade aos resultados, porém,
-faz com seu tempo de reação seja mais lento, ou em alguns casos seja insensível a uma quebra de regime abrupta.
+faz com que seu tempo de reação seja mais lento, ou em alguns casos seja insensível a uma quebra de regime abrupta.
 
 === Hidden Markov Models (HMM)
 
@@ -168,12 +168,12 @@ trajetória oculta mais provável via *Algoritmo de Viterbi*. Dessa forma, o HMM
 
 == Seleção de Atributos e Avaliação de Clusters <sub_cap_clusters>
 
-Para que os algoritmos não-supervisionados (como o K-Means) convirjam para partições representativas, a escolha adequada das variáveis de entrada é crucial. Como, diferentemente de algortímos supervisionados, não existem os rótulos esperados
+Para que os algoritmos não-supervisionados (como o K-Means) convirjam para partições representativas, a escolha adequada das variáveis de entrada é crucial. Como, diferentemente de algoritmos supervisionados, não existem os rótulos esperados
 para guiar os modelos, a qualidade do agrupamento deve ser mensurada matematicamente por meio de métricas de validação interna da geometria dos grupos gerados:
 
 1. _Silhouette Score_ (#cite(<rousseeuw1987silhouettes>, form: "prose")): Mede a coesão intra-_cluster_ frente à separabilidade inter-_cluster_, variando no intervalo $[-1, 1]$. Nesta métrica, valores maiores indicam melhor adequação, ou seja, valores próximos a 1 
 sugerem clusters perfeitamente densos e bem separados, enquanto valores próximos a 0 ou negativos indicam forte sobreposição.
-2. *Índice Davies-Bouldin* (#cite(<davies1979cluster>, form: "prose")): Avalia a razão média da dispersão interna do _cluster_ pela distância euclidiana entre os centróides, penalizando sobreposições. Diferente do Silhouette, nesta métrica valores menores indicam melhor adequação, pois 
+2. *Índice Davies-Bouldin* (#cite(<davies1979cluster>, form: "prose")): Avalia a razão média da dispersão interna do _cluster_ pela distância euclidiana entre os centroides, penalizando sobreposições. Diferente do Silhouette, nesta métrica valores menores indicam melhor adequação, pois 
 um índice menor (com limite inferior tendendo a zero) significa que os clusters são compactos internamente e distantes uns dos outros.
 3. *Índice Calinski-Harabasz* (#cite(<calinski1974dendrite>, form: "prose")): Mensura a razão entre a variância inter-_cluster_ e a variância intra-_cluster_, ponderada pelos graus de liberdade do sistema. Para este índice, valores maiores indicam melhor adequação, 
 denotando que a distância entre os centros dos clusters é expressivamente maior que a dispersão dos pontos dentro de cada regime.

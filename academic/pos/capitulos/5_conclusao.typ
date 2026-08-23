@@ -12,19 +12,19 @@ O estudo revelou achados importantes que conectam a modelagem teórica à aplica
 
 1. *Adequação da Modelagem de Cauda (EGARCH-t):* A adoção do modelo EGARCH-t acoplado ao _Expected Shortfall_ provou-se eficaz na precificação do risco isolado dos ativos. A validação por meio dos 
 testes conjuntos de Christoffersen, conforme apresentado na @subcap_valest, confirmou que o modelo é capaz de absorver a heterocedasticidade condicional e evitar o agrupamento de violações (_volatility clustering_), 
-mesmo frente aos massivos choques de iliquidez do período _Out-of-Sample_, respondendo, assim, as falha dos modelos de VaR tradicionais citados na @subcap_vargarch.
+mesmo frente aos massivos choques de iliquidez do período _Out-of-Sample_, respondendo, assim, às falhas dos modelos de VaR tradicionais citados na @subcap_vargarch.
 
 2. *O Paradoxo entre Acurácia Preditiva e Desempenho Financeiro:* Observou-se uma dicotomia robusta e quantificada entre o Modelo Oculto de Markov (HMM) e o particionamento geométrico atemporal (K-Means). Conforme 
 demonstrado através da análise sistêmica de *Lead Time* (Antecipação de Alerta), o HMM demonstrou superioridade analítica preditiva ao integrar a dependência temporal via matrizes de transição, antecipando eventos de crédito 
 severos de forma significativamente mais ágil que as demais metodologias em múltiplos cenários corporativos independentes (como no caso da CVC Corp e do Grupo Pão de Açúcar). Contudo, no _backtest_ financeiro, a estratégia de liquidação 
-pautada pelo K-Means (*Vende Amarelo*) não apenas entregou a melhor relação risco-retorno (*Calmar Ratio* de 1,603), mas foi a *única* capaz de superar a estratégia passiva (_Buy-and-Hold_) com significância estatística comprovada por _Block Bootstrap_
-(p-valor < 0,05). Este fenômeno consolida empiricamente o que denominou-se de *Paradoxo da Latência*: a inércia do K-Means funcionou como um filtro de ruído contra a volatilidade secundária, poupando a carteira do excesso de giro 
-impulsionado pelas matrizes de transição do HMM. Em cenários de iliquidez e altos custos de transação (0,5% por operação), essa ineficiência preditiva transmuta-se, paradoxalmente, em proteção de capital.
+pautada pelo K-Means (*Vende Amarelo*) não apenas entregou o maior retorno financeiro absoluto do período (36,18%), mas foi a *única* capaz de superar a estratégia passiva (_Buy-and-Hold_) com significância estatística comprovada por _Block Bootstrap_
+(p-valor < 0,05). Este fenômeno consolida empiricamente o impacto do *Paradoxo da Acurácia-Rentabilidade* (_Accuracy-Profitability Paradox_): a inércia do K-Means funcionou como um filtro de ruído contra a volatilidade secundária, 
+poupando a carteira do excesso de giro impulsionado pelas matrizes de transição do HMM. Em cenários de iliquidez e altos custos de transação (0,5% por operação), essa ineficiência preditiva transmuta-se, paradoxalmente, em proteção de capital.
 
 3. *A Armadilha da Combinação de Modelos:* O estudo documentou a falha do modelo _Ensemble_. Ao tentar fundir a reatividade do HMM com a estabilidade do K-Means, 
 a modelagem mista deixou a carteira vulnerável ao efeito chicote (_whipsaw_). O modelo realizava vendas impulsionadas pelo HMM e recompras tardias pelo K-Means, 
 corroendo o capital com excesso de custos transacionais, entregando o pior retorno do período. A combinação acabou exacerbando os defeitos de cada modelo, e reforçando 
-a necessidade da importância da avaliação do momento de compra e venda dos papéis para evitar que o carrego obtido seja consumido por custos transacionais e perdas decorrentes
+a importância da avaliação do momento de compra e venda dos papéis para evitar que o carrego obtido seja consumido por custos transacionais e perdas decorrentes
 de operações em momentos inoportunos.
 
 == Implicações Práticas
