@@ -21,7 +21,7 @@ pautada pelo K-Means (*Vende Amarelo*) não apenas entregou o maior retorno fina
 (p-valor < 0,05). Este fenômeno consolida empiricamente o impacto do *Paradoxo da Acurácia-Rentabilidade* (_Accuracy-Profitability Paradox_): a inércia do K-Means funcionou como um filtro de ruído contra a volatilidade secundária, 
 poupando a carteira do excesso de giro impulsionado pelas matrizes de transição do HMM. Em cenários de iliquidez e altos custos de transação (0,5% por operação), essa ineficiência preditiva transmuta-se, paradoxalmente, em proteção de capital.
 
-3. *A Armadilha da Combinação de Modelos:* O estudo documentou a falha do modelo _Ensemble_. Ao tentar fundir a reatividade do HMM com a estabilidade do K-Means, 
+3. *A Armadilha da Combinação de Modelos:* O estudo documentou a falha do modelo _Ensemble_. Ao tentar fundir a reatividade do HMM com a inércia do K-Means, 
 a modelagem mista deixou a carteira vulnerável ao efeito chicote (_whipsaw_). O modelo realizava vendas impulsionadas pelo HMM e recompras tardias pelo K-Means, 
 corroendo o capital com excesso de custos transacionais, entregando o pior retorno do período. A combinação acabou exacerbando os defeitos de cada modelo, e reforçando 
 a importância da avaliação do momento de compra e venda dos papéis para evitar que o carrego obtido seja consumido por custos transacionais e perdas decorrentes

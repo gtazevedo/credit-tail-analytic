@@ -16,7 +16,7 @@ ou fatores de risco baseados em distribuições de probabilidade, como por exemp
 Os primeiros sistemas formais de alerta de _distress_ corporativo remontam ao
 modelo de #cite(<altman1968>, form: "prose"), que utiliza combinações lineares de indicadores 
 fundamentais (Altman Z-Score) para prever insolvência. Desde então, a literatura evoluiu para
-abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>). Contudo, as abordagens 
+abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>), contudo, as abordagens 
 tradicionais baseadas em fundamentos, obtidos em balanços e informações contábeis, geralmente divulgados
 em frequência trimestral ou anual, são inadequados para sistemas de alerta em tempo real (ou com poucos dias
 de defasagem) devido à frequência de divulgação dessas informações.
@@ -29,10 +29,9 @@ amplamente dependente dos dados observados. No mercado de debêntures brasileiro
 baixa liquidez e baixa atividade, essa abordagem se mostra frágil. 
 
 Na tentativa de mitigar este problema, este trabalho propõe uma abordagem alternativa. Ao invés de mensurar o risco 
-dos papéis e estimar possíveis perdas, busca-se apenas identificar momentos em que ocorrem mudanças de regime, através 
-do uso de algoritmos de aprendizado de máquina, para gerar alertas antecipados sobre a possibilidade de grandes perdas (
-    apesar de possuir a limitação de não ser capaz de estimá-las.
-). 
+dos papéis e estimar possíveis perdas, limita-se apenas a identificar momentos em que ocorrem mudanças de regime, através 
+do uso de algoritmos de aprendizado de máquina, para gerar alertas antecipados sobre a possibilidade de grandes perdas,
+apesar de não ser capaz de estimá-las, como é feito por outros modelos, como o Value at Risk (VaR). 
 
 == Value-at-Risk e Modelos da Família GARCH <subcap_vargarch>
 
@@ -55,7 +54,7 @@ Onde:
 - $gamma$ captura o *efeito assimétrico* (o sinal do choque).
 - $beta$ mede a persistência da volatilidade.
 
-Se $gamma < 0$, os choques negativos em $t-1$ aumentam a variância em $t$ mais do que choques positivos da mesma magnitude, diferentemente do modelo GARCH tradicional.
+Se $gamma < 0$, os choques negativos em $t-1$ aumentam a variância em $t$ mais do que choques positivos da mesma magnitude, adicionando a possibilidade de efeitos assimétricos, diferentemente do modelo GARCH tradicional.
 
 Contudo, além da assimetria, os retornos de ativos de crédito exibem forte leptocurtose (caudas pesadas), onde perdas extremas ocorrem com frequência superior ao previsto pela distribuição normal.  Para contornar 
 este problema, a modelagem EGARCH pode ser combinada a uma distribuição T de Student condicional, que permite modelar as caudas da distribuição por meio dos graus de liberdade nu$$.
@@ -68,14 +67,11 @@ sendo cego em relação ao que ocorre na cauda extrema, ou seja, ele desconsider
 
 Para solucionar essa limitação, a literatura e regulações como Basileia III têm migrado para o _Expected Shortfall_ (ES) #cite(<acerbi2002>), que calcula a perda média esperada condicionada 
 ao nível de confiança. Diferentemente do VaR, o ES é uma métrica de risco coerente e possibilita uma avaliação mais robusta da magnitude das perdas extremas, porque, enquanto o VaR nos diz qual a perda máxima esperada,
-por exemplo, para um dia com 99% de confiança, o ES nos informa qual a perda média esperada, caso ocorra um evento de quebra do VaR (ou seja, considerando os piores 1% dos cenários). 
+por exemplo, para um dia com 99% de confiança, o ES nos informa qual a perda média esperada, caso ocorra um evento de quebra do VaR (ou seja, considerando os piores 1% dos cenários, para nosso exemplo de 99% de confiança). 
 
 Adicionalmente, modelos de estimação de risco requerem validação estatística (_Backtesting_). Os dois métodos tradicionalmente utilizados para a validação do VaR são:
-- *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995techniques>): Avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) 
-é estatisticamente idêntica à proporção esperada.
-- *Teste de Independência e Teste Conjunto de Christoffersen* #cite(<christoffersen1998>): Avalia a "Cobertura Condicional". Testa se as violações do VaR ocorrem de forma agrupada no tempo 
-(_volatility clustering_). Se as violações forem estatisticamente independentes, o modelo prova que capturou e exauriu corretamente a dinâmica temporal da variância, 
-resultando em um modelo validado no Teste Conjunto (que unifica e avalia simultaneamente a Cobertura Incondicional e a Independência).
+- *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995techniques>): Avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) é estatisticamente idêntica à proporção esperada.
+- *Teste de Independência e Teste Conjunto de Christoffersen* #cite(<christoffersen1998>): Avalia a "Cobertura Condicional". Testa se as violações do VaR ocorrem de forma agrupada no tempo (_volatility clustering_). Se as violações forem estatisticamente independentes, o modelo prova que capturou e exauriu corretamente a dinâmica temporal da variância, resultando em um modelo validado no Teste Conjunto (que unifica e avalia simultaneamente a Cobertura Incondicional e a Independência).
 
 Para formalizar a validação empírica do motor de volatilidade frente às anomalias discutidas, este estudo adota a seguinte hipótese:
 
@@ -94,9 +90,9 @@ baseados em uma única média do comportamento global da série.
 Devido a essa constância, esses modelos têm dificuldade em se adaptarem quando existe uma quebra de regime, como os eventos de crédito que foram comentados acima, que uma vez divulgados,
 alteram a dinâmica de negociação e preço dos papéis. As informações observadas antes do evento deixam de possuir a mesma relevância para prever o comportamento futuro
 dos ativos afetados. #cite(<hamilton1994time>, form: "prose") mostra que tais quebras estruturais ocorrem na maioria das séries macroeconômicas ou financeiras que possuem um período
-suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (_Regime-Switching_). Segundo essa teoria, a economia e os mercados não têm um estado único. 
-Eles transitam entre diferentes estados, onde as equações que regem os preços mudam dependendo do regime atual. Para solucionar esse problema, foi proposta a utilização 
-de Cadeias de Markov para modelar a transição entre diferentes estados da economia.
+suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (_Regime-Switching_). Segundo essa teoria, a economia e os mercados não têm um estado único, 
+eles transitam entre diferentes estados, onde as equações que regem os preços mudam dependendo do regime atual, e devido a isso, foi proposta a utilização 
+de Cadeias de Markov para modelar a transição entre diferentes estados da economia, uma vez que elas modelam o estado futuro como um estado dependente apenas do anterior.
 
 == Aprendizado de Máquina Não Supervisionado
 
@@ -104,15 +100,15 @@ Enquanto alguns autores na literatura propõem a integração direta (como os mo
 de risco latentes. 
 
 Algoritmos de clusterização baseados em distância espacial euclidiana são extremamente sensíveis a valores discrepantes (_outliers_) e grandezas numéricas não uniformes. No mercado de debêntures, 
-onde os ativos apresentam distorções bruscas, a padronização dos dados (pré-processamento) é indispensável. Em vez de utilizar os escalonadores tradicionais, a literatura recomenda o uso de 
-padronizadores robustos, como o `RobustScaler`. Este algoritmo subtrai a mediana e divide os dados pelo intervalo interquartil (IQR, ou seja, a diferença entre o 3º e o 1º quartil). Ao 
-ancorar-se em quantis robustos, ele mitiga estatisticamente o peso das caudas anômalas (_outliers_) e permite que o agrupador avalie a matriz de características 
+onde os ativos apresentam distorções bruscas, a padronização dos dados (pré-processamento) é indispensável. Ao invés da utilização de escalonadores tradicionais, a literatura, como em #cite(<rousseeuw2011robust>, form: "prose") sugere o uso de 
+padronizadores baseados em quantis, como o `RobustScaler`. Este algoritmo subtrai a mediana e divide os dados pelo intervalo interquartil (IQR, ou seja, a diferença entre o 3º e o 1º quartil),  
+mitigando estatisticamente o peso das caudas anômalas (_outliers_) e permitindo que o agrupador avalie a matriz de características 
 livre de distorções induzidas por anomalias momentâneas.
 
 === K-Means
 
 Um algoritmo popular para problemas de clusterização é o _K-means_ que particiona os dados em $K$ grupos distintos, minimizando a variância intra-cluster. Para utilizá-lo no problema
-em questão, foram criados três clusters de acordo com o nível de risco do papel, de forma que o esperado é que, conforme um papel começa a apresentar, durante o seu período de negociação,
+em questão, foram criados três clusters de acordo com o nível de risco do papel, de forma que o esperado é que, conforme um papel começe a apresentar, durante o seu período de negociação,
 uma variação mais errática do seu _spread_, ou seja, um aumento da volatilidade do _spread_, ele vá migrando do cluster de baixo ao cluster de alto risco.
 
 Para entender melhor essa aplicação vamos tomar como base #cite(<bishop2006pattern>, form: "prose"), em nosso problema temos que identificar grupos ou _clusters_ de dados em um espaço multidimensional.
@@ -133,38 +129,40 @@ independentemente dos rótulos atribuídos aos centróides. Porém, existem muit
 mas envolve a aplicação de um vetor de polaridade de risco para fixar os rótulos nos regimes Verde (baixo risco), Amarelo (alerta) e Vermelho (crise).
 
 Apesar de sua eficiência em separar os períodos de forma estática, minimizando $J$, 
-o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro, e como será analisado posteriormente, isso confere maior estabilidade aos resultados, porém,
-faz com que seu tempo de reação seja mais lento, ou em alguns casos seja insensível a uma quebra de regime abrupta.
+o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro. Como será analisado posteriormente, essa ausência de memória probabilística gera dois efeitos práticos,
+observados nessa pesquisa: por um lado, causa instabilidade na manutenção do regime (problemas de _flickering_ nas fronteiras dos _clusters_); por outro, exige deslocamentos geométricos 
+mais severos para confirmar uma mudança definitiva de estado. Isso torna seu tempo de reação mais lento (inércia geométrica), o que pode torná-lo insensível a quebras de regime abruptas, 
+mas atua, paradoxalmente, como um filtro de ruídos nas simulações financeiras realizadas na etapa de Backtest.
 
 === Hidden Markov Models (HMM)
 
 Para corrigir a imperfeição temporal do K-Means, utiliza-se o HMM (_Hidden Markov Model_), um modelo probabilístico estruturado classicamente por #cite(<rabiner1989tutorial>, form: "prose") e 
 adotado para modelagem de dados sequenciais com estados latentes. 
 Conforme detalhado por #cite(<bishop2006pattern>, form: "prose"), o HMM parte do princípio de que os dados observados
-(como o _spread_ e a volatilidade) são reflexos de um estado que não pode ser observado diretamente.
-Esse estado é a causa do comportamento dos preços, e é chamado de *variável latente* (ou _hidden state_).
+(como o _spread_ e a volatilidade) são reflexos de um estado (chamado de variável latente ou _hidden state_), que não 
+pode ser observado diretamente e que é a causa do comportamento dos preços.
 
 Seja $z_n$ a variável latente que representa o regime oculto do mercado no tempo $n$. 
 No HMM, a dinâmica temporal é regida por um processo de Markov onde a probabilidade do estado atual $z_n$ 
 depende estritamente do estado imediatamente anterior $z_{n-1}$, denotado por $p(z_n | z_{n-1})$.
 
-Como as variáveis latentes assumem $K$ regimes categóricos (neste estudo, 3 níveis de risco, detalhados em @subcap_kmeans_k3), 
+Como as variáveis latentes assumem $K$ regimes categóricos (neste estudo, 3 regimes de risco, detalhados em @subcap_kmeans_k3), 
 essa distribuição corresponde matematicamente à matriz de transição de estados $A$. Adicionalmente, o modelo é governado 
 pelas probabilidades de emissão $B$, que descrevem a distribuição contínua das observações $x_n$ dado o estado $z_n$ (modeladas aqui 
-por distribuições Gaussianas), e pelo vetor de probabilidades iniciais $pi$. Em conjunto, o modelo é parametrizado por $theta = \{A, B, pi\}$.
+por distribuições Gaussianas), e pelo vetor de probabilidades iniciais $pi$, logo, o modelo é parametrizado por $theta = \{A, B, pi\}$.
 
 Segundo #cite(<rabiner1989tutorial>, form: "prose"), a viabilidade do HMM depende da solução matemática de dois problemas  
 presentes na arquitetura do motor de risco: a calibração dos parâmetros $theta$ e a decodificação da sequência ótima de regimes.
 
 Para calibração do HMM de forma não supervisionada, utiliza-se o algoritmo de *Baum-Welch*, um caso especial do algoritmo de _Expectation-Maximization_ (EM). 
 Na etapa de Expectativa (*E-Step*), estimam-se as probabilidades de cada estado usando o procedimento _Forward-Backward_ formalizado por 
-#cite(<baum1970maximization>, form: "prose"). A etapa _Forward_ calcula as probabilidades observando o histórico até $n$, 
+#cite(<baum1970maximization>, form: "prose"), já a etapa _Forward_ calcula as probabilidades observando o histórico até $n$, 
 denotado por $alpha(z_n)$, enquanto a etapa _Backward_ 
 condensa a probabilidade sob a ótica do futuro de $n$ em diante, denotado por $beta(z_n)$.
 
 Na etapa de Maximização (*M-Step*), as matrizes $A$, $B$ e o vetor $pi$ são iterativamente atualizados por Máxima Verossimilhança até a convergência. 
 Uma vez calibrado o HMM, a identificação do nível de risco no tempo $n$ é realizada filtrando a probabilidade condicional de cada regime, decodificando a 
-trajetória oculta mais provável via *Algoritmo de Viterbi*. Dessa forma, o HMM captura simultaneamente a topologia multivariada dos dados e a inércia estrutural das transições de crédito.
+trajetória oculta mais provável via *Algoritmo de Viterbi*, dessa forma, o HMM captura simultaneamente a topologia multivariada dos dados e a inércia estrutural das transições de crédito.
 
 == Seleção de Atributos e Avaliação de Clusters <sub_cap_clusters>
 
@@ -178,9 +176,9 @@ um índice menor (com limite inferior tendendo a zero) significa que os clusters
 3. *Índice Calinski-Harabasz* (#cite(<calinski1974dendrite>, form: "prose")): Mensura a razão entre a variância inter-_cluster_ e a variância intra-_cluster_, ponderada pelos graus de liberdade do sistema. Para este índice, valores maiores indicam melhor adequação, 
 denotando que a distância entre os centros dos clusters é expressivamente maior que a dispersão dos pontos dentro de cada regime.
 
-Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento. A solução matemática para este problema repousa sobre as 
+Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento, então, a solução matemática para este problema repousa sobre as 
 heurísticas de consenso, combinando os resultados de cada métrica. O *Método de Borda* (*Borda Count*), tradicionalmente um sistema de votação, foi introduzido por #cite(<borda1781>), contudo, sua adaptação computacional
-moderna o torna um mecanismo imparcial e poderoso para consolidar múltiplos sistemas de classificação e validação multivariada. Esse método foi amplamente estendido na 
-literatura moderna de Aprendizado de Máquina, sendo validado na construção de classificadores de consenso por 
+moderna o torna um mecanismo imparcial e poderoso para consolidar múltiplos sistemas de classificação e validação multivariada, sendo amplamente estendido na 
+literatura moderna de Aprendizado de Máquina, e validado na construção de classificadores de consenso por 
 #cite(<ho1994decision>, form: "prose") e #cite(<kittler1998combining>, form: "prose"), bem como na seleção robusta de atributos (_ensembles_) por #cite(<saeys2008robust>, form: "prose"). No contexto deste trabalho, 
-as _features_ são pontuadas pela posição ordinal que alcançaram em cada métrica isolada. Somando-se as avaliações de Borda, mitiga-se o viés individual de cada métrica e se converge para o subconjunto dimensionalmente mais robusto.
+as _features_ são pontuadas pela posição ordinal que alcançaram em cada métrica isolada, combinando os resultados pelo *Método de Borda*, mitiga-se o viés individual de cada métrica e se converge para o subconjunto dimensionalmente mais robusto.
