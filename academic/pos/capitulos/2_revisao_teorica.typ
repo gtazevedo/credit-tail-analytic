@@ -15,15 +15,15 @@ ou fatores de risco baseados em distribuições de probabilidade, como por exemp
 
 Os primeiros sistemas formais de alerta de _distress_ corporativo remontam ao
 modelo de #cite(<altman1968>, form: "prose"), que utiliza combinações lineares de indicadores 
-fundamentais (Altman Z-Score) para prever insolvência. Desde então, a literatura evoluiu para
-abordagens baseadas em modelos estruturais de crédito #cite(<merton1974>), contudo, as abordagens 
-tradicionais baseadas em fundamentos, obtidos em balanços e informações contábeis, geralmente divulgados
+fundamentais, o Altman Z-Score, para prever insolvência. Desde então, a literatura evoluiu para
+abordagens baseadas em modelos estruturais de crédito, como #cite(<merton1974>). Contudo, estas abordagens 
+tradicionais, baseadas em fundamentos, em geral obtidos em balanços e informações contábeis, usualmente divulgados
 em frequência trimestral ou anual, são inadequados para sistemas de alerta em tempo real (ou com poucos dias
 de defasagem) devido à frequência de divulgação dessas informações.
 
 Para superar a dependência de demonstrações financeiras, surgiram os modelos de forma reduzida, 
 conforme consolidado por #cite(<duffie2003>, form: "prose"), que modelam o risco de 
-crédito diretamente através de dados de mercado. Porém, apesar de serem capazes de mitigar a
+crédito diretamente através de dados de mercado. Apesar de serem capazes de mitigar a
 defasagem da informação contábil, a modelagem contínua exige mercados líquidos, uma vez que é 
 amplamente dependente dos dados observados. No mercado de debêntures brasileiro, onde se observa
 baixa liquidez e baixa atividade, essa abordagem se mostra frágil. 
@@ -56,8 +56,8 @@ Onde:
 
 Se $gamma < 0$, os choques negativos em $t-1$ aumentam a variância em $t$ mais do que choques positivos da mesma magnitude, adicionando a possibilidade de efeitos assimétricos, diferentemente do modelo GARCH tradicional.
 
-Contudo, além da assimetria, os retornos de ativos de crédito exibem forte leptocurtose (caudas pesadas), onde perdas extremas ocorrem com frequência superior ao previsto pela distribuição normal.  Para contornar 
-este problema, a modelagem EGARCH pode ser combinada a uma distribuição T de Student condicional, que permite modelar as caudas da distribuição por meio dos graus de liberdade nu$$.
+Além da assimetria, os retornos de ativos de crédito também apresentam leptocurtose (caudas pesadas), onde perdas extremas ocorrem com frequência superior ao previsto pela distribuição normal.  Para contornar 
+este problema, a modelagem EGARCH pode ser combinada a uma distribuição T de Student condicional, que permite modelar as caudas da distribuição por meio dos graus de liberdade $nu$.
 
 === Expected Shortfall (ES) e Testes de Backtesting
 
@@ -66,8 +66,8 @@ de risco, conforme #cite(<artzner1999>, form: "prose"). Em outras palavras, ele 
 sendo cego em relação ao que ocorre na cauda extrema, ou seja, ele desconsidera, no nosso exemplo (supondo um VaR a 99%), os 1% da distribuição e os impactos de um possível evento dessa cauda.
 
 Para solucionar essa limitação, a literatura e regulações como Basileia III têm migrado para o _Expected Shortfall_ (ES) #cite(<acerbi2002>), que calcula a perda média esperada condicionada 
-ao nível de confiança. Diferentemente do VaR, o ES é uma métrica de risco coerente e possibilita uma avaliação mais robusta da magnitude das perdas extremas, porque, enquanto o VaR nos diz qual a perda máxima esperada,
-por exemplo, para um dia com 99% de confiança, o ES nos informa qual a perda média esperada, caso ocorra um evento de quebra do VaR (ou seja, considerando os piores 1% dos cenários, para nosso exemplo de 99% de confiança). 
+ao nível de confiança. Diferentemente do VaR, o ES é uma métrica de risco coerente e possibilita uma avaliação robusta da magnitude das perdas extremas. Enquanto o VaR informa a perda máxima esperada,
+por exemplo, para um dia com 99% de confiança, o ES informa qual a perda média esperada das ocorrências que violam esse limite (o 1% restante, para o exemplo de 99% de confiança).
 
 Adicionalmente, modelos de estimação de risco requerem validação estatística (_Backtesting_). Os dois métodos tradicionalmente utilizados para a validação do VaR são:
 - *Teste de Proporção de Falhas (POF) de Kupiec* #cite(<kupiec1995techniques>): Avalia a "Cobertura Incondicional", ou seja, verifica se a quantidade total de falhas (quebras do limite do VaR) é estatisticamente idêntica à proporção esperada.
@@ -83,16 +83,16 @@ A rejeição generalizada de H0₁ no portfólio analisado indicaria inadequaç�
 
 == A Hipótese de Mudança de Regimes (Regime-Switching)
 
-Porém, mesmo o modelo EGARCH que possui o tratamento da assimetria dos retornos, possui limitações. A família GARCH, como explicado por #cite(<tsay2005analysis>, form: "prose"), assume que
+Mesmo o modelo EGARCH que possui o tratamento da assimetria dos retornos, possui limitações. A família GARCH, como explicado por #cite(<tsay2005analysis>, form: "prose"), assume que
 os parâmetros do modelo (ou seja, os pesos $omega$, $alpha$, $gamma$ e $beta$ da @eq_egarch) e a "variância incondicional" não mudam ao longo do tempo. Eles são constantes, 
 baseados em uma única média do comportamento global da série.
 
 Devido a essa constância, esses modelos têm dificuldade em se adaptarem quando existe uma quebra de regime, como os eventos de crédito que foram comentados acima, que uma vez divulgados,
 alteram a dinâmica de negociação e preço dos papéis. As informações observadas antes do evento deixam de possuir a mesma relevância para prever o comportamento futuro
 dos ativos afetados. #cite(<hamilton1994time>, form: "prose") mostra que tais quebras estruturais ocorrem na maioria das séries macroeconômicas ou financeiras que possuem um período
-suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (_Regime-Switching_). Segundo essa teoria, a economia e os mercados não têm um estado único, 
-eles transitam entre diferentes estados, onde as equações que regem os preços mudam dependendo do regime atual, e devido a isso, foi proposta a utilização 
-de Cadeias de Markov para modelar a transição entre diferentes estados da economia, uma vez que elas modelam o estado futuro como um estado dependente apenas do anterior.
+suficientemente longo. Como solução a esse problema, o autor propõe a hipótese de mudanças de regime (_Regime-Switching_). Segundo essa teoria, a economia e os mercados não possuem um estado único:
+transitam entre diferentes estados, nos quais as equações que regem os preços se alteram a depender do regime atual. Por essa razão, propõe-se a utilização 
+de Cadeias de Markov para modelagem da transição entre diferentes regimes, uma vez que elas modelam o estado futuro como um estado dependente apenas do estado anterior.
 
 == Aprendizado de Máquina Não Supervisionado
 
@@ -123,10 +123,9 @@ Onde $r_(n k) in \{0, 1\}$ é uma variável indicadora binária, tal que $r_(n k
 $mu_k$ representa o vetor centroide do _cluster_ $k$. O objetivo é encontrar os valores de $r_(n k)$ e os centroides $mu_k$ que minimizam a função $J$. Isso é comumente realizado por meio de um
 algoritmo iterativo dividido em duas etapas, conhecido como Algoritmo de Lloyd (ou, mais genericamente, algoritmo de maximização de expectativa (EM)).
 
-O modelo, por vezes apresenta um problema conhecido como _Label Switching_, no qual os centroides gerados recebem rótulos arbitrários, 
-isso ocorre porque o algoritmo inicializa os centroides ($mu_k$) de forma aleatória e busca minimizar a soma das distancias quadráticas (conforme a @eq_kmeans), 
-independentemente dos rótulos atribuídos aos centróides. Porém, existem muitas formas conhecidas de tratar esse problema. A forma adotada nesse trabalho será detalhada em @subcap_kmeans, 
-mas envolve a aplicação de um vetor de polaridade de risco para fixar os rótulos nos regimes Verde (baixo risco), Amarelo (alerta) e Vermelho (crise).
+O modelo, por vezes apresenta um problema conhecido como _Label Switching_. Centroides gerados ($mu_k$) recebem rótulos arbitrários, 
+devido a sua inicialização de forma aleatória para minimizar a soma das distancias quadráticas (conforme a @eq_kmeans). Existem diversas formas conhecidas de tratar esse problema, neste trabalho
+a forma adotada será detalhada em @subcap_kmeans e envolve a aplicação de um vetor de polaridade de risco para fixar os rótulos nos regimes Verde (baixo risco), Amarelo (alerta) e Vermelho (crise).
 
 Apesar de sua eficiência em separar os períodos de forma estática, minimizando $J$, 
 o K-Means é cego para o tempo: ele ignora a probabilidade de transição de um dia para o outro. Como será analisado posteriormente, essa ausência de memória probabilística gera dois efeitos práticos,
@@ -156,13 +155,13 @@ presentes na arquitetura do motor de risco: a calibração dos parâmetros $thet
 
 Para calibração do HMM de forma não supervisionada, utiliza-se o algoritmo de *Baum-Welch*, um caso especial do algoritmo de _Expectation-Maximization_ (EM). 
 Na etapa de Expectativa (*E-Step*), estimam-se as probabilidades de cada estado usando o procedimento _Forward-Backward_ formalizado por 
-#cite(<baum1970maximization>, form: "prose"), já a etapa _Forward_ calcula as probabilidades observando o histórico até $n$, 
+#cite(<baum1970maximization>, form: "prose"). A etapa _Forward_ calcula as probabilidades observando o histórico até $n$, 
 denotado por $alpha(z_n)$, enquanto a etapa _Backward_ 
 condensa a probabilidade sob a ótica do futuro de $n$ em diante, denotado por $beta(z_n)$.
 
 Na etapa de Maximização (*M-Step*), as matrizes $A$, $B$ e o vetor $pi$ são iterativamente atualizados por Máxima Verossimilhança até a convergência. 
 Uma vez calibrado o HMM, a identificação do nível de risco no tempo $n$ é realizada filtrando a probabilidade condicional de cada regime, decodificando a 
-trajetória oculta mais provável via *Algoritmo de Viterbi*, dessa forma, o HMM captura simultaneamente a topologia multivariada dos dados e a inércia estrutural das transições de crédito.
+trajetória oculta mais provável via *Algoritmo de Viterbi*, possibilitando ao HMM capturar simultaneamente a topologia multivariada dos dados e a inércia estrutural das transições de crédito.
 
 == Seleção de Atributos e Avaliação de Clusters <sub_cap_clusters>
 
@@ -176,9 +175,9 @@ um índice menor (com limite inferior tendendo a zero) significa que os clusters
 3. *Índice Calinski-Harabasz* (#cite(<calinski1974dendrite>, form: "prose")): Mensura a razão entre a variância inter-_cluster_ e a variância intra-_cluster_, ponderada pelos graus de liberdade do sistema. Para este índice, valores maiores indicam melhor adequação, 
 denotando que a distância entre os centros dos clusters é expressivamente maior que a dispersão dos pontos dentro de cada regime.
 
-Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento, então, a solução matemática para este problema repousa sobre as 
-heurísticas de consenso, combinando os resultados de cada métrica. O *Método de Borda* (*Borda Count*), tradicionalmente um sistema de votação, foi introduzido por #cite(<borda1781>), contudo, sua adaptação computacional
+Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento. A solução matemática para este problema repousa sobre as 
+heurísticas de consenso, combinando os resultados de cada métrica. O *Método de Borda* (*Borda Count*), tradicionalmente um sistema de votação, foi introduzido por #cite(<borda1781>). Contudo, sua adaptação computacional
 moderna o torna um mecanismo imparcial e poderoso para consolidar múltiplos sistemas de classificação e validação multivariada, sendo amplamente estendido na 
 literatura moderna de Aprendizado de Máquina, e validado na construção de classificadores de consenso por 
 #cite(<ho1994decision>, form: "prose") e #cite(<kittler1998combining>, form: "prose"), bem como na seleção robusta de atributos (_ensembles_) por #cite(<saeys2008robust>, form: "prose"). No contexto deste trabalho, 
-as _features_ são pontuadas pela posição ordinal que alcançaram em cada métrica isolada, combinando os resultados pelo *Método de Borda*, mitiga-se o viés individual de cada métrica e se converge para o subconjunto dimensionalmente mais robusto.
+as _features_ são pontuadas pela posição ordinal que alcançaram em cada métrica isolada. Ao se combinar os resultados pelo *Método de Borda*, mitiga-se o viés individual de cada métrica e se converge para o subconjunto dimensionalmente mais robusto.

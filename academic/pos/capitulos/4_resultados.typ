@@ -42,20 +42,20 @@ introduziu choques exógenos severos e propiciou resgates em massa nos fundos de
 prevendo o risco sem 
 sobreajuste em meio a choques sistêmicos, atesta uma forte resiliência da premissa autorregressiva.
 
-Adicionalmente, a iliquidez estrutural do mercado secundário de debêntures atua como o principal ofensor analítico do Teste de Proporção de Falhas. Diversos ativos corporativos 
+A iliquidez estrutural do mercado secundário de debêntures atua como o principal ofensor analítico do Teste de Proporção de Falhas. Diversos ativos corporativos 
 frequentemente passam dias úteis sem negociação efetiva. Quando o papel é negociado, o prêmio de risco (_spread_) sofre uma reprecificação abrupta, gerando um salto (_jump_) cuja 
 magnitude pontual, em alguns casos, rompe o limite projetado pelo VaR de 99%. Como o modelo EGARCH-t assume que a volatilidade condicional rege-se por uma dinâmica fluida de persistência no 
 tempo, as violações detectadas decorrem sobretudo da fragmentação da continuidade dos preços (falta de fluxo regular de negociação), e não de uma ineficácia intrínseca do filtro matemático. 
 Somando-se a isso, a extrema sensibilidade do teste binomial de Kupiec em amostras temporais pequenas condena modelos por desvios mínimos acima da tolerância esperada de 1%.
 
-Cabe ressaltar a diferença conceitual e quantitativa entre os ativos "Não-Rejeitados (POF)" e "Não-Rejeitados (Conjunto)", expostos na @tab_kupiec. O teste de Kupiec POF avalia estritamente a 
-Cobertura Incondicional (_Unconditional Coverage_), limitando-se a analisar o volume total de falhas. Em contrapartida, as colunas do Teste Conjunto refletem a validação pelo Teste de Christoffersen, 
-que integra a Cobertura Incondicional à Cobertura Condicional (Teste de Independência). Observa-se que a não-rejeição conjunta é sistematicamente superior em todos os indexadores. Isso evidencia que as 
-violações ocorridas no _Out-of-Sample_ não estão agrupadas no tempo (_volatility clustering_). Portanto, ainda que o modelo sofra rejeição marginal no teste POF devido a um excesso absoluto de falhas 
-causadas pelos saltos de iliquidez, o Teste Conjunto valida a modelagem ao provar que o motor EGARCH-t capturou e mitigou com precisão a dependência temporal da variância, 
+O teste de Kupiec POF, exposto na @tab_kupiec, e, resumido na coluna "Não-Rejeitados (POF)", avalia estritamente a 
+Cobertura Incondicional (_Unconditional Coverage_), limitando-se a analisar o número de falhas. Já as colunas "Não-Rejeitados (Conjunto)", para diferentes níveis de confiança, do Teste Conjunto reflete a validação pelo Teste de Christoffersen, 
+que integra a Cobertura Incondicional à Cobertura Condicional (Teste de Independência). Observa-se que a não-rejeição conjunta é superior em todos os indexadores. Evidenciando que as 
+violações ocorridas no _Out-of-Sample_ não estão agrupadas no tempo (_volatility clustering_). Portanto, ainda que o modelo sofra rejeição marginal no teste POF devido a um excesso de falhas 
+causadas pelos saltos de iliquidez, o Teste Conjunto valida a modelagem ao provar que o motor EGARCH-t capturou e mitigou a dependência temporal da variância, 
 convertendo os choques do mercado em violações isoladas e estatisticamente aleatórias.
 
-Por fim, a fim de avaliar a robustez destas conclusões, a @fig_kupiec ilustra a sensibilidade das taxas de não-rejeição do Teste Conjunto frente a variações no nível de significância do próprio teste ($alpha$). 
+A @fig_kupiec ilustra os dados da @tab_kupiec para auxiliar na visualização da sensibilidade das taxas de não-rejeição do Teste Conjunto frente a variações no nível de significância do próprio teste ($alpha$). 
 Ao adotar-se um rigor extremo ($alpha = 0,10$, ou 90% de confiança para não-rejeição), a não-rejeição no indexador IPCA recua para 39,1%. Em contrapartida, sob um critério mais conservador para rejeição de 
 modelos ($alpha = 0,01$, ou 99% de confiança), a não-rejeição salta significativamente, alcançando 62,5% no CDI Percentual e 52,8% no IPCA. Essa elasticidade estatística evidencia que grande parte das 
 rejeições no cenário-base (95%) ocorre por infrações marginais ao p-valor estipulado, reforçando que o modelo se encontra muito próximo do limiar de validação, mesmo frente ao severo estresse do mercado 
@@ -70,7 +70,7 @@ está intrinsecamente ancorada e validada, dispensando a exigência de avaliaç�
 == O Desempenho do HMM vs K-Means na Classificação
 Estabelecida a validade estatística das métricas de risco de cauda, a análise avalia a agilidade e a capacidade dos algoritmos não-supervisionados de transpor essas métricas continuas em regimes de risco
 pré estabelecidos (Verde, Amarelo e Vermelho). Nas subsessões seguintes serão apresentados os contrastes entre os resultados obtidos pelo particionamento geométrico (K-Means) e a inferência temporal (HMM).
-A fim de ilustrar empiricamente o comportamento dos modelos nessa tarefa, iremos utilizar como exemplo o caso de estudo do Grupo Pão de Açucar (GPA) para as debentures CBRDB8 e CBRDA8, ambas são debentures
+A fim de ilustrar empiricamente o comportamento dos modelos nessa tarefa, iremos utilizar como exemplo o caso de estudo do Grupo Pão de Açucar (GPA) para as debêntures CBRDB8 e CBRDA8, ambas 
 indexadas CDI+. Nas tabelas @tab_eventos_cbrda8 e @tab_eventos_cbrdb8 pode-se verificar as maiores variações de PU e Taxa ocorrida para ambas as debentures no periodo recente.
 
 
@@ -114,21 +114,20 @@ indexadas CDI+. Nas tabelas @tab_eventos_cbrda8 e @tab_eventos_cbrdb8 pode-se ve
 
 A fim de ilustrar o resultado do K-Means, tomemos a debênture CBRDB8 (Grupo Pão de Açúcar). Entre fevereiro e junho de 2026, com o agravamento da percepção de crédito da varejista, o ativo sofreu uma severa 
 reprecificação sistêmica: o prêmio de risco (_spread_) variou inicialmente de 16,04% em  23/02/2026 para 30,11% em 24/02/2026, voltando a patamares próximos de 23,5%
-no final de fevereiro, antes de saltar para patamares de 190% em junho de 2026. Ocasionando uma perda acumulada de mais de 60%. Apesar da magnitude do evento, 
+no final de fevereiro, antes de saltar para patamares de 190% em junho de 2026, ocasionando uma perda acumulada de mais de 60%. Apesar da magnitude do evento, 
 o K-Means demorou a ancorar o ativo no regime de Crise (Vermelho), como se pode observar na @fig_kmeans_gpa, classificando os dias iniciais da quebra como Verde e 
 oscilando erraticamente para o Amarelo em uma clara demonstração de _flickering_ matemático. 
 Por analisar os dados de forma transversal e atemporal, o agrupamento perdeu o poder de inferir a deterioração em curso.
 
-Já no caso da CBRDA8, em 26 de fevereiro de 2026, a taxa do ativo sofreu um salto, variando de 45,7% para 100,0%. Já que a debenture, por estar mais próxima ao vencimento
-quando comparada a CBRDB8, possuía uma grande sensibilidade a mudanças na percepção de risco. Todavia, o K-Means falhou em reconhecer, neste caso, a degradação do papel,
+Já no caso da CBRDA8, em 26 de fevereiro de 2026, a taxa do ativo sofreu um salto, variando de 45,7% para 100,0%, uma vez que a debênture, por estar mais próxima ao vencimento
+quando comparada a CBRDB8, possuía maior sensibilidade a mudanças na percepção de risco. Todavia, o K-Means falhou em reconhecer, neste caso, a degradação do papel,
 mantendo toda a história do ativo como um regime Verde (Baixo Risco). O exemplo demonstra que o K-Means falha em capturar a natureza sequencial dos dados, o que é crucial 
 para a gestão de risco de crédito.
 
 Além disso, durante o período de treino (período anterior a Jan/2023), o ativo CBRDA8 possuía 77 dias de negociação, com saltos no _spread_ que levaram o algoritmo de 
-máxima verossimilhança que ajustou o EGARCH falhar em convergir. Como houve problemas de convergência, o período _Out-of-Sample_ começou em uma escala irreal (volatilidade de 170%
-ao ano)
-e fez com que o K-Means fosse insensivel aos saltos observados. Já para CBRDB8, o período de treino possuía 65 observações, porém, sem saltos erráticos como no caso anterior,
-a volatilidade do periodo  _Out-of-Sample_ iniciou em valores realistas (entre 0.1% e 1.5% ao ano), permitindo ao modelo ter melhor sensibilidade as variações observadas. Na
+máxima verossimilhança que ajustou o EGARCH falhar em convergir. Como houve problemas de convergência, o período _Out-of-Sample_ começou em uma escala irreal (volatilidade de 170% ao ano),
+tornando o K-Means insensivel aos saltos observados. Já para CBRDB8, o período de treino possuía 65 observações, porém, sem saltos erráticos como no caso anterior.
+A volatilidade do periodo  _Out-of-Sample_ iniciou em valores entre 0.1% e 1.5% ao ano, permitindo ao modelo ter melhor sensibilidade as variações observadas. Na
 tentativa de limitar, e melhorar a qualidade do resultados observados para casos como CBRDA8 que se implementou a trava de maximo de 20x a variancia _In-Sample_  como
 descrito em @subcap_egarch.
 
@@ -142,13 +141,13 @@ descrito em @subcap_egarch.
 
 Sob a mesma ótica do choque das debêntures do GPA, o Modelo Oculto de Markov provou-se superior ao integrar a dependência temporal inerente às 
 matrizes de transição ($A$). Para a emissão CBRDB8, sua taxa durante o período _In-Sample_ era cerca de 1.7%, porém, com o evento das Lojas Americanas em
-Janeiro/Fevereiro de 2023, houve um efeito de contágio no mercado, e a taxa do papel passou a ser negociada próximo de 2.5%. Porém, quando essa variação foi 
+Janeiro/Fevereiro de 2023, houve um efeito de contágio no mercado, e a taxa do papel passou a ser negociada próximo de 2.5%. Entretanto, quando essa variação foi 
 comparada com o histórico do papel, foi observada uma variação no Z-Score de 6.5 desvios padrões, levando a classificação no Regime Vermelho já no inicio do
-período pelo motor HMM. Como se pode observar na @fig_hmm_gpa.
+período pelo motor HMM, como se pode observar na @fig_hmm_gpa.
 
 Já para a CBRDA8, assim como foi dito na @subcap_rkmeans, o EGARCH falhou em convergir no período _In-Sample_, fazendo com que a distribuição do regime Verde
-ficasse larga e achatada. Ou seja, mesmo grandes variações para cima ou para baixo não eram suficientes para fazer o modelo sair do regime de baixo risco, 
-porém, em Fev/2026, com o salto de _spread_ de 44% (de 45,7% para 100,0%, conforme a @tab_eventos_cbrda8), o motor HMM conseguiu identificar o choque e classificar 
+ficasse larga e achatada. Ou seja, mesmo grandes variações para cima ou para baixo não eram suficientes para fazer o modelo sair do regime de baixo risco.
+Mas, em Fev/2026, com o salto de _spread_ de 44% (de 45,7% para 100,0%, conforme a @tab_eventos_cbrda8), o motor HMM conseguiu ser sensibilizado e classificar 
 a debênture no regime de crise.
 
 A capacidade de reação do algoritmo HMM comprovam que a característica matricial de transições das Cadeias de Markov Ocultas é indispensável, para a identificação
@@ -166,9 +165,9 @@ Na tentativa de mitigar os efeitos de instabilidade do HMM e ao mesmo tempo apro
 a probabilidade estimada a partir do modelo K-Means, conforme descrito em @subcap_kmeans, com a probabilidade de transição de regimes do HMM. A ponderação utilizada pode ser
 consultada com mais detalhes na @subcap_modelo_misto.
 
-Em relação aos resultados, pode se observar na @fig_ensemble_gpa que a probabilidade de classificação (_Ensemble Score_), apresentou estabilidade, quando comparada ao HMM, porém,
-também falhou em capturar a deterioração observada para CBRDA8. Já no caso de CBRDB8, o modelo apresentou variações de estado frequentes, porém, foi capaz de antecipar o choque,
-ao contrário do K-Means, porém de forma menos agressiva do que o HMM.
+Em relação aos resultados, pode se observar na @fig_ensemble_gpa que a probabilidade de classificação (_Ensemble Score_), apresentou estabilidade, quando comparada ao HMM, entretanto,
+também falhou em capturar a deterioração observada para CBRDA8. Já no caso de CBRDB8, o modelo apresentou variações de estado frequentes, mas foi capaz de antecipar o choque,
+ao contrário do K-Means, contudo de forma menos agressiva do que o HMM.
 
 #figure(
   image("../imagens/13_estudo_caso_pão_de_açúcar_(gpa)_ensemble_prob.png", width: 90%),
@@ -178,8 +177,8 @@ ao contrário do K-Means, porém de forma menos agressiva do que o HMM.
 === Antecipação de Eventos Sistêmicos (Lead Time)
 
 A fim de fornecer o rigor quantitativo, evitando a dependência excessiva em um único estudo de caso, expandiu-se a avaliação direcional dos modelos para um rol mais abrangente de eventos de crédito observados no mercado 
-corporativo brasileiro entre 2023 e 2026, porém, para evitar-se um detalhamento de todos os casos, que extenderiam em demasia este trabalho, optou-se pela seleção de alguns eventos específicos e análise menos detalhada 
-do que a observada no estudo de caso especifico (Grupo Pão de Açúcar). A premissa central de um modelo de alerta precoce (_Early Warning_) é a capacidade de emitir sinalizações quando se inicia um regime de risco elevado (Regime Vermelho) 
+corporativo brasileiro entre 2023 e 2026. Porém, para evitar-se um detalhamento de todos os casos, que estenderiam este trabalho, optou-se pela seleção de alguns eventos específicos e análise resumida, quando comparada ao estudo de caso especifico (Grupo Pão de Açúcar). 
+A premissa central de um modelo de alerta precoce (_Early Warning_) é a capacidade de emitir sinalizações quando se inicia um regime de risco elevado (Regime Vermelho) 
 com antecedência suficiente para permitir a liquidação defensiva do portfólio, métrica denominada _Lead Time_.
 
 Através de uma comparação entre eventos recentes de deterioração de créditos e os resultados resultados dessa pesquisa, foram analisados 9 grandes eventos corporativos cujos ativos mantiveram liquidez 
@@ -205,17 +204,17 @@ o ativo foi ancorado definitivamente no Regime Vermelho.
   caption: [Resumo Comparativo: Antecipação (Lead Time) do Alerta de Crise por Modelo. \ *Nota*: Eventos: RJ = Rec. Judicial; RP = Reperfilamento; WV = Waiver; RE = Rec. Extrajudicial. Status: AN = Antecipado; AT = Atraso; F = Falhou.]
 ) <tab_lead_time>
 
-A análise da @tab_lead_time, calculada sob a premissa de estado de alerta contínuo, ou seja, o modelo entrou no estado vermelho e permaneceu até a data do evento sem sair do estado vermelho no período, demonstra empiricamente o valor preditivo que a
+A análise da @tab_lead_time, calculada sob a premissa de estado de alerta contínuo, ou seja, o modelo entrou no estado vermelho e permaneceu nele de forma ininterrupta até a data do evento, demonstra empiricamente o valor preditivo que a
 dependência temporal (matriz de Markov) adiciona à classificação. Ao desconsiderar períodos de instabilidade de regimes (uma vez que só consideramos períodos sem saídas do estado vermelho), o K-Means revelou-se ruidoso, demonstrando 
 atrasos efetivos (como observado nos casos da Oi, Dasa e Multilaser). Com exceção da fraude da Lojas Americanas e da Recuperação Extrajudicial da Casas Bahia (onde todos os algoritmos falharam em manter o alerta ininterrupto), o HMM apresentou 
 robustez preditiva superior. Para o caso da CVC Corp, o HMM foi capaz de sustentar o alerta de crise 78 dias antes do evento, enquanto o mapeamento geométrico (K-Means) sofreu de forte inércia, resultando em um atraso de 669 dias 
-alcançar o estado vermelho de forma ininterrupta.
 
-Adicionalmente, os resultados do _Ensemble_ demonstram que o K-Means frequentemente contamina a convicção do modelo. Conclui-se, portanto, que o HMM constitui veículo superior de proteção informacional para a liquidação defensiva de 
-carteiras, quando consideramos apenas a capacidade de antecipação de alertas de forma ininterrupta até a deflagração do choque financeiro. Contudo, se considerarmos as regras operacionais definidas na metodologia do _Backtest_ (@subcap_kupiec_backtest), 
-em que o portfólio adota um filtro de Quarentena Temporal: caso o modelo acuse Regime Vermelho, o ativo é sumariamente vendido e fica expressamente bloqueado para recompra por um período de 180 dias (6 meses), um sinal isolado (ainda que configure 
-instabilidade matemática e não se mantenha ininterrupto até o choque) é suficiente para identificar a necessidade de saída do ativo, desde que ocorra dentro da janela de 180 dias que antecede o evento. A @tab_lead_time_operacional avalia o _Lead Time_ sob 
-essa ótica puramente operacional: contabiliza-se a distância temporal entre o evento de crédito e o primeiro disparo vermelho registrado no semestre anterior.
+Os resultados do _Ensemble_ demonstram que o K-Means frequentemente contamina a convicção do modelo. Conclui-se, portanto, que o HMM constitui veículo superior de proteção informacional para a liquidação defensiva de 
+carteiras, quando consideramos apenas a capacidade de antecipação de alertas de forma ininterrupta até a deflagração do choque financeiro. Ao considerar as regras operacionais definidas na metodologia do _Backtest_ (@subcap_kupiec_backtest), 
+em que o portfólio adota um filtro de Quarentena Temporal: caso o modelo acuse Regime Vermelho, o ativo é sumariamente vendido e fica expressamente bloqueado para recompra por um período de 180 dias (6 meses), observa-se uma mudança de comportamento.
+Uma vez que um sinal isolado (ainda que configure instabilidade matemática e não se mantenha ininterrupto até o choque) é suficiente para identificar a necessidade de saída do ativo, 
+desde que ocorra dentro da janela de 180 dias que antecede o evento. A @tab_lead_time_operacional avalia o _Lead Time_ sob essa ótica puramente operacional: contabiliza-se a distância temporal entre o evento de crédito e o primeiro 
+disparo vermelho registrado no semestre anterior.
 
 #figure(
   table(

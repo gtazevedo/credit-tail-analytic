@@ -8,7 +8,7 @@ viáveis para a mitigação de perdas severas, superando o carrego passivo de po
 
 == Principais Descobertas
 
-O estudo revelou achados importantes que conectam a modelagem teórica à aplicabilidade financeira prática:
+Os resultados empíricos demonstram que:
 
 1. *Adequação da Modelagem de Cauda (EGARCH-t):* A adoção do modelo EGARCH-t acoplado ao _Expected Shortfall_ provou-se eficaz na precificação do risco isolado dos ativos. A validação por meio dos 
 testes conjuntos de Christoffersen, conforme apresentado na @subcap_valest, confirmou que o modelo é capaz de absorver a heterocedasticidade condicional e evitar o agrupamento de violações (_volatility clustering_), 
@@ -21,7 +21,7 @@ pautada pelo K-Means (*Vende Amarelo*) não apenas entregou o maior retorno fina
 (p-valor < 0,05). Este fenômeno consolida empiricamente o impacto do *Paradoxo da Acurácia-Rentabilidade* (_Accuracy-Profitability Paradox_): a inércia do K-Means funcionou como um filtro de ruído contra a volatilidade secundária, 
 poupando a carteira do excesso de giro impulsionado pelas matrizes de transição do HMM. Em cenários de iliquidez e altos custos de transação (0,5% por operação), essa ineficiência preditiva transmuta-se, paradoxalmente, em proteção de capital.
 
-3. *A Armadilha da Combinação de Modelos:* O estudo documentou a falha do modelo _Ensemble_. Ao tentar fundir a reatividade do HMM com a inércia do K-Means, 
+3. *Ineficiência do Modelo Ensemble:* O estudo documentou a falha do modelo _Ensemble_. Ao tentar fundir a reatividade do HMM com a inércia do K-Means, 
 a modelagem mista deixou a carteira vulnerável ao efeito chicote (_whipsaw_). O modelo realizava vendas impulsionadas pelo HMM e recompras tardias pelo K-Means, 
 corroendo o capital com excesso de custos transacionais, entregando o pior retorno do período. A combinação acabou exacerbando os defeitos de cada modelo, e reforçando 
 a importância da avaliação do momento de compra e venda dos papéis para evitar que o carrego obtido seja consumido por custos transacionais e perdas decorrentes
@@ -32,14 +32,14 @@ de operações em momentos inoportunos.
 Para a indústria de gestão de recursos, a metodologia desenvolvida oferece um arcabouço robusto e sistemático para a gestão tática em carteiras de crédito privado. Em um mercado caracterizado por baixa liquidez estrutural 
 e precificação ocasionalmente defasada, a adoção de gatilhos quantitativos pode substituir ou auxiliar o viés comportamental humano, que frequentemente leva gestores a reter posições perdedoras na esperança de uma reversão que muitas vezes não ocorre.
 
-A operacionalização desta pesquisa demonstra que o melhor modelo preditivo não é, necessariamente, a melhor estratégia de _trading_. A escolha do motor de decisão deve estar alinhada aos atritos do mercado e às regras táticas de execução 
+A pesquisa demonstra que a superioridade preditiva (acurácia) de um modelo não garante, de forma isolada, a rentabilidade de uma etratégia de investimentos. A escolha do motor de decisão deve estar alinhada aos atritos do mercado e às regras táticas de execução 
 (como, por exemplo, a regra de "quarentena de 180 dias", que atuou como ponte operacional para viabilizar os sinais do K-Means). Os resultados observados foram frutos de simulações históricas baseadas em parâmetros de 
 _Backtest_ (custo de 0,5% e liquidez plena); na prática real de tesouraria, o momento exato do _early warning_ sofrerá o impacto do secamento do _bid-ask spread_, reiterando que o alerta não garante, por si só, 
 o sucesso da liquidação em mercados de crédito ilíquidos.
 
 == Limitações e Recomendações para Trabalhos Futuros
 
-Apesar dos resultados promissores, o presente estudo possui limitações inerentes à estrutura e à qualidade dos dados financeiros brasileiros. A principal limitação concentrou-se na convergência da volatilidade condicional (EGARCH) 
+A modelagem desenvolvida possui limitações inerentes à estrutura e à qualidade dos dados financeiros brasileiros. A principal limitação concentrou-se na convergência da volatilidade condicional (EGARCH) 
 para ativos extremos, onde longos históricos de ausência de negociação distorceram a estimação dos parâmetros de risco no período _In-Sample_. Adicionalmente, ao pautar a modelagem em dados de negócios efetivamente realizados 
 (mitigando o viés da marcação a mercado teórica), o sistema herda uma dependência do fluxo contínuo de liquidez secundária, o que significa que o modelo pode ficar "cego" nos momentos de maior estresse, quando o mercado 
 cessa suas negociações.
