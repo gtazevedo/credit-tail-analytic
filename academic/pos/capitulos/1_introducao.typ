@@ -12,15 +12,15 @@ Porém, esse mercado enfrenta problemas de liquidez, e conforme #cite(<sheng2008
 - Em geral as emissões não são conversíveis em ações;
 - Alguns investidores adquirem debêntures e as mantêm até o vencimento;
 
-Apesar de algumas dessas características estruturais se manterem verdadeiras, como:
+Foi observado que algumas dessas características estruturais se mantêm verdadeiras, como:
 - A baixa liquidez (onde mais da metade das marcações diárias do mercado giram volumes inferiores a R\$ 1 milhão);
 - A exclusividade de emissões do tipo simples;
 
-e outras características, como:
+e outras, como:
 - A baixa presença de pessoas físicas e investidores estrangeiros;
 - O fato de os intermediários manterem os papéis na carteira até o vencimento;
 
-serem reforçadas por estudos mais recentes como #cite(<barra2021estudo>, form: "prose") e #cite(<anbima2026recorde>, form: "prose"), houve algumas mudanças relevantes que sugerem um amadurecimento institucional. A amostra utilizada neste estudo 
+são reforçadas por estudos recentes como #cite(<barra2021estudo>, form: "prose") e #cite(<anbima2026recorde>, form: "prose"). Porém, observou-se uma mudança em relação a pesquisa de #cite(<sheng2008liquidez>, form: "prose") que sugere amadurecimento institucional. A amostra utilizada neste estudo 
 indica que as empresas têm conseguido alongar o perfil de suas dívidas, com as debêntures apresentando uma mediana de sete anos de prazo até o vencimento.
 
 == O Problema de Pesquisa
@@ -30,8 +30,8 @@ Estudos como #cite(<correa2010aprecamento>, form: "prose") focam em problemas de
 Contudo, muitos modelos assumem situações normais de mercado, enquanto outros fazem suposições ainda mais fortes que não condizem com a realidade do mercado brasileiro. Bancos e assets muitas vezes controlam o risco de cauda de debêntures 
 baseado em GARCH e VaR contínuos, que possuem suposições violadas quando ocorrem eventos extremos, e podem subestimar o risco observado.
 
-Como demonstrado por #cite(<bao2011illiquidity>, form: "prose"), o mercado de crédito corporativo apresenta fricções de liquidez que impedem o ajuste contínuo dos preços, eventos recentes envolvendo o Grupo Pão de Açúcar e Americanas são exemplos dos 
-saltos observados nos preços das debêntures desses emissores; No caso das Americanas, houve uma queda de 50% no valor das debêntures em um dia, acumulando perdas de cerca de 90% em uma semana; Já no caso do Grupo Pão de Açúcar,
+Como demonstrado por #cite(<bao2011illiquidity>, form: "prose"), o mercado de crédito corporativo apresenta fricções de liquidez que impedem o ajuste contínuo dos preços. Eventos recentes envolvendo o Grupo Pão de Açúcar e Americanas são exemplos dos 
+saltos observados nos preços das debêntures desses emissores. No caso das Americanas, houve uma queda de 50% no valor das debêntures em um dia, acumulando perdas de cerca de 90% em uma semana, enquanto no Grupo Pão de Açúcar
 foram observados deságios de até cerca de 70%. Nessas situações, modelos GARCH e VaR tradicionais falham em capturar o risco de cauda, uma vez que segundo #cite(<jorion2006>, form: "prose"), assumem que a liquidação será instantânea a preço de tela.
 Para corrigir essas suposições e capturar quebras estruturais, a literatura mais moderna defende a transição para modelos baseados em mudanças de regime (_Markov-Switching_), conforme proposto por #cite(<haas2004new>, form: "prose") 
 e #cite(<ardia2019markov>, form: "prose").
@@ -43,7 +43,5 @@ prever flutuações contínuas, o modelo busca identificar eventos de mudança d
 debêntures, um tempo hábil para tentar vender o papel antes que as perdas se materializem.  
 
 Para isso, serão utilizadas duas abordagens de modelagem de risco, uma baseada em K-Means e outra em HMM, ambas utilizando as mesmas _features_ de entrada, derivadas de variáveis como a volatilidade e o _spread_ das debêntures,
-obtidas por meio de dados abertos divulgados pela Anbima. Além disso, toda a aplicação, feita em python, será disponibilizada para consulta pública no #link("https://github.com/gtazevedo/credit-tail-analytic")[GitHub], 
-juntamente da sua documentação de uso,
-permitindo que qualquer interessado possa replicar os resultados,
-incluindo o _download_ das informações utilizadas no trabalho, uma vez que os dados são públicos.
+obtidas por meio de dados abertos divulgados pela Anbima. Toda a aplicação, desenvolvida em python, será disponibilizada para consulta pública no #link("https://github.com/gtazevedo/credit-tail-analytic")[GitHub], 
+juntamente com a sua documentação de uso. Isso permite que qualquer interessado possa realizar o download das informações públicas utilizadas e replicar os resultados obtidos nesse trabalho.
