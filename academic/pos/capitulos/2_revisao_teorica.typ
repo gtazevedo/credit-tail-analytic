@@ -16,7 +16,7 @@ ou fatores de risco baseados em distribuições de probabilidade, como por exemp
 Os primeiros sistemas formais de alerta de _distress_ corporativo remontam ao
 modelo de #cite(<altman1968>, form: "prose"), que utiliza combinações lineares de indicadores 
 fundamentais, o Altman Z-Score, para prever insolvência. Desde então, a literatura evoluiu para
-abordagens baseadas em modelos estruturais de crédito, como #cite(<merton1974>). Contudo, estas abordagens 
+abordagens baseadas em modelos estruturais de crédito, como #cite(<merton1974>, form: "prose"). Contudo, estas abordagens 
 tradicionais, baseadas em fundamentos, em geral obtidos em balanços e informações contábeis, usualmente divulgados
 em frequência trimestral ou anual, são inadequados para sistemas de alerta em tempo real (ou com poucos dias
 de defasagem) devido à frequência de divulgação dessas informações.
