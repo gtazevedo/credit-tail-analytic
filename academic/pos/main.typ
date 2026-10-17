@@ -3,20 +3,24 @@
 #show: abnt.with(
   titulo: "Modelagem de Risco de Cauda no Mercado de Crédito Privado: Uma Abordagem Híbrida via EGARCH-t e Modelos Ocultos de Markov",
   autor: "Guilherme Tolotti Azevedo",
-  orientador: "Nome do Orientador",
-  instituicao: "Nome da Universidade / Instituição",
   ano: "2026",
-  local: "São Paulo, SP"
+  mes: "Outubro",
+  local: "Belo Horizonte"
 )
 
-// IMPORTAÇÃO DOS CAPÍTULOS
-#include "capitulos/0_pre_textual.typ"
-#include "capitulos/1_introducao.typ"
-#include "capitulos/2_revisao_teorica.typ"
-#include "capitulos/3_metodologia.typ"
-#include "capitulos/4_resultados.typ"
-#include "capitulos/5_conclusao.typ"
+// ESTRUTURA OFICIAL DO RELATÓRIO TÉCNICO PUC MINAS (12 SEÇÕES)
+#include "secoes/1_introducao.typ"
+#include "secoes/2_problema_solucao.typ"
+#include "secoes/3_canvas_analitico.typ"
+#include "secoes/4_coleta_dados.typ"
+#include "secoes/5_processamento.typ"
+#include "secoes/6_analise_exploratoria.typ"
+#include "secoes/7_aplicacao_modelos.typ"
+#include "secoes/8_pipeline_automacao.typ"
+#include "secoes/9_discussao_resultados.typ"
+#include "secoes/10_conclusao.typ"
+#include "secoes/11_links.typ"
 
-// REFERÊNCIAS BIBLIOGRÁFICAS
-#pagebreak()
-#bibliography("referencias.bib", style: "associacao-brasileira-de-normas-tecnicas")
+// 12. REFERÊNCIAS
+= Referências <sec_referencias>
+#bibliography("referencias.bib", title: none, style: "associacao-brasileira-de-normas-tecnicas")
