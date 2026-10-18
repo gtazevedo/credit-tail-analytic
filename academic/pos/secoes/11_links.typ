@@ -8,7 +8,7 @@ Os artefatos, códigos-fonte e bases de dados consolidadas desenvolvidos ao long
 - *Pacote Python para Coleta de Debêntures (`debentures_dot_com`):* Biblioteca de código aberto mantida pelo autor para extração automatizada de características cadastrais de debêntures:
   #align(center)[#link("https://github.com/gtazevedo/debentures-dot-com")[https://github.com/gtazevedo/debentures-dot-com]]
 
-- *Anexos Digitais e Resultados Detalhados de Backtest:* Tabelas analíticas de resultados granulares por debênture dos testes de Kupiec, Christoffersen e simulações do Bootstrap:
+- *Anexos Digitais e Resultados Detalhados de* _Backtest_: Tabelas analíticas de resultados granulares por debênture dos testes de Kupiec, Christoffersen e simulações do Bootstrap:
   #align(center)[#link("https://github.com/gtazevedo/credit-tail-analytic/tree/main/anexos_digitais")[https://github.com/gtazevedo/credit-tail-analytic/tree/main/anexos_digitais]]
 
 - *Fontes Primárias de Dados Públicos:*

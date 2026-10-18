@@ -9,7 +9,7 @@ A automação do fluxo de trabalho baseia-se em uma arquitetura modular em Pytho
 A escolha por uma arquitetura nativa em Python orquestrada por scripts modulares justifica-se por três fatores:
 
 1. *Autonomia Operacional:* Dispensa a dependência de servidores complexos de terceiros ou infraestruturas pagas em nuvem, permitindo a execução integral do pipeline em qualquer servidor local ou máquina de análise de risco;
-2. *Reprodutibilidade Estrita:* Cada etapa do fluxo consome entradas versionadas e produz saídas determinísticas, controlando sementes pseudoaleatórias (*random seeds*);
+2. *Reprodutibilidade Estrita:* Cada etapa do fluxo consome entradas versionadas e produz saídas determinísticas, controlando sementes pseudoaleatórias (_random seeds_);
 3. *Flexibilidade de Integração:* A estrutura modular facilita o acoplamento futuro com ferramentas como Airflow ou MLflow, caso o volume diário de debêntures exija orquestração distribuída em tempo real.
 
 == Modelo do Fluxo de Trabalho <sec_modelo_fluxo>
@@ -82,10 +82,10 @@ As etapas do pipeline desempenham funções específicas dentro do ecossistema:
 
 1. *Ingestão e Saneamento:* Coleta os arquivos brutos da ANBIMA e do BACEN, higieniza identificadores e remove registros com iliquidez severa;
 2. *Estimação Econométrica:* O motor EGARCH-t processa as séries de retornos e extrai a volatilidade condicional, os resíduos padronizados e as métricas de VaR e Expected Shortfall;
-3. *Calibração In-Sample:* Os dados de treinamento ajustam os centróides do K-Means e as matrizes de transição do HMM, definindo os pesos ideais do Ensemble;
-4. *Inferência Out-of-Sample:* Gera probabilidades diárias causais de estresse financeiro sem vazamento de informação futura;
-5. *Simulação Tática (Backtest):* Aplica regras operacionais de liquidação e recompra sobre os ativos, registrando as variações patrimoniais da carteira;
-6. *Auditoria Estatística:* Executa 10.000 repetições de *Block Bootstrap* para atestar a significância estatística do retorno excedente frente ao mercado passivo.
+3. *Calibração* (_In-Sample_): Os dados de treinamento ajustam os centróides do K-Means e as matrizes de transição do HMM, definindo os pesos ideais do Ensemble;
+4. *Inferência* (_Out-of-Sample_): Gera probabilidades diárias causais de estresse financeiro sem vazamento de informação futura;
+5. *Simulação Tática* (_Backtest_): Aplica regras operacionais de liquidação e recompra sobre os ativos, registrando as variações patrimoniais da carteira;
+6. *Auditoria Estatística:* Executa 10.000 repetições de _Block Bootstrap_ para atestar a significância estatística do retorno excedente frente ao mercado passivo.
 
 == Códigos/telas <sec_codigos_telas>
 
@@ -143,7 +143,7 @@ A execução do pipeline completo opera via terminal, apresentando logs detalhad
 [INFO] Treinando K-Means (k=3 regimes) e Gaussian HMM (Laplace alpha=1.0)...
 [INFO] Grid-Search Ensemble concluído: peso ótimo w_HMM=0.70, w_KMeans=0.30 (Calmar=-0.017).
 [INFO] Executando Backtest Out-of-Sample (50 bps custo, 180d quarentena, 15d inércia)...
-[INFO] K-Means Vende Amarelo: Retorno=36.18% | Buy and Hold=32.84% | Delta=+3.34%
+[INFO] K-Means Vende Amarelo: Retorno=36.18% | Buy and Hold=22.42% | Delta=+13.76%
 [INFO] Rodando Block Bootstrap (n=10.000 repetições, bloco=20 dias)... p-valor = 0.0416 (p < 0.05).
 [INFO] Pipeline finalizado com sucesso. Artefatos gravados em anexos_digitais/ e graficos/.
 ```

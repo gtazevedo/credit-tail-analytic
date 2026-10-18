@@ -6,10 +6,10 @@ investigando o ganho marginal da modelagem markoviana em séries de crédito pri
 == Motor Econométrico de Volatilidade (EGARCH-t)
 
 Para modelar a variância dos retornos de spread, realizou-se um torneio combinatório de 32 especificações da família GARCH utilizando a biblioteca `arch`. A linhagem teórica desses modelos remonta à introdução 
-dos processos heterocedásticos autorregressivos (ARCH) por #cite(<engle1982autoregressive>), generalizados posteriormente por #cite(<bollerslev1986generalized>) na classe GARCH. As iterações avaliaram ordens autorregressivas 
+dos processos heterocedásticos autorregressivos (ARCH) por #cite(<engle1982autoregressive>, form: "prose"), generalizados posteriormente por #cite(<bollerslev1986generalized>, form: "prose") na classe GARCH. As iterações avaliaram ordens autorregressivas 
 AR(1) para a média condicional, variações de defasagens ($p, q in \{1, 2\}$), diferentes funções de variância (GARCH tradicional, EGARCH, GJR-GARCH e TARCH) e distribuições de resíduos Normal e t-Student.
 
-A eleição do modelo campeão baseou-se na taxa de vitórias (*Win Rate*) pelo Critério de Informação de Akaike (AIC) em 529 debêntures no período *In-Sample*. A taxa de vitória $W_j$ expressa a proporção da 
+A eleição do modelo campeão baseou-se na taxa de vitórias (_Win Rate_) pelo Critério de Informação de Akaike (AIC) em 529 debêntures no período _In-Sample_. A taxa de vitória $W_j$ expressa a proporção da 
 amostra em que o modelo $j$ alcançou o menor AIC:
 
 $ W_j = (sum_{i=1}^N I_(i, j)) / N times 100 $
@@ -32,7 +32,7 @@ para amostras de 30, 100 e 500 debêntures.
   caption: [Torneio GARCH: Ranking Médio para a amostra ampla de 500 ativos.]
 ) <fig_ranking_500>
 
-O modelo AR(1)-EGARCH(1,1) com inovação t-Student alcançou a maior taxa de vitórias nos grupos amplos. Formulado originalmente por #cite(<nelson1991conditional>), o EGARCH modela a variância condicional 
+O modelo AR(1)-EGARCH(1,1) com inovação t-Student alcançou a maior taxa de vitórias nos grupos amplos. Formulado originalmente por #cite(<nelson1991conditional>, form: "prose"), o EGARCH modela a variância condicional 
 em escala logarítmica, dispensando restrições de não-negatividade sobre os parâmetros e capturando a assimetria característica de ativos corporativos:
 
 $ ln(sigma_t^2) = omega + beta ln(sigma_(t-1)^2) + alpha ( |z_(t-1)| - E[|z_(t-1)|] ) + gamma z_(t-1) $
@@ -52,14 +52,14 @@ Ljung-Box (86,4%) e ARCH-LM (94,9%) ao nível de 5%, atestando a remoção de au
   caption: [Taxa de aprovação dos testes de diagnóstico nos resíduos do EGARCH(1,1) t-Student.]
 ) <fig_diagnostico_residuos>
 
-Com a volatilidade condicional calibrada, computaram-se o Valor em Risco (VaR 99%) e o Expected Shortfall (ES 99%) para cada papel e pregão.
+Após a calibração da volatilidade condicional, computaram-se o Valor em Risco (VaR 99%) e o Expected Shortfall (ES 99%) para cada papel e pregão.
 
 == Agrupamento Não-Supervisionado: K-Means
 
-O algoritmo K-Means atua como linha de base estática. Conforme formulado por #cite(<bishop2006pattern>), o K-Means particiona $N$ observações em $K$ grupos minimizando a soma das distâncias quadráticas aos 
+O algoritmo K-Means atua como linha de base estática. Conforme formulado por #cite(<bishop2006pattern>, form: "prose"), o K-Means particiona $N$ observações em $K$ grupos minimizando a soma das distâncias quadráticas aos 
 centróides mais próximos por meio do algoritmo iterativo de Lloyd (Maximização de Expectativa). O modelo assume propositalmente independência temporal entre as observações para isolar o efeito da geometria dos dados.
 
-A quantidade de agrupamentos fixou-se em $k=3$ regimes: Verde (baixo risco), Amarelo (alerta) e Vermelho (crise). A escolha recebeu validação formal pelo Método do Cotovelo (*Elbow Method*) e pelo *Silhouette Score* 
+A quantidade de agrupamentos foi fixada em $k=3$ regimes: Verde (baixo risco), Amarelo (alerta) e Vermelho (crise). A escolha recebeu validação formal pelo Método do Cotovelo (_Elbow Method_) e pelo _Silhouette Score_ 
 para $k in \{2, 3, 4, 5, 6, 7\}$ sobre os dados de treinamento, conforme exibe a @fig_cluster_validation.
 
 #figure(
@@ -72,17 +72,21 @@ para $k in \{2, 3, 4, 5, 6, 7\}$ sobre os dados de treinamento, conforme exibe a
   caption: [Elbow Method e Silhouette Score por número de clusters (Superior: IPCA, Inferior: CDI Spread).]
 ) <fig_cluster_validation>
 
-A curva de inércia apresenta flexão em $k=3$, patamar que maximiza a interpretação financeira dos regimes. A atribuição dos clusters resolveu a instabilidade de rótulos (*label switching*) ordenando os centróides pela 
-magnitude das coordenadas de risco. A probabilidade de crise fora da amostra foi estimada pela distância euclidiana inversa de cada observação até o centróide do regime Vermelho.
+A curva de inércia apresenta flexão em $k=3$, patamar que maximiza a interpretação financeira dos regimes. Devido à natureza não-supervisionada do K-Means, 
+os centróides gerados recebem rótulos arbitrários (este é um problema conhecido como _Label Switching_), o modelo resolve este problema através de um vetor 
+de polaridade de risco (onde valores maiores de volatilidade e _Z-Score_ implicam maior risco), ordenando as médias dos agrupamentos para classificar 
+deterministicamente os regimes em Verde (baixo risco), Amarelo (alerta) e Vermelho (crise). Na etapa preditiva, para a construção de um modelo misto ponderado 
+(conforme será abordado em @subcap_modelo_ensemble), a probabilidade de crise (`Prob_Crise_KMeans`) é definida 
+com base na distância euclidiana inversa de cada observação _Out-of-Sample_ até o centróide Vermelho.
 
 == Modelos Ocultos de Markov (HMM)
 
-O Modelo Oculto de Markov (Gaussian HMM), estruturado classicamente por #cite(<rabiner1989tutorial>), introduz dependência temporal estocástica na classificação dos regimes. A dinâmica pressupõe uma cadeia de Markov 
+O Modelo Oculto de Markov (Gaussian HMM), estruturado classicamente por #cite(<rabiner1989tutorial>, form: "prose"), introduz dependência temporal estocástica na classificação dos regimes. A dinâmica pressupõe uma cadeia de Markov 
 latente de primeira ordem com três estados não observáveis, em que a probabilidade de transição depende exclusivamente do estado imediatamente anterior:
 
 $ P(S_t = j mid S_(t-1) = i) = A_(i j) $
 
-O treinamento estimou as médias, as covariâncias diagonais e as probabilidades de transição por meio do algoritmo de Baum-Welch sobre os dados sequenciais *In-Sample*, fundamentado na teoria de máxima verossimilhança de #cite(<baum1970maximization>).
+O treinamento estimou as médias, as covariâncias diagonais e as probabilidades de transição por meio do algoritmo de Baum-Welch sobre os dados sequenciais _In-Sample_, fundamentado na teoria de máxima verossimilhança de #cite(<baum1970maximization>, form: "prose").
 
 Para impedir que estados extremos se transformassem em regimes absorventes por ausência de transições históricas na base de treino, aplicou-se a Suavização Aditiva de Laplace combinada a um piso de 1% nas probabilidades de transição:
 
@@ -92,10 +96,13 @@ $ P''_{i j} = max(P'_{i j}, 0.01) quad ==> quad P_(i j) = P''_{i j} / (sum_{k=1}
 
 adotando-se $alpha = 1$ e $K=3$. A inferência fora da amostra utilizou o algoritmo de Viterbi para decodificar a trajetória latente mais provável e o procedimento Forward-Backward para calcular a probabilidade pontual de crise (`Prob_Crise_HMM`).
 
-== Modelo Ensemble
+== Modelo Ensemble <subcap_modelo_ensemble>
 
-O modelo misto buscou conciliar a inércia do particionamento geométrico à agilidade temporal da inferência bayesiana, aplicando princípios de combinação de múltiplos classificadores explorados por #cite(<kittler1998combining>) e 
-#cite(<ho1994decision>). A ponderação ideal foi determinada por um *Grid Search* sobre as predições de calibração visando maximizar o *Calmar Ratio* do portfólio. A @fig_ensemble_sensitivity ilustra a grade de sensibilidade dos pesos.
+O modelo misto buscou conciliar a inércia do particionamento geométrico à agilidade temporal da inferência bayesiana, aplicando princípios de combinação de múltiplos classificadores explorados por #cite(<kittler1998combining>, form: "prose") e 
+#cite(<ho1994decision>, form: "prose"). A ponderação ideal foi determinada por um _Grid Search_ sobre as predições de calibração visando maximizar o _Calmar Ratio_ (Razão do Retorno Anualizado (CAGR - _Compound Annual Growth Rate_) 
+pelo _Maximum Drawdown_) do portfólio. Essa métrica foi escolhida no lugar de métricas mais conhecidas como _Sharpe Ratio_ uma vez que debêntures pós-fixadas (atreladas ao CDI) possuem correlação direta com a 
+taxa de juros e volatilidade intrínseca artificialmente próxima a zero, o que distorce o índice (_Sharpe Ratio_) na avaliação de prêmio de risco 
+(tornando-o assintótico frente a prêmios negativos).
 
 #figure(
   image("../imagens/sensitivity_ensemble_amarelo.png", width: 85%),
@@ -108,13 +115,12 @@ $ "Probabilidade Sintética"_t = 0.70 times "Prob_Crise_HMM"_t + 0.30 times "Pro
 
 O sinal resultante recebeu suavização por média móvel exponencial de três dias ($"EMA"_3$, com fator $alpha = 0,5$), gerando a pontuação final de risco e atenuando oscilações de alta frequência.
 
-== Protocolos de Validação Operacional
+== Protocolos de Validação Operacional <subcap_kupiec_backtest>
 
-A validação operacional estruturou-se em duas frentes complementares sobre o período *Out-of-Sample*:
+A validação operacional estruturou-se em duas frentes complementares sobre o período _Out-of-Sample_:
 
-1. *Validação Estatística:* Teste de Proporção de Falhas de #cite(<kupiec1995techniques>) para cobertura incondicional e Teste de Cobertura Condicional de #cite(<christoffersen1998>) para verificar a independência temporal das violações do VaR a 99%;
-2. *Simulador Financeiro de Backtest:* Execução diária de estratégias táticas de venda defensiva confrontadas com o carrego passivo (*Buy and Hold*). O simulador aplicou taxa de custo de transação de 0,5% (50 bps) por operação, 
-remuneração diária de caixa a 100% do CDI, quarentena de 180 dias sem eventos para recompra e trava de *payback* mínimo de 3 meses.
+1. *Validação Estatística:* Teste de Proporção de Falhas de #cite(<kupiec1995techniques>, form: "prose") para cobertura incondicional e Teste de Cobertura Condicional de #cite(<christoffersen1998>, form: "prose") para verificar a independência temporal das violações do VaR a 99%;
+2. *Simulador Financeiro de* _Backtest_: Execução diária de estratégias táticas de venda defensiva confrontadas com o carrego passivo (_Buy and Hold_). O simulador aplicou taxa de custo de transação de 0,5% (50 bps) por operação, remuneração diária de caixa a 100% do CDI, quarentena de 180 dias sem eventos para recompra e trava de _payback_ mínimo de 3 meses.
 
 == Implementação em Código-Fonte
 

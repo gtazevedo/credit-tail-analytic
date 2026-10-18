@@ -1,27 +1,27 @@
 = Processamento/Tratamento de Dados <sec_processamento>
 
 A preparação dos dados assegura que as estimativas econométricas e as classificações estatísticas reflitam dinâmicas reais de mercado, e não ruídos de liquidez fragmentada. A massa de dados bruta passou por etapas sequenciais de filtragem de liquidez, harmonização de 
-taxas contratuais, engenharia de atributos, tratamento de valores discrepantes (*outliers*) e escalonamento geométrico.
+taxas contratuais, engenharia de atributos, tratamento de valores discrepantes (_outliers_) e escalonamento geométrico.
 
 == Divisão Temporal e Filtro de Iliquidez
 
 Os registros foram particionados em dois intervalos cronológicos disjuntos:
 
-- Período de Treinamento (*In-Sample*): De 2 de janeiro de 2018 a 30 de dezembro de 2022. Esta janela serviu para calibrar os parâmetros dos modelos GARCH, selecionar os subconjuntos de variáveis e determinar as matrizes de transição dos regimes;
-- Período de Teste e Validação (*Out-of-Sample*): De 2 de janeiro de 2023 a 10 de julho de 2026. Esta janela serviu para executar o teste de antecipação (*Early Warning*) e simular as estratégias de investimento sob condições reais de mercado.
+- Período de Treinamento (_In-Sample_): De 2 de janeiro de 2018 a 30 de dezembro de 2022. Esta janela serviu para calibrar os parâmetros dos modelos GARCH, selecionar os subconjuntos de variáveis e determinar as matrizes de transição dos regimes;
+- Período de Teste e Validação (_Out-of-Sample_): De 2 de janeiro de 2023 a 10 de julho de 2026. Esta janela serviu para executar o teste de antecipação (_Early Warning_) e simular as estratégias de investimento sob condições reais de mercado.
 
-Como citado na @problemas_pesquisa, um desafio inerente ao mercado secundário de crédito privado brasileiro é a baixa liquidez dos ativos, inclusive com alguns chegando a possuir
-dias sem negociação. A ANBIMA classifica o volume de negociação, no sistema de informações consultado, em faixas, sendo a faixa mais baixa dada por "Até 1MM", e portanto, dado as informações possuídas na realização dessa pesquisa,
-esses são os ativos definidos como ilíquidos. Para lidar com essa característica, desenvolveu-se uma rotina algorítmica de tratamento, que, quando habilitada, 
-remove da base de dados para treinamento (que será detalhada posteriormente em @subcap_processamento), os ativos que permaneceram como ilíquidos durante um período igual ou superior a 95% da amostra.
+Como citado na @problemas_pesquisa, um desafio inerente ao mercado secundário de crédito privado brasileiro é a baixa liquidez dos ativos, inclusive com alguns chegando a registrar
+dias sem negociação. A ANBIMA classifica o volume de negociação, no sistema de informações consultado, em faixas, sendo a faixa mais baixa dada por "Até 1MM"; portanto, considerando as informações disponíveis durante a realização desta pesquisa,
+esses são os ativos definidos como ilíquidos. Para lidar com essa característica, desenvolveu-se uma rotina algorítmica de tratamento que, quando habilitada, 
+remove da base de dados para treinamento (que será detalhada posteriormente em @subcap_processamento) os ativos que permaneceram como ilíquidos durante um período igual ou superior a 95% da amostra.
 O propósito dessa funcionalidade é impedir que, caso sejam observados
-eventos de variação de _spread_ espúrios, devido a baixa liquidez, eles não sejam propagados para o modelo EGARCH, o que poderia corromper a estimação da persistência e dos choques 
+eventos de variação de _spread_ espúrios devido à baixa liquidez, eles sejam propagados para o modelo EGARCH, o que poderia corromper a estimação da persistência e dos choques 
 (parâmetros $alpha$ e $beta$) da variância condicional. Esses ativos foram removidos apenas da amostra de calibração, com a exceção de RDVT11, que foi removido manualmente de toda a base
 devido aos seguintes fatores:
-- O ativo não tinha dados de negociação durante a etapa de treinamento, então seria considerado posteriormente, mesmo ilíquido.
-- A série de preços do ativo apresenta grandes variações, com um espaçamento elevado entre os dados, o que pode introduzir vieses na estimação.
-    - Em 05/12/2023 o ativo foi negociado com PU de 1001.77, sendo negociado novamente apenas em 20/03/2024 com PU de 1.40 e posterior em 21/03/2024 com PU de 0.000014. Voltando a ser negociado em 26/07/2024 com PU de 38.04 e em 28/02/2025 com PU de 754.31.
-- A empresa passou por eventos de reestruturação e recuperação judicial
+- O ativo não tinha dados de negociação durante a etapa de treinamento, então seria considerado posteriormente, mesmo ilíquido;
+- A série de preços do ativo apresenta grandes variações, com espaçamento elevado entre os dados, o que pode introduzir vieses na estimação;
+    - Em 05/12/2023 o ativo foi negociado com PU de 1.001,77, sendo negociado novamente apenas em 20/03/2024 com PU de 1,40 e posteriormente em 21/03/2024 com PU de 0,000014. O papel voltou a ser negociado em 26/07/2024 com PU de 38,04 e em 28/02/2025 com PU de 754,31;
+- A empresa emissora passou por eventos de reestruturação societária e recuperação judicial.
 
 == Harmonização de Taxas e Engenharia de Atributos <subcap_processamento>
 
@@ -40,25 +40,25 @@ Nos contratos atrelados a inflação (IPCA+) ou sobretaxa direta sobre o DI (DI+
 
 Com os spreads homogêneos calculados, foram construídos os seguintes atributos derivados:
 
-1. *Variação Diária do Spread (Delta Spread):* Atua como variável de entrada para a modelagem da variância condicional:
+1. *Variação Diária do Spread* (_Delta Spread_): Atua como variável de entrada para a modelagem da variância condicional:
    $ Delta S_t = S_t - S_(t-1) $
 
 2. *Taxa Ajustada ao Prazo:* Em razão da indisponibilidade de dados homogêneos de duration modificada para toda a amostra, ajustou-se o spread pelo logaritmo dos dias úteis restantes até o vencimento:
    $ "Taxa"_"prazo" = S_t / ln(max("DU", 2)) $
 
-3. *Z-Score Móvel de Spread:* Calculado sobre uma janela causal deslizante de 60 dias úteis, mensurando a distância em desvios-padrão da taxa corrente frente ao histórico recente do próprio ativo;
+3. *_Z-Score_ Móvel de Spread:* Calculado sobre uma janela causal deslizante de 60 dias úteis, mensurando a distância em desvios-padrão da taxa corrente frente ao histórico recente do próprio ativo;
 
-4. *Spread Range e Spread Skew Intraday:* Métricas de dispersão e assimetria das cotações observadas ao longo da mesma sessão de negócios:
+4. *_Spread Range_ e _Spread Skew Intraday_:* Métricas de dispersão e assimetria das cotações observadas ao longo da mesma sessão de negócios:
    $ S_("range") = "Taxa"_"max" - "Taxa"_"min" $
    $ S_("skew") = ("Taxa"_"med" - "Taxa"_"min") / (S_("range") + epsilon) $
    adotando-se $epsilon = 10^(-6)$ para assegurar estabilidade numérica.
 
 == Tratamento de Discrepâncias e Normalização
 
-Choques extremos e registros pontuais atípicos foram tratados por meio de Winsorização bilateral nos percentis 1% e 99%, calculados estritamente sobre os dados *In-Sample*. Os limites encontrados foram congelados e aplicados para limitar os 
-dados *Out-of-Sample*, eliminando a contaminação por informação futura (*look-ahead bias*).
+Choques extremos e registros pontuais atípicos foram tratados por meio de Winsorização bilateral nos percentis 1% e 99%, calculados estritamente sobre os dados _In-Sample_. Os limites encontrados foram congelados e aplicados para limitar os 
+dados _Out-of-Sample_, eliminando a contaminação por informação futura (_look-ahead bias_).
 
-A padronização das variáveis utilizou o algoritmo `RobustScaler`, fundamentado no estimador por quantis de #cite(<rousseeuw2011robust>), que subtrai a mediana e divide pela amplitude interquartil ($"IQR" = Q_3 - Q_1$). O método mitiga distorções 
+A padronização das variáveis utilizou o algoritmo `RobustScaler`, fundamentado no estimador por quantis de #cite(<rousseeuw2011robust>, form: "prose"), que subtrai a mediana e divide pela amplitude interquartil ($"IQR" = Q_3 - Q_1$). O método mitiga distorções 
 causadas por observações anômalas. Para evitar indefinições numéricas em ativos com baixa oscilação, fixou-se um piso de variância equivalente a 10% do IQR mediano do indexador correspondente.
 
 == Implementação em Código-Fonte

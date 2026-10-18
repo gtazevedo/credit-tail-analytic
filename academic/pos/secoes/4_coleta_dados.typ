@@ -6,7 +6,7 @@ de cada instrumento emitido e as séries históricas macroeconômicas de taxas d
 
 Os dados transacionais de negociação foram extraídos da plataforma da Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais (ANBIMA), a partir do 
 sistema REUNE (Prévias Públicas de Negociação de Instrumentos Financeiros). A série histórica compreende o intervalo entre 2 de janeiro de 2018 e 10 de julho de 2026. O 
-histórico abrange 2.112 dias úteis. As rotinas automatizadas de raspagem (*web scraping*) e os módulos de unificação dos arquivos diários encontram-se disponíveis 
+histórico abrange 2.112 dias úteis. As rotinas automatizadas de raspagem (_web scraping_) e os módulos de unificação dos arquivos diários encontram-se disponíveis 
 no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório público do projeto].
 
 As características cadastrais das debêntures foram obtidas por meio de consultas programáticas ao portal Debentures.com.br e ao ANBIMA Data, utilizando o pacote `debentures_dot_com` 
@@ -50,8 +50,8 @@ de saneamento e modelagem.
 
 Para sintetizar as informações apresentadas sobre os dados, elaborou-se um resumo considerando a metodologia dos 5-Ws:
 
-- *(Why?) Por que os dados são importantes:* As cotações de negócios efetivos refletem o prêmio de risco real exigido pelo mercado. Elas eliminam a ficção de modelos que assumem continuidade de preços em ativos ilíquidos, expondo os momentos exatos em que ocorrem deságios severos.
-- *(Who?) Qual a origem dos dados:* Informações públicas auditadas e divulgadas pela ANBIMA (sistema REUNE), portal Debentures.com.br e Banco Central do Brasil.
-- *(What?) O que é analisado:* Preços unitários, taxas de spread negociadas, prazos até o vencimento e volumes negociados de debêntures corporativas, confrontados com as taxas livres de risco da economia.
-- *(Where?) Qual a cobertura geográfica:* Mercado financeiro doméstico brasileiro, contemplando emissores de dívida corporativa atuantes no território nacional.
-- *(When?) Qual o período analisado:* Intervalo contínuo entre janeiro de 2018 e julho de 2026. Essa janela foi dividida em duas etapas metodológicas: período de treinamento (*In-Sample*, 2018 a 2022) e período de validação e teste (*Out-of-Sample*, 2023 a 2026).
+- *(_Why?_) Por que os dados são importantes:* As cotações de negócios efetivos refletem o prêmio de risco real exigido pelo mercado. Elas eliminam a ficção de modelos que assumem continuidade de preços em ativos ilíquidos, expondo os momentos exatos em que ocorrem deságios severos.
+- *(_Who?_) Qual a origem dos dados:* Informações públicas auditadas e divulgadas pela ANBIMA (sistema REUNE), portal Debentures.com.br e Banco Central do Brasil.
+- *(_What?_) O que é analisado:* Preços unitários, taxas de spread negociadas, prazos até o vencimento e volumes negociados de debêntures corporativas, confrontados com as taxas livres de risco da economia.
+- *(_Where?_) Qual a cobertura geográfica:* Mercado financeiro doméstico brasileiro, contemplando emissores de dívida corporativa atuantes no território nacional.
+- *(_When?_) Qual o período analisado:* Intervalo contínuo entre janeiro de 2018 e julho de 2026. Essa janela foi dividida em duas etapas metodológicas: período de treinamento (_In-Sample_, 2018 a 2022) e período de validação e teste (_Out-of-Sample_, 2023 a 2026).

@@ -2,7 +2,7 @@
 
 A Estatística para Ciência de Dados vem ganhando espaço no mercado de trabalho porque estabelece a base quantitativa necessária para transformar grandes volumes de dados em decisões objetivas. 
 No mercado de capitais, a tomada de decisão orientada por dados auxilia o profissional com estimativas probabilísticas verificáveis, através, por exemplo, da precificação de ativos e do 
-gerenciamento de risco de crédito corporativo, conforme demonstrado por #cite(<hull2012risk>). Muitos dos modelos que são usados hoje, contudo, são puramente determinísticos e têm 
+gerenciamento de risco de crédito corporativo, conforme demonstrado por #cite(<hull2012risk>, form: "prose"). Muitos dos modelos que são usados hoje, contudo, são puramente determinísticos e têm 
 dificuldade em capturar, por exemplo, mudanças de regime. Uma solução para isso é a integração entre modelos econométricos clássicos de séries temporais e algoritmos modernos de Aprendizado de Máquina, 
 que viabilizam a extração de padrões ocultos e regimes latentes em séries não-lineares, superando limitações históricas de abordagens puramente determinísticas.
 
