@@ -1,16 +1,15 @@
 = Automatização do Pipeline de Dados <sec_pipeline_automacao>
 
-A operacionalização de modelos preditivos no mercado de capitais requer processos automatizados, auditáveis e reproduzíveis. A arquitetura computacional do projeto foi desenhada sob os princípios de DataOps e MLOps, garantindo a rastreabilidade integral dos dados, o versionamento de modelos e a independência de execução em múltiplos ambientes operacionais.
+A operacionalização de modelos preditivos no mercado de capitais requer processos automatizados, auditáveis e reproduzíveis. A arquitetura computacional do projeto foi desenhada sob os princípios de DataOps e MLOps, priorizando modularidade e rastreabilidade,
+garantindo o controle de versões dos dados e código, além da execução em múltiplos ambientes operacionais.
 
 == Definição da Ferramenta de Orquestração de Pipeline do Fluxo de Trabalho <sec_ferramenta_pipeline>
 
-A automação do fluxo de trabalho baseia-se em uma arquitetura modular em Python, estruturada na forma de pacote instalável independente denominado `credit_tail_analytics`. O gerenciamento de dependências e ambientes virtuais utiliza o `Poetry`, que assegura o bloqueio determinístico das versões das bibliotecas matemáticas (`arch`, `scikit-learn`, `hmmlearn`, `pandas`, `scipy`).
+A automação do fluxo de trabalho baseia-se em uma arquitetura modular em Python, estruturada na forma de pacote instalável independente denominado `credit_tail_analytics`. O gerenciamento de dependências e ambientes virtuais utiliza o `Poetry`, 
+atendendo a três requisitos práticos. Primeiramente, elimina a dependência de servidores proprietários ou serviços em nuvem, viabilizando a execução local. Em segundo lugar, garante reprodutibilidade estrita pelo controle
+de versionamento de pacotes, sementes pseudoaleatórias e dependências matemáticas. Por fim, viabiliza o acoplamento futuro com ferramentas de orquestração distribuída (como Airflow ou MLflow), caso a escala demande processamento em tempo real
+ou _near real-time_.
 
-A escolha por uma arquitetura nativa em Python orquestrada por scripts modulares justifica-se por três fatores:
-
-1. *Autonomia Operacional:* Dispensa a dependência de servidores complexos de terceiros ou infraestruturas pagas em nuvem, permitindo a execução integral do pipeline em qualquer servidor local ou máquina de análise de risco;
-2. *Reprodutibilidade Estrita:* Cada etapa do fluxo consome entradas versionadas e produz saídas determinísticas, controlando sementes pseudoaleatórias (_random seeds_);
-3. *Flexibilidade de Integração:* A estrutura modular facilita o acoplamento futuro com ferramentas como Airflow ou MLflow, caso o volume diário de debêntures exija orquestração distribuída em tempo real.
 
 == Modelo do Fluxo de Trabalho <sec_modelo_fluxo>
 
@@ -78,9 +77,9 @@ digraph G {
   caption: [Diagrama do Fluxo de Atividades do Pipeline de Risco e Backtest.]
 ) <fig_pipeline_fluxo>
 
-As etapas do pipeline desempenham funções específicas dentro do ecossistema:
+As etapas do pipeline desempenham as seguintes funções:
 
-1. *Ingestão e Saneamento:* Coleta os arquivos brutos da ANBIMA e do BACEN, higieniza identificadores e remove registros com iliquidez severa;
+1. *Ingestão e Saneamento:* Coleta os arquivos brutos da ANBIMA e do BACEN, higieniza identificadores e remove registros com elevada iliquidez;
 2. *Estimação Econométrica:* O motor EGARCH-t processa as séries de retornos e extrai a volatilidade condicional, os resíduos padronizados e as métricas de VaR e Expected Shortfall;
 3. *Calibração* (_In-Sample_): Os dados de treinamento ajustam os centróides do K-Means e as matrizes de transição do HMM, definindo os pesos ideais do Ensemble;
 4. *Inferência* (_Out-of-Sample_): Gera probabilidades diárias causais de estresse financeiro sem vazamento de informação futura;

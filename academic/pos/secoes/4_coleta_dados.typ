@@ -5,8 +5,8 @@ desta pesquisa, foram integradas três fontes primárias de informação públic
 de cada instrumento emitido e as séries históricas macroeconômicas de taxas de juros e inflação.
 
 Os dados transacionais de negociação foram extraídos da plataforma da Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais (ANBIMA), a partir do 
-sistema REUNE (Prévias Públicas de Negociação de Instrumentos Financeiros). A série histórica compreende o intervalo entre 2 de janeiro de 2018 e 10 de julho de 2026. O 
-histórico abrange 2.112 dias úteis. As rotinas automatizadas de raspagem (_web scraping_) e os módulos de unificação dos arquivos diários encontram-se disponíveis 
+sistema REUNE (Prévias Públicas de Negociação de Instrumentos Financeiros). A série histórica compreende o intervalo contínuo entre 2 de janeiro de 2018 e 10 de julho de 2026, totalizando 
+2.112 dias úteis de negociações. As rotinas automatizadas de raspagem (_web scraping_) e os módulos de unificação dos arquivos diários encontram-se disponíveis 
 no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório público do projeto].
 
 As características cadastrais das debêntures foram obtidas por meio de consultas programáticas ao portal Debentures.com.br e ao ANBIMA Data, utilizando o pacote `debentures_dot_com` 
@@ -19,8 +19,24 @@ viabilizou computar uma aproximação dos prêmios de risco e das variações de
 
 == Dicionário de Dados
 
-A base consolidada resultante unifica os registros de negociação, cadastrais e macroeconômicos. A @tab_dicionario_dados descreve os principais atributos utilizados nas etapas 
-de saneamento e modelagem.
+A base consolidada resultante unifica os registros de negociação, cadastrais e macroeconômicos. A @tab_dicionario_dados descreve os principais atributos utilizados nas etapas de saneamento e modelagem.
+
+#block(
+  fill: rgb(248, 250, 252),
+  stroke: 0.5pt + rgb(210, 220, 230),
+  inset: 10pt,
+  radius: 3pt,
+  width: 100%,
+  [
+    #set text(size: 10pt)
+    #set par(leading: 0.5em, first-line-indent: 0pt)
+    *Nome do dataset:* Base Consolidada de Negociação de Debêntures e Séries Macroeconômicas \
+    *Descrição:* Unificação dos registros diários de negócios secundários (ANBIMA REUNE), dados cadastrais estruturais (portal Debentures.com.br) e indicadores macroeconômicos diários do Banco Central do Brasil (SGS/BACEN). \
+    *Link:* #link("https://github.com/gtazevedo/credit-tail-analytic")[https://github.com/gtazevedo/credit-tail-analytic]
+  ]
+)
+
+#v(0.3cm)
 
 #figure(
   table(
@@ -50,8 +66,8 @@ de saneamento e modelagem.
 
 Para sintetizar as informações apresentadas sobre os dados, elaborou-se um resumo considerando a metodologia dos 5-Ws:
 
-- *(_Why?_) Por que os dados são importantes:* As cotações de negócios efetivos refletem o prêmio de risco real exigido pelo mercado. Elas eliminam a ficção de modelos que assumem continuidade de preços em ativos ilíquidos, expondo os momentos exatos em que ocorrem deságios severos.
+- *(_Why?_) Por que os dados são importantes:* As cotações de negócios efetivos refletem o prêmio de risco real exigido pelo mercado. Afastam premissas teóricas de continuidade de preços que não se sustentam em ativos ilíquidos, expondo os momentos exatos em que ocorrem elevados deságios.
 - *(_Who?_) Qual a origem dos dados:* Informações públicas auditadas e divulgadas pela ANBIMA (sistema REUNE), portal Debentures.com.br e Banco Central do Brasil.
 - *(_What?_) O que é analisado:* Preços unitários, taxas de spread negociadas, prazos até o vencimento e volumes negociados de debêntures corporativas, confrontados com as taxas livres de risco da economia.
 - *(_Where?_) Qual a cobertura geográfica:* Mercado financeiro doméstico brasileiro, contemplando emissores de dívida corporativa atuantes no território nacional.
-- *(_When?_) Qual o período analisado:* Intervalo contínuo entre janeiro de 2018 e julho de 2026. Essa janela foi dividida em duas etapas metodológicas: período de treinamento (_In-Sample_, 2018 a 2022) e período de validação e teste (_Out-of-Sample_, 2023 a 2026).
+- *(_When?_) Qual o período analisado:* Intervalo contínuo entre janeiro de 2018 e julho de 2026. Esta janela foi dividida em duas etapas metodológicas: período de treinamento (_In-Sample_, 2018 a 2022) e período de validação e teste (_Out-of-Sample_, 2023 a 2026).

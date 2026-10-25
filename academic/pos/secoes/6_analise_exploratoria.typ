@@ -5,12 +5,24 @@ definiu o subconjunto ideal de variáveis para os algoritmos de agrupamento.
 
 == Propriedades Estatísticas e Diagnóstico de Cauda
 
-As séries históricas de retornos de spread exibem desvios em relação à normalidade. No período _In-Sample_, calculou-se o excesso de curtose sobre as variações dos spreads diários. Foi constatado que os retornos (sobre as séries de _spread_) apresentaram um 
-Excesso de Curtose de $2.683,30$, indicando eventos extremos e caudas pesadas que inviabilizariam o uso de uma matriz Gaussiana, todavia, a _feature_ `Taxa_ZScore`, resultante do filtro estocástico do EGARCH-t, reduziu este Excesso de Curtose para apenas $1,17$. Em 
-finanças quantitativas e modelagem multivariada, excessos de curtose localizados no intervalo de $-2$ a $+2$ (e mesmo sob critérios mais relaxados, até $+7$) são considerados comportados e largamente aceitáveis para a adoção de premissas de 
-normalidade em estimações por Máxima Verossimilhança sem enviesamento grave dos estimadores de #cite(<hair2010multivariate>, form: "prose"). Consequentemente, o espaço latente do HMM encontra-se num domínio de eventos extremos mitigado, o que valida a 
-escolha do modelo Gaussiano para assegurar a estabilidade numérica e convergência na calibração das matrizes, da mesma forma, os vetores de médias estimadas para as emissões Gaussianas sofrem a correção 
-heurística de _Label Switching_ para rotular os estados como Verde, Amarelo e Vermelho.
+As séries históricas de retornos de spread exibem desvios acentuados em relação à normalidade. No período _In-Sample_, calculou-se o excesso de curtose sobre as variações dos spreads diários. Constatou-se que os retornos apresentaram excesso de curtose de $2.683,30$, indicando eventos extremos e caudas pesadas que inviabilizariam o uso de uma matriz Gaussiana. Todavia, a _feature_ `Taxa_ZScore`, resultante do filtro estocástico do EGARCH-t, reduziu o excesso de curtose para $1,18$.
+
+A @tab_descritiva consolida as principais estatísticas descritivas das variáveis que compõem o espaço de estados para o agrupamento de regimes durante o período de treinamento (_In-Sample_, 2018 a 2022).
+
+#figure(
+  table(
+    stroke: 0.5pt,
+    columns: (2fr, 1fr, 1.1fr, 1fr, 1fr, 1fr, 1.1fr, 1.2fr),
+    align: center + horizon,
+    [*Variável*], [*Média*], [*Desv. Padrão*], [*Mediana*], [*Q1 (25%)*], [*Q3 (75%)*], [*Assimetria*], [*Exc. Curtose*],
+    [`Taxa_ZScore`], [0,114], [1,241], [0,000], [-0,743], [0,905], [0,45], [1,18],
+    [`Volatilidade_EGARCH`], [14,329], [162,051], [0,299], [0,200], [0,466], [22,87], [750,45],
+    [`Expected_Shortfall_99`], [0,406], [11,720], [0,966], [0,583], [1,000], [-52,42], [3.477,60]
+  ),
+  caption: [Estatísticas Descritivas das Variáveis Selecionadas no Período In-Sample (2018 a 2022).]
+) <tab_descritiva>
+
+A discrepância entre as médias e medianas nas variáveis brutas de volatilidade e cauda evidencia a forte assimetria provocada por choques raros de reprecificação. Em contrapartida, a variável padronizada `Taxa_ZScore` apresenta excesso de curtose moderado ($1,18$), situado no intervalo $[-2, +2]$ preconizado por #cite(<hair2010multivariate>, form: "prose") para premissas de normalidade assintótica. Consequentemente, o espaço latente do HMM passa a operar em um domínio no qual o impacto de eventos extremos é atenuado, assegurando estabilidade numérica na convergência das matrizes gaussianas.
 
 == Teste de Estacionariedade dos Spreads (ADF)
 
@@ -36,12 +48,9 @@ A especificação adotou modelo com termo constante e defasagens selecionadas au
   caption: [Resultados do Teste ADF ($alpha = 5\%$) por Indexador.]
 ) <tab_adf>
 
-Os resultados, reportados na @tab_adf, demonstram que a série de _spread_ bruto (`Taxa_Ativo`) é não-estacionária em 91% dos casos, como esperado (a nível de _spread_, as séries são integradas de ordem 1) e após a primeira 
-diferença (`Delta Spread`), *95,7% das séries rejeitam H0 ao nível de 5%*, validando o pressuposto de estacionariedade necessário para o EGARCH. Os ativos que compõem os 3,4% restantes que não rejeitam $H_0$ são, em sua maioria, 
-papéis com histórico extremamente curto (entre 30 e 60 observações) e perfil de iliquidez estrutural, 
-nos quais a baixa frequência de negociação gera séries com longos períodos de retornos nulos que distorcem a convergência do teste, 
-para esses casos, o motor EGARCH produz estimativas de volatilidade 
-de menor confiança. Podendo-se concluir que a diferenciação viabilizou a aplicação segura do motor de volatilidade.
+Os resultados, reportados na @tab_adf, demonstram que a série de _spread_ bruto (`Taxa_Ativo`) é não-estacionária em 91% dos casos, como esperado (em nível de _spread_, as séries são integradas de ordem 1) e após a primeira 
+diferença (`Delta Spread`), 95,7% das séries rejeitam $H_0$ ao nível de 5%, validando o pressuposto de estacionariedade necessário para o EGARCH. Os ativos que compõem os 3,4% restantes que não rejeitam $H_0$ são, em sua maioria, 
+papéis com histórico extremamente curto (entre 30 e 60 observações) e perfil de iliquidez estrutural, nos quais longas sequências de retornos nulos prejudicam a convergência assintótica do teste e reduzem a precisão do motor EGARCH. 
 
 == Seleção de Variáveis por Contagem de Borda
 
@@ -52,17 +61,17 @@ A seleção executou um _Grid Search_ combinatório sobre subconjuntos de variá
 do particionamento foi avaliada por três métricas consolidadas de validação de agrupamentos: 
 
 1. *Índice Silhouette* (_Silhouette Score_) #cite(<rousseeuw1987silhouettes>): Mede a coesão intra-_cluster_ frente à separabilidade inter-_cluster_, variando no intervalo $[-1, 1]$. Nesta métrica, valores maiores indicam melhor adequação, ou seja, valores próximos a 1 sugerem _clusters_ perfeitamente densos e bem separados, enquanto valores próximos a 0 ou negativos indicam forte sobreposição;
-2. *Índice Davies-Bouldin* #cite(<davies1979cluster>): Avalia a razão média da dispersão interna do _cluster_ pela distância euclidiana entre os centroides, penalizando sobreposições. Diferente do _Silhouette_, nesta métrica valores menores indicam melhor adequação, pois um índice menor (com limite inferior tendendo a zero) significa que os _clusters_ são compactos internamente e distantes uns dos outros;
+2. *Índice Davies-Bouldin* #cite(<davies1979cluster>): Avalia a razão média da dispersão interna do _cluster_ pela distância euclidiana entre os centroides, penalizando sobreposições. Diferentemente do _Silhouette_, nesta métrica valores menores indicam melhor adequação, pois um índice menor (com limite inferior tendendo a zero) significa que os _clusters_ são compactos internamente e distantes uns dos outros;
 3. *Índice Calinski-Harabasz* #cite(<calinski1974dendrite>): Mensura a razão entre a variância inter-_cluster_ e a variância intra-_cluster_, ponderada pelos graus de liberdade do sistema. Para este índice, valores maiores indicam melhor adequação, denotando que a distância entre os centros dos _clusters_ é expressivamente maior que a dispersão dos pontos dentro de cada regime.
 
-Dado que não existe uma solução unificada no Aprendizado de Máquina, frequentemente estas três métricas fornecem orientações sobre qual o melhor particionamento. A solução matemática para este problema repousa sobre as 
-heurísticas de consenso, combinando os resultados de cada métrica. O Método de Borda (_Borda Count_), tradicionalmente um sistema de votação, foi introduzido por #cite(<borda1781>, form: "prose"). Contudo, sua adaptação computacional
-moderna o torna um mecanismo imparcial e poderoso para consolidar múltiplos sistemas de classificação e validação multivariada, sendo amplamente estendido na 
-literatura moderna de Aprendizado de Máquina, e validado na construção de classificadores de consenso por 
-#cite(<ho1994decision>, form: "prose") e #cite(<kittler1998combining>, form: "prose"), bem como na seleção robusta de atributos (_ensembles_) por #cite(<saeys2008robust>, form: "prose"). No contexto deste trabalho, 
-as _features_ são pontuadas pela posição ordinal que alcançaram em cada métrica isolada. Ao se combinar os resultados pelo Método de Borda, mitiga-se o viés individual de cada métrica e se converge para o subconjunto dimensionalmente mais robusto.
+Diante de divergências de ordenação entre métricas de partição utilizadas, a definição do subconjunto ideal recorreu à heurística do consenso multivariado. Optou-se pela utilização do Método de Borda (_Borda Count_), tradicionalmente 
+um sistema de votação, introduzido por #cite(<borda1781>, form: "prose"), e amplamente utilizado na literatura moderna de Aprendizado de Máquina para construção de classificadores de consenso após sua adaptação computacional
+(#cite(<ho1994decision>, form: "prose"); #cite(<kittler1998combining>, form: "prose")). Neste trabalho, as _features_ são pontuadas pela posição ordinal que alcançaram em cada métrica isolada. Os resultados são então combinados pelo Método 
+de Borda, permitindo mitigar o viés individual de cada métrica e convergir para o subconjunto dimensionalmente mais robusto.
 
-A @fig_feature_selection exibe os dez subconjuntos mais bem classificados no torneio. Como resultado da otimização matemática (_Borda Score_), o subconjunto `Taxa_ZScore` e `Volatilidade_EGARCH` obteve a pontuação máxima no particionamento empírico. No entanto, o subconjunto eleito para a modelagem final incorporou também a estimativa de risco de cauda (`Expected_Shortfall_99`), formando o trio `Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`, que figurou em segundo lugar no ranking geral. A escolha tática por esse trio de variáveis justifica-se pela necessidade imperativa de o modelo possuir sensibilidade preditiva a perdas financeiras extremas, agregando significado econômico aos _clusters_ formados.
+A @fig_feature_selection exibe os dez subconjuntos mais bem classificados na seleção combinatória. Como resultado da otimização matemática (_Borda Score_), o subconjunto `Taxa_ZScore` e `Volatilidade_EGARCH` obteve a pontuação máxima no particionamento empírico. No entanto, 
+o subconjunto eleito para a modelagem final incorporou também a estimativa de risco de cauda (`Expected_Shortfall_99`), formando o trio `Taxa_ZScore`, `Volatilidade_EGARCH` e `Expected_Shortfall_99`, que figurou em segundo lugar no ranking geral. A 
+opção metodológica por esse trio de variáveis justifica-se pela necessidade do modelo possuir sensibilidade a perdas financeiras extremas, agregando significado econômico aos _clusters_ formados.
 
 #figure(
   image("../imagens/feature_selection_ranking.png", width: 90%),

@@ -27,10 +27,10 @@ as técnicas estatísticas aplicadas e os resultados esperados.
   row-gutter: 5pt,
   
   card("1. Problema de Negócio", [
-    Iliquidez crônica e assimetria de retornos no mercado secundário de debêntures. Modelos tradicionais de risco (GARCH contínuo e VaR paramétrico) falham diante de saltos discretos e deságios severos em eventos de cauda.
+    Iliquidez crônica e assimetria de retornos no mercado secundário de debêntures. Modelos tradicionais de risco (GARCH contínuo e VaR paramétrico) falham diante de saltos discretos e elevados deságios em eventos de cauda.
   ]),
   card("2. Objetivo Analítico", [
-    Classificar regimes latentes de risco de crédito (Verde, Amarelo e Vermelho) e antecipar choques patrimoniais por meio de aprendizado de máquina não-supervisionado com modelagem temporal.
+    Classificar regimes latentes de risco de crédito (Verde, Amarelo e Vermelho) e antecipar choques patrimoniais por meio de aprendizado de máquina não supervisionado com modelagem temporal.
   ]),
   card("3. Justificativa", [
     Atrasos na detecção de deterioração de crédito inviabilizam o desinvestimento em mercados ilíquidos. Alertas antecipados protegem o capital antes da materialização definitiva do evento.
@@ -60,9 +60,9 @@ as técnicas estatísticas aplicadas e os resultados esperados.
     Pacote Python modular (`credit_tail_analytics`), pipeline de dados automatizado, base histórica tratada, relatórios analíticos de backtest e repositório de código aberto.
   ]),
   card("11. Impacto Esperado", [
-    Mitigação de perdas severas em eventos de estresse corporativo, contenção de custos de transação pelo filtro de ruído e superação estatisticamente comprovada do carrego passivo (Buy and Hold).
+    Mitigação de perdas acentuadas em eventos de estresse corporativo, contenção de custos de transação pelo filtro de ruído e superação estatisticamente comprovada do carrego passivo (Buy and Hold).
   ]),
   card("12. Restrições e Riscos", [
-    Escassez de negociações diárias na maioria dos papéis, congelamento de liquidez em dias de estresse, custos operacionais de giro (50 bps) e instabilidade de estados (flickering).
+    Escassez de negociações diárias na maioria dos papéis, principalmente em períodos de estresse, custos operacionais de giro (50 bps) e instabilidade de estados (flickering).
   ])
 )

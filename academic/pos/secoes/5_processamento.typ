@@ -1,7 +1,7 @@
 = Processamento/Tratamento de Dados <sec_processamento>
 
-A preparação dos dados assegura que as estimativas econométricas e as classificações estatísticas reflitam dinâmicas reais de mercado, e não ruídos de liquidez fragmentada. A massa de dados bruta passou por etapas sequenciais de filtragem de liquidez, harmonização de 
-taxas contratuais, engenharia de atributos, tratamento de valores discrepantes (_outliers_) e escalonamento geométrico.
+O tratamento dos dados de negociação mitiga distorções decorrentes da baixa liquidez, descontinuidades temporais observadas nas séries obtidas e utilização de diferentes indexadores. Para sanar esta necessidade, a massa de dados bruta 
+passou por etapas sequenciais de filtragem de liquidez, harmonização de taxas contratuais, engenharia de atributos, tratamento de valores discrepantes (_outliers_) e escalonamento geométrico.
 
 == Divisão Temporal e Filtro de Iliquidez
 
@@ -10,18 +10,14 @@ Os registros foram particionados em dois intervalos cronológicos disjuntos:
 - Período de Treinamento (_In-Sample_): De 2 de janeiro de 2018 a 30 de dezembro de 2022. Esta janela serviu para calibrar os parâmetros dos modelos GARCH, selecionar os subconjuntos de variáveis e determinar as matrizes de transição dos regimes;
 - Período de Teste e Validação (_Out-of-Sample_): De 2 de janeiro de 2023 a 10 de julho de 2026. Esta janela serviu para executar o teste de antecipação (_Early Warning_) e simular as estratégias de investimento sob condições reais de mercado.
 
-Como citado na @problemas_pesquisa, um desafio inerente ao mercado secundário de crédito privado brasileiro é a baixa liquidez dos ativos, inclusive com alguns chegando a registrar
-dias sem negociação. A ANBIMA classifica o volume de negociação, no sistema de informações consultado, em faixas, sendo a faixa mais baixa dada por "Até 1MM"; portanto, considerando as informações disponíveis durante a realização desta pesquisa,
-esses são os ativos definidos como ilíquidos. Para lidar com essa característica, desenvolveu-se uma rotina algorítmica de tratamento que, quando habilitada, 
-remove da base de dados para treinamento (que será detalhada posteriormente em @subcap_processamento) os ativos que permaneceram como ilíquidos durante um período igual ou superior a 95% da amostra.
-O propósito dessa funcionalidade é impedir que, caso sejam observados
+A iliquidez observada no mercado secundário de debêntures impõe extensos intervalos sem negociação, porém, o sistema REUNE/ANBIMA se limita a estratificar o volume diário negociado em 3 faixas ordinais, classificando a Faixa 3 como "Até 1MM". 
+Para os fins desta modelagem, visando mitigar vieses decorrentes de extensos períodos sem negociação, os papéis com concentração quase absoluta nessa faixa foram delimitados como cronicamente ilíquidos.
+Para isso, desenvolveu-se uma rotina algorítmica de tratamento que, quando habilitada, remove da base de dados para treinamento (posteriormente detalhada em @subcap_processamento) os ativos que permaneceram como ilíquidos durante 
+um período igual ou superior a 95% da amostra. O propósito dessa funcionalidade é impedir que, caso sejam observados
 eventos de variação de _spread_ espúrios devido à baixa liquidez, eles sejam propagados para o modelo EGARCH, o que poderia corromper a estimação da persistência e dos choques 
-(parâmetros $alpha$ e $beta$) da variância condicional. Esses ativos foram removidos apenas da amostra de calibração, com a exceção de RDVT11, que foi removido manualmente de toda a base
-devido aos seguintes fatores:
-- O ativo não tinha dados de negociação durante a etapa de treinamento, então seria considerado posteriormente, mesmo ilíquido;
-- A série de preços do ativo apresenta grandes variações, com espaçamento elevado entre os dados, o que pode introduzir vieses na estimação;
-    - Em 05/12/2023 o ativo foi negociado com PU de 1.001,77, sendo negociado novamente apenas em 20/03/2024 com PU de 1,40 e posteriormente em 21/03/2024 com PU de 0,000014. O papel voltou a ser negociado em 26/07/2024 com PU de 38,04 e em 28/02/2025 com PU de 754,31;
-- A empresa emissora passou por eventos de reestruturação societária e recuperação judicial.
+(parâmetros $alpha$ e $beta$) da variância condicional. Esses papéis foram excluídos exclusivamente da amostra de calibração, à exceção do ativo RDVT11, removido integralmente de toda a base. Isso ocorreu devido ao fato de que o papel não possuía 
+cotações no período de treinamento e apresentou variações extremas e esparsas (negociado a PU 1.001,77 em dezembro de 2023, recuando para 1,40 e 0,000014 em março de 2024 antes de retornar a 754,31 em 2025), refletindo a recuperação 
+judicial e a reestruturação societária do emissor.
 
 == Harmonização de Taxas e Engenharia de Atributos <subcap_processamento>
 
