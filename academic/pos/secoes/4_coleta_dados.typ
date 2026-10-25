@@ -10,7 +10,7 @@ sistema REUNE (Prévias Públicas de Negociação de Instrumentos Financeiros). 
 no #link("https://github.com/gtazevedo/credit-tail-analytic")[repositório público do projeto].
 
 As características cadastrais das debêntures foram obtidas por meio de consultas programáticas ao portal Debentures.com.br e ao ANBIMA Data, utilizando o pacote `debentures_dot_com` 
-(de autoria própria). Essa base contém atributos estruturais de cada papel, como código do emissor, data de emissão, data de repactuação, data de vencimento final, 
+(de autoria própria). Essa base contém atributos estruturais de cada título, como código do emissor, data de emissão, data de repactuação, data de vencimento final, 
 indexador contratual, tipo de garantia e volume total emitido.
 
 As séries macroeconômicas de referência (taxa DI diária, taxa Selic e índices de inflação IPCA e IGP-M) foram coletadas diretamente do Sistema Gerenciador de Séries Temporais 
@@ -54,7 +54,7 @@ A base consolidada resultante unifica os registros de negociação, cadastrais e
     [`pu_max`], [Maior preço unitário praticado na sessão de negócios], [Float],
     [`faixa_volume`], [Classificação de liquidez ANBIMA (Faixas 1, 2 e 3)], [String],
     [`indexador`], [Indexador contratual da emissão (DI+, IPCA+, Pré)], [String],
-    [`du_vencimento`], [Dias úteis restantes até a data de vencimento do papel], [Integer],
+    [`du_vencimento`], [Dias úteis restantes até a data de vencimento do título], [Integer],
     [`cdi_anual`], [Taxa média diária anualizada do CDI divulgada pelo BACEN], [Float],
     [`delta_spread`], [Primeira diferença do spread de crédito diário], [Float],
     [`taxa_prazo`], [Spread anualizado ajustado pelo logaritmo do prazo útil], [Float]

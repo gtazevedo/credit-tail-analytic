@@ -2,23 +2,22 @@
 
 == O Problema de Pesquisa <problemas_pesquisa>
 
-A modelagem do risco de crédito corporativo evoluiu historicamente por meio de abordagens contábeis, estruturais e de forma reduzida. A literatura pioneira introduziu escores lineares baseados em 
-indicadores contábeis, como o Z-Score de #cite(<altman1968>, form: "prose"), utilizado para prever insolvência. Desde então, a literatura evoluiu para abordagens baseadas em modelos estruturais de crédito, 
+A modelagem do risco de crédito corporativo desenvolveu-se historicamente por meio de abordagens contábeis, estruturais e de forma reduzida. A literatura pioneira introduziu escores lineares baseados em 
+indicadores contábeis, como o Z-Score de #cite(<altman1968>, form: "prose"), utilizado para prever insolvência. Subsequentemente, avançou-se para abordagens fundamentadas em modelos estruturais de crédito, 
 como #cite(<merton1974>, form: "prose"). Contudo, essas abordagens tradicionais, assentadas em balanços divulgados em periodicidade trimestral ou anual, mostram-se inadequadas para sistemas de alerta em tempo real em razão da defasagem temporal inerente à publicação dos demonstrativos contábeis.
 
 Para superar a dependência de demonstrações financeiras, surgiram os modelos de forma reduzida, conforme consolidado por #cite(<duffie2003>, form: "prose"), que modelam o risco de 
-crédito diretamente através de dados de mercado. Apesar de serem capazes de mitigar a defasagem da informação contábil, a modelagem contínua exige mercados líquidos, uma vez que é 
-amplamente dependente dos dados observados. No mercado de debêntures brasileiro, no qual se observa baixa liquidez e baixa atividade, essa abordagem se mostra frágil. 
+crédito diretamente por meio de dados de mercado. Apesar de mitigarem a defasagem da informação contábil, tais formulações pressupõem mercados líquidos, dependendo da regularidade das negociações observadas. No mercado de debêntures brasileiro, no qual se observa liquidez reduzida e baixa frequência de negociações, essa abordagem se mostra frágil. 
 
 Conforme aponta #cite(<correa2010aprecamento>, form: "prose"), o prêmio de liquidez responde por parcela expressiva do spread das debêntures, sobrepondo-se com frequência ao risco de inadimplência. 
-Mercados corporativos concentram fricções operacionais que dificultam o ajuste contínuo dos preços e fazem com que sejam observados saltos no preço dos ativos, por vezes
-acompanhados de períodos de iliquidez, conforme demonstrado por #cite(<bao2011illiquidity>, form: "prose") e comprovado por eventos recentes no mercado brasileiro. O pedido de recuperação judicial das Lojas Americanas culminou 
+Mercados corporativos concentram fricções operacionais que dificultam o ajuste contínuo dos preços e induzem descontinuidades e saltos nas cotações, frequentemente
+acompanhados de períodos de iliquidez, conforme demonstrado por #cite(<bao2011illiquidity>, form: "prose") e evidenciado por episódios recentes no mercado brasileiro. O pedido de recuperação judicial das Lojas Americanas culminou 
 em uma desvalorização de 50% no preço unitário de suas debêntures em um único pregão, acumulando perdas de 90% em uma semana. No caso do Grupo Pão de Açúcar, foram observados deságios de até 70% 
 nas negociações secundárias. Emissões da Light sofreram reprecificações abruptas similares durante o processo de recuperação judicial.
 
 Práticas tradicionais de tesouraria apresentam limitações operacionais nessas condições, porque bancos e gestoras de recursos frequentemente calculam o Valor em Risco (VaR) e modelos GARCH simétricos sob a hipótese de 
 normalidade e liquidez plena de saída. Conforme aponta #cite(<jorion2006>, form: "prose"), esses métodos assumem que o investidor consegue liquidar posições instantaneamente ao preço cotado em tela. Em momentos de _stress_,
-é comum observar expressiva contração da liquidez dos ativos, dificultando a liquidação tempestiva de posições ou exigindo deságios expressivos para sua execução.
+é comum observar expressiva contração da liquidez dos ativos, dificultando a liquidação tempestiva de posições ou demandando elevados deságios para sua execução.
 
 Outra limitação teórica da família GARCH tradicional, como explica #cite(<tsay2005analysis>, form: "prose"), reside no pressuposto de que os parâmetros da equação de variância 
 e a volatilidade incondicional permanecem estáticos ao longo do tempo. Esses modelos operam ancorados em uma única média global da série histórica, porém, quando ocorrem quebras estruturais 
@@ -27,7 +26,7 @@ longas sofrem quebras estruturais que exigem formulações baseadas em mudanças
 alterando a própria dinâmica estocástica dos preços; propostas como as de #cite(<haas2004new>, form: "prose") e #cite(<ardia2019markov>, form: "prose") buscam incorporar essas quebras na modelagem.
 
 O problema investigado compreende a modelagem estatística de séries temporais financeiras acoplada ao agrupamento não supervisionado de regimes de risco latentes, com a finalidade de emitir sinais de 
-alerta preventivos (_Early Warning_) sobre a possibilidade de perdas acentuadas antes de sua materialização, visando à preservação patrimonial do investidor.
+alerta antecipado (_Early Warning_) sobre a possibilidade de perdas acentuadas antes de sua materialização, visando à preservação patrimonial do investidor.
 
 == Objetivos
 
@@ -45,7 +44,7 @@ Para atingir a proposta central, definem-se os seguintes objetivos específicos:
 == Solução Proposta
 
 A solução desenvolvida apoia-se em uma arquitetura híbrida de duas camadas operacionais, na qual a primeira camada executa o saneamento econométrico dos dados de negociação da ANBIMA, 
-eliminando ruídos causados por dias sem negócios e estimando a variância condicional e o risco de cauda com o motor EGARCH-t. A segunda, por sua vez, consome as métricas tratadas e alimenta 
+eliminando ruídos causados por dias sem negócios e estimando a variância condicional e o risco de cauda com o motor EGARCH-t. A segunda camada consome as métricas tratadas e alimenta 
 algoritmos de agrupamento não supervisionado.
 
 Esses algoritmos particionam o espaço de estados latentes em três estados objetivos: Verde (baixo risco), Amarelo (alerta) e Vermelho (crise), o que viabiliza a emissão de alertas antecipados para a liquidação defensiva

@@ -8,18 +8,19 @@ entre a modelagem econométrica e o aprendizado de máquina não supervisionado 
 O pipeline combinou um motor AR(1)-EGARCH(1,1)-t para modelagem da volatilidade condicional e estimação de perdas de cauda (VaR e Expected Shortfall) com dois classificadores de regimes: o particionamento geométrico 
 (K-Means) e a inferência temporal estocástica (Gaussian HMM). Os modelos foram testados empiricamente sobre uma base contínua de 529 debêntures entre 2018 e 2026.
 
-A análise dos resultados observados conduziu a três principais conclusões:
-
-1. *Validação da Modelagem de Cauda:* O filtro EGARCH-t demonstrou capacidade estatística de absorver a dependência temporal da variância e evitar o agrupamento de violações (_volatility clustering_), mesmo frente aos choques atípicos do período _Out-of-Sample_ (2023 a 2026);
-2. *O Paradoxo da Acurácia-Rentabilidade:* O HMM apresentou menor latência de detecção, antecipando eventos de crédito com semanas de antecedência nos estudos de caso corporativos. No entanto, sua alta sensibilidade gerou falsos positivos e giro excessivo de portfólio. Sob custos de transação realistas (0,5% por operação), a inércia do K-Means funcionou como um filtro contra ruídos transitórios de mercado. A estratégia K-Means Vende Amarelo entregou o maior retorno acumulado do período (36,18%), sendo a única a superar o _Buy-and-Hold_ (22,42%) com significância estatística comprovada por _Block Bootstrap_ ($p = 0,0416 < 0,05$);
-3. *Ineficiência da Abordagem* _Ensemble_: A mescla linear entre HMM e K-Means induziu ao efeito chicote (_whipsaw_), acumulando custos operacionais em vendas precipitadas e recompras tardias, registrando o menor retorno líquido acumulado da simulação.
+A avaliação integrada das evidências empíricas conduz a três achados determinantes. Em primeiro lugar, comprova-se a robustez do filtro econométrico EGARCH-$t$, cuja parametrização capturou adequadamente a dependência temporal 
+da variância e impediu o agrupamento sistemático de violações (_volatility clustering_), mesmo diante da sucessão de choques de crédito observados na janela fora da amostra (2023 a 2026). Em segundo lugar, identificou-se o 
+paradoxo da acurácia-rentabilidade: conquanto o modelo markoviano (HMM) tenha exibido menor latência na identificação de eventos corporativos específicos — antecipando inflexões críticas de crédito com semanas de antecedência —, 
+sua hipersensibilidade provocou falsos positivos e giro patrimonial excessivo. Sob atrito operacional realista (custos transacionais de 50 bps por movimento), a relativa inércia do particionamento por K-Means converteu-se em uma 
+salvaguarda contra ruídos transitórios de negociação. Em termos empíricos, a estratégia "K-Means Vende Amarelo" entregou a maior rentabilidade líquida do estudo (36,18%), superando o referencial passivo _Buy and Hold_ (22,42%) com 
+significância estatística respaldada pelo teste de _Block Bootstrap_ ($p = 0,0416 < 0,05$). Em terceiro lugar, constatou-se a ineficiência econômica da combinação linear em ensemble: a conciliação estocástica entre HMM e K-Means 
+deflagrou o efeito chicote (_whipsaw_), incorrendo em liquidações precipitadas e custos recorrentes de recompra, desfecho que culminou no menor retorno acumulado de toda a bateria de testes.
 
 == Limitações da Pesquisa
 
-A modelagem proposta opera sob restrições práticas inerentes ao mercado de capitais brasileiro:
-
-- *Dependência de Negócios Realizados:* O sistema utiliza cotações de negócios efetivos para evitar distorções de marcações teóricas. Em episódios de estresse extremo em que o mercado interrompe ou reduz substancialmente o número de transações, o modelo perde a fonte contínua de dados de entrada;
-- *Ativos com Negociação Esparsa:* Títulos com longos intervalos sem transações no histórico de calibração podem introduzir instabilidade na estimação por máxima verossimilhança, exigindo a aplicação de pisos de variância e salvaguardas numéricas preventivas.
+A metodologia proposta opera sob restrições estruturais associadas à microestrutura do mercado secundário de renda fixa no Brasil. Primeiramente, ao priorizar cotações de negócios efetivamente consumados para evitar as distorções 
+inerentes às marcações teóricas a mercado, o sistema fica vulnerável a períodos de paralisia de liquidez em que a interrupção abrupta das negociações reduz o fluxo contínuo de dados de entrada. Adicionalmente, títulos caracterizados 
+por negociação rarefeita durante a janela de calibração podem suscitar instabilidade numérica na estimação por máxima verossimilhança dos parâmetros do EGARCH, impondo a adoção preventiva de pisos de variância e restrições aos coeficientes de persistência.
 
 == Perspectivas para Trabalhos Futuros
 

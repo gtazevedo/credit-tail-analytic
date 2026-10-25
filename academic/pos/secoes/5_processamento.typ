@@ -11,11 +11,11 @@ Os registros foram particionados em dois intervalos cronológicos disjuntos:
 - Período de Teste e Validação (_Out-of-Sample_): De 2 de janeiro de 2023 a 10 de julho de 2026. Esta janela serviu para executar o teste de antecipação (_Early Warning_) e simular as estratégias de investimento sob condições reais de mercado.
 
 A iliquidez observada no mercado secundário de debêntures impõe extensos intervalos sem negociação, porém, o sistema REUNE/ANBIMA se limita a estratificar o volume diário negociado em 3 faixas ordinais, classificando a Faixa 3 como "Até 1MM". 
-Para os fins desta modelagem, visando mitigar vieses decorrentes de extensos períodos sem negociação, os papéis com concentração quase absoluta nessa faixa foram delimitados como cronicamente ilíquidos.
+Para os fins desta modelagem, visando mitigar vieses decorrentes de extensos períodos sem negociação, os títulos com concentração quase absoluta nessa faixa foram delimitados como cronicamente ilíquidos.
 Para isso, desenvolveu-se uma rotina algorítmica de tratamento que, quando habilitada, remove da base de dados para treinamento (posteriormente detalhada em @subcap_processamento) os ativos que permaneceram como ilíquidos durante 
 um período igual ou superior a 95% da amostra. O propósito dessa funcionalidade é impedir que, caso sejam observados
 eventos de variação de _spread_ espúrios devido à baixa liquidez, eles sejam propagados para o modelo EGARCH, o que poderia corromper a estimação da persistência e dos choques 
-(parâmetros $alpha$ e $beta$) da variância condicional. Esses papéis foram excluídos exclusivamente da amostra de calibração, à exceção do ativo RDVT11, removido integralmente de toda a base. Isso ocorreu devido ao fato de que o papel não possuía 
+(parâmetros $alpha$ e $beta$) da variância condicional. Esses títulos foram excluídos exclusivamente da amostra de calibração, à exceção do ativo RDVT11, removido integralmente de toda a base. Isso ocorreu devido ao fato de que o título não possuía 
 cotações no período de treinamento e apresentou variações extremas e esparsas (negociado a PU 1.001,77 em dezembro de 2023, recuando para 1,40 e 0,000014 em março de 2024 antes de retornar a 754,31 em 2025), refletindo a recuperação 
 judicial e a reestruturação societária do emissor.
 
@@ -34,32 +34,32 @@ $ S_t = ( (F_"titulo")^252 - 1 ) times 100 - "CDI"_t $
 
 Nos contratos atrelados a inflação (IPCA+) ou sobretaxa direta sobre o DI (DI+), o spread bruto informado pelo mercado secundário já expressa diretamente o prêmio de crédito: $S_t = "Taxa do Ativo"_t$.
 
-Com os spreads homogêneos calculados, foram construídos os seguintes atributos derivados:
+A partir dos spreads homogêneos, derivou-se um conjunto de variáveis preditivas voltadas à captura de choques temporais e de dispersão intra-diária. A dinâmica de curto prazo foi representada pela variação diária do spread ($Delta S_t$), 
+que serve de entrada ao motor de volatilidade condicional:
+$ Delta S_t = S_t - S_(t-1) $ <eq_delta_spread>
 
-1. *Variação Diária do Spread* (_Delta Spread_): Atua como variável de entrada para a modelagem da variância condicional:
-   $ Delta S_t = S_t - S_(t-1) $
+Diante da ausência de dados uniformes de duration modificada para a totalidade dos ativos transacionados, mitigou-se a sensibilidade temporal deflacionando o spread pelo logaritmo do prazo remanescente até o vencimento:
+$ "Taxa"_"prazo" = S_t / ln(max("DU", 2)) $ <eq_taxa_prazo>
 
-2. *Taxa Ajustada ao Prazo:* Em razão da indisponibilidade de dados homogêneos de duration modificada para toda a amostra, ajustou-se o spread pelo logaritmo dos dias úteis restantes até o vencimento:
-   $ "Taxa"_"prazo" = S_t / ln(max("DU", 2)) $
+Adicionalmente, computou-se o Z-Score causal do spread em janela móvel de 60 dias úteis, parametrizando a distância da taxa observada em relação à média e ao desvio-padrão históricos do próprio ativo.
 
-3. *_Z-Score_ Móvel de Spread:* Calculado sobre uma janela causal deslizante de 60 dias úteis, mensurando a distância em desvios-padrão da taxa corrente frente ao histórico recente do próprio ativo;
+Além disso, a dispersão das cotações na sessão foi sintetizada por meio da amplitude intraday ($S_("range")$) e da assimetria relativa dos negócios ($S_("skew")$):
+$ S_("range") = "Taxa"_"max" - "Taxa"_"min" $
+$ S_("skew") = ("Taxa"_"med" - "Taxa"_"min") / (S_("range") + epsilon) $
+adotando-se $epsilon = 10^(-6)$ para blindar o cálculo contra indeterminações divisionais em dias de cotação estática.
 
-4. *_Spread Range_ e _Spread Skew Intraday_:* Métricas de dispersão e assimetria das cotações observadas ao longo da mesma sessão de negócios:
-   $ S_("range") = "Taxa"_"max" - "Taxa"_"min" $
-   $ S_("skew") = ("Taxa"_"med" - "Taxa"_"min") / (S_("range") + epsilon) $
-   adotando-se $epsilon = 10^(-6)$ para assegurar estabilidade numérica.
 
 == Tratamento de Discrepâncias e Normalização
 
-Choques extremos e registros pontuais atípicos foram tratados por meio de Winsorização bilateral nos percentis 1% e 99%, calculados estritamente sobre os dados _In-Sample_. Os limites encontrados foram congelados e aplicados para limitar os 
-dados _Out-of-Sample_, eliminando a contaminação por informação futura (_look-ahead bias_).
+A contenção de valores anômalos e ruídos operacionais adotou winsorização bilateral restrita aos percentis 1% e 99%, parametrizada exclusivamente sobre o subconjunto _In-Sample_ e subsequentemente mantida para aplicação aos dados _Out-of-Sample_, 
+salvaguardando a metodologia contra vazamento de informação retrospectiva (_look-ahead bias_).
 
-A padronização das variáveis utilizou o algoritmo `RobustScaler`, fundamentado no estimador por quantis de #cite(<rousseeuw2011robust>, form: "prose"), que subtrai a mediana e divide pela amplitude interquartil ($"IQR" = Q_3 - Q_1$). O método mitiga distorções 
-causadas por observações anômalas. Para evitar indefinições numéricas em ativos com baixa oscilação, fixou-se um piso de variância equivalente a 10% do IQR mediano do indexador correspondente.
+Para o escalonamento das features, optou-se pelo estimador robusto de #cite(<rousseeuw2011robust>, form: "prose") (`RobustScaler`), que centraliza os dados na mediana e utiliza o intervalo interquartil ($"IQR" = Q_3 - Q_1$), de forma a prevenir que debêntures com aberturas bruscas de taxa
+comprimam artificialmente a escala dos demais instrumentos. Também foi utilizado um limiar mínimo de dispersão equivalente a 10% do IQR mediano de cada classe de indexador, evitando divisões por zero em ativos com baixa volatilidade.
 
 == Implementação em Código-Fonte
 
-A classe `DataPreprocessor`, localizada em `src/credit_tail_analytics/models/credit_risk/preprocessor.py`, executa as operações de limpeza, separação de indexadores, engenharia de atributos e filtragem transversal de liquidez:
+A arquitetura dessa etapa concentra-se no módulo `src/credit_tail_analytics/models/credit_risk/preprocessor.py`, no qual a classe `DataPreprocessor` consolida as rotinas de limpeza, separação contábil de indexadores e transformação das séries:
 
 ```python
 import numpy as np
@@ -106,7 +106,7 @@ class DataPreprocessor:
         df['Taxa_Ajustada_Prazo'] = df['Spread_Equivalente'] / np.log(np.maximum(df['DU_Vencimento'], 2))
         df['Delta_Spread'] = df.groupby('Ticker')['Spread_Equivalente'].diff()
 
-        # 4. Z-Score causal com janela móvel de 60 dias úteis
+        # 4. Z-Score com janela móvel de 60 dias úteis
         roll = df.groupby('Ticker')['Spread_Equivalente'].rolling(window=60, min_periods=10)
         m = roll.mean().reset_index(level=0, drop=True)
         s = roll.std().reset_index(level=0, drop=True).replace(0, np.nan)
@@ -116,7 +116,7 @@ class DataPreprocessor:
         df['Spread_Range_Intraday'] = df['Taxa_Maxima'] - df['Taxa_Minima']
         df['Spread_Skew_Intraday'] = (df['Taxa_Ativo'] - df['Taxa_Minima']) / (df['Spread_Range_Intraday'] + 1e-6)
 
-        # 6. Banimento transversal de ativos cronicamente ilíquidos (>= 95% do In-Sample na Faixa 3)
+        # 6. Remoção de ativos ilíquidos (>= 95% do In-Sample na Faixa 3)
         if self.filter_low_liquidity:
             df_is = df[df['Data'] < self.split_date]
             mask_faixa3 = df_is['Faixa_Volume_ANBIMA'] == 'Até 1MM'

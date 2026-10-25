@@ -8,7 +8,7 @@ garantindo o controle de versões dos dados e código, além da execução em m�
 A automação do fluxo de trabalho baseia-se em uma arquitetura modular em Python, estruturada na forma de pacote instalável independente denominado `credit_tail_analytics`. O gerenciamento de dependências e ambientes virtuais utiliza o `Poetry`, 
 atendendo a três requisitos práticos. Primeiramente, elimina a dependência de servidores proprietários ou serviços em nuvem, viabilizando a execução local. Em segundo lugar, garante reprodutibilidade estrita pelo controle
 de versionamento de pacotes, sementes pseudoaleatórias e dependências matemáticas. Por fim, viabiliza o acoplamento futuro com ferramentas de orquestração distribuída (como Airflow ou MLflow), caso a escala demande processamento em tempo real
-ou _near real-time_.
+ou em tempo quase real (_near real-time_).
 
 
 == Modelo do Fluxo de Trabalho <sec_modelo_fluxo>
@@ -77,23 +77,21 @@ digraph G {
   caption: [Diagrama do Fluxo de Atividades do Pipeline de Risco e Backtest.]
 ) <fig_pipeline_fluxo>
 
-As etapas do pipeline desempenham as seguintes funções:
+O fluxo delineado na @fig_pipeline_fluxo opera de forma integrada e sequencial ao longo de seis fases computacionais interligadas. Inicialmente, no estágio de ingestão e saneamento, realizam-se a extração e a harmonização dos arquivos transacionais brutos da ANBIMA e 
+das séries macroeconômicas do BACEN, etapa em que os códigos identificadores são padronizados e os títulos sem liquidez de negociação são removidos da amostra. Em seguida, a camada de estimação econométrica processa as séries temporais de retornos por meio do modelo 
+EGARCH-$t$, derivando a variância condicional instantânea, os resíduos padronizados e as métricas paramétricas de cauda — notadamente o _Value-at-Risk_ (VaR) e o _Expected Shortfall_ (ES).
 
-1. *Ingestão e Saneamento:* Coleta os arquivos brutos da ANBIMA e do BACEN, higieniza identificadores e remove registros com elevada iliquidez;
-2. *Estimação Econométrica:* O motor EGARCH-t processa as séries de retornos e extrai a volatilidade condicional, os resíduos padronizados e as métricas de VaR e Expected Shortfall;
-3. *Calibração* (_In-Sample_): Os dados de treinamento ajustam os centróides do K-Means e as matrizes de transição do HMM, definindo os pesos ideais do Ensemble;
-4. *Inferência* (_Out-of-Sample_): Gera probabilidades diárias causais de estresse financeiro sem vazamento de informação futura;
-5. *Simulação Tática* (_Backtest_): Aplica regras operacionais de liquidação e recompra sobre os ativos, registrando as variações patrimoniais da carteira;
-6. *Auditoria Estatística:* Executa 10.000 repetições de _Block Bootstrap_ para atestar a significância estatística do retorno excedente frente ao mercado passivo.
+A partir desses insumos, o pipeline avança para a calibração amostral (_in-sample_), na qual os dados de treino orientam a convergência dos centróides do K-Means e o aprendizado das probabilidades de transição do HMM, balizando a ponderação conjunta da arquitetura em 
+ensemble. Durante a inferência fora da amostra (_out-of-sample_), o sistema computa de modo causal as probabilidades diárias de estresse financeiro, assegurando a ausência de vazamento de informações futuras. Por fim, o motor de simulação tática (_backtest_) traduz 
+tais probabilidades em decisões de liquidação e recompra de ativos sob atrito de custos operacionais, submetendo o retorno patrimonial resultante a uma auditoria estatística rigorosa fundamentada em 10.000 repetições de _Block Bootstrap_ para averiguar a significância 
+do alfa gerado perante o referencial passivo.
 
 == Códigos/telas <sec_codigos_telas>
 
-A base de código está organizada em pacotes modulares no diretório `src/credit_tail_analytics/`, dividida nas seguintes pastas especializadas:
-
-- `data/`: Rotinas de raspagem (`anbima_scraper.py`), tratamento cadastral (`build_cadastro.py`) e download macroeconômico (`download_macro.py`);
-- `models/`: Módulos de volatilidade condicional (`credit_risk/`) e algoritmos de agrupamento (`clustering/`);
-- `analysis/`: Rotinas do simulador de backtest e reamostragem estatística via Bootstrap em bloco;
-- `visualization/`: Geração automatizada de gráficos diagnósticos e relatórios.
+A estrutura do projeto adota uma arquitetura modularizada, encapsulada no diretório raiz do pacote `src/credit_tail_analytics/`. Os procedimentos de coleta e pré-processamento encontram-se centralizados no módulo `data/`, abrigando os scripts de raspagem dos 
+informes da ANBIMA (`anbima_scraper.py`), a consolidação da base cadastral de debêntures (`build_cadastro.py`) e a extração automatizada de séries macroeconômicas via API do Banco Central (`download_macro.py`). A lógica quantitativa é distribuída entre o pacote 
+`models/`, responsável pelo filtro de volatilidade condicional assimétrica (`credit_risk/`) e pela detecção não supervisionada de regimes (`clustering/`), e o módulo `analysis/`, que implementa o simulador contábil de _backtest_ e a rotina de reamostragem em blocos. 
+O suporte visual e a geração dos relatórios diagnósticos do estudo são providos pelas rotinas do diretório `visualization/`.
 
 O repositório oficial do projeto encontra-se disponível no GitHub:
 #align(center)[#link("https://github.com/gtazevedo/credit-tail-analytic")[https://github.com/gtazevedo/credit-tail-analytic]]

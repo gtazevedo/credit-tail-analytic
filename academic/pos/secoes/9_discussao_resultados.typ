@@ -8,7 +8,7 @@ e a viabilidade financeira das decisões de investimento em ambiente simulado de
 A acurácia do motor EGARCH-t na estimação do Valor em Risco (VaR 99%) foi testada por meio do Teste de Proporção de Falhas de Kupiec (POF) 
 e do Teste de Cobertura Condicional de Christoffersen, adotando significância de 5% ($alpha = 0,05$).
 
-A @tab_kupiec consolida os resultados do teste no período _Out-of-Sample_ (2023 a 2026).
+A @tab_kupiec consolida os resultados do teste no período _Out-of-Sample_ (2023 a 2026), abrangendo 663 séries temporais com negócios registrados nessa janela (incluindo emissões posteriores a 2022).
 
 #figure(
   table(
@@ -32,18 +32,18 @@ A @fig_kupiec sintetiza a sensibilidade da taxa de não-rejeição relativa do T
   caption: [Sensibilidade da Não-Rejeição no Teste Conjunto a Diferentes Níveis de Confiança.]
 ) <fig_kupiec>
 
-Embora as taxas de rejeição da Hipótese Nula possam parecer elevadas em primeiro momento, estes resultados devem ser interpretados sob a ótica da magnitude do estresse observado na janela temporal analisada. 
-O _backtest_ de Kupiec foi executado exclusivamente sobre o período _Out-of-Sample_ (2023 a 2026). Esta janela temporal 
-engloba um período de expressivo estresse no mercado de crédito privado brasileiro (marcado pelos pedidos sequenciais de recuperação judicial das Lojas Americanas e da Light S.A., além da reestruturação do Grupo Pão de Açúcar), que 
+Embora as taxas de rejeição da Hipótese Nula possam parecer elevadas em um primeiro momento, esses resultados devem ser interpretados sob a ótica da magnitude do estresse observado na janela temporal analisada. 
+O _backtest_ de Kupiec foi executado exclusivamente sobre o período _Out-of-Sample_ (2023 a 2026). Essa janela temporal 
+engloba um período de elevado estresse no mercado de crédito privado brasileiro (marcado pelos pedidos sequenciais de recuperação judicial das Lojas Americanas e da Light S.A., além da reestruturação do Grupo Pão de Açúcar), o qual 
 introduziu choques exógenos atípicos e propiciou expressivo volume de resgates na indústria de fundos de investimento. A sustentação de 57,5% de não-rejeição no grupo CDI Percentual (para um nível de significância de 5%), 
 prevendo o risco sem 
-sobreajuste em meio a choques sistêmicos, atesta uma forte resiliência da premissa autorregressiva.
+sobreajuste em meio a choques sistêmicos, atesta uma elevada resiliência da premissa autorregressiva.
 
 A iliquidez estrutural do mercado secundário de debêntures constitui a principal causa de distorções estatísticas no Teste de Proporção de Falhas. Diversos ativos corporativos 
-frequentemente passam dias úteis sem negociação efetiva. Quando o papel é negociado, o prêmio de risco (_spread_) sofre uma reprecificação abrupta, gerando um salto (_jump_) cuja 
+frequentemente passam dias úteis sem negociação efetiva. Quando o ativo é negociado, o prêmio de risco (_spread_) sofre uma reprecificação abrupta, gerando um salto (_jump_) cuja 
 magnitude pontual, em alguns casos, rompe o limite projetado pelo VaR de 99%. Como o modelo EGARCH-t assume que a volatilidade condicional rege-se por uma dinâmica fluida de persistência no 
 tempo, as violações detectadas decorrem sobretudo da fragmentação da continuidade dos preços (falta de fluxo regular de negociação), e não de uma ineficácia intrínseca do filtro matemático. 
-Somando-se a isso, a extrema sensibilidade do teste binomial de Kupiec em amostras temporais pequenas induz à rejeição de modelos por desvios mínimos acima da tolerância esperada de 1%.
+Adicionalmente, a sensibilidade do teste binomial de Kupiec em amostras temporais reduzidas induz à rejeição de modelos por desvios marginais acima da tolerância esperada de 1%.
 
 O teste de Kupiec POF, exposto na @tab_kupiec e resumido na coluna "Não-Rejeitados (POF)", avalia estritamente a 
 Cobertura Incondicional (_Unconditional Coverage_), limitando-se a analisar o número de falhas. Já as colunas "Não-Rejeitados (Conjunto)", para diferentes níveis de confiança, do Teste Conjunto refletem a validação pelo Teste de Christoffersen, 
@@ -60,8 +60,8 @@ _Out-of-Sample_.
 
 A validação estatística focou primariamente nas métricas de VaR. A ausência de um _backtest_ independente para o _Expected Shortfall_ (ES) é justificada pela natureza estrutural do modelo adotado: 
 sob a premissa de distribuição T de Student assimétrica, o ES condicional derivado do motor EGARCH-t atua como uma função analítica direta e co-dependente do quantil do VaR. 
-Consequentemente, ao comprovar via Teste de Christoffersen que o filtro de volatilidade captura a frequência correta e expurga o agrupamento das violações, a métrica ES
-está intrinsecamente ancorada e validada, dispensando a exigência de avaliações adicionais.
+Consequentemente, ao evidenciar, por meio do Teste de Christoffersen, que o filtro de volatilidade captura a frequência correta e elimina o agrupamento temporal das violações, a métrica ES
+torna-se intrinsecamente ancorada e consistente, dispensando avaliações adicionais.
 
 == Agilidade de Detecção e Antecipação de Choques (Lead Time)
 
@@ -98,7 +98,7 @@ CBRDB8, emitidas pelo Grupo Pão de Açúcar (GPA). As tabelas @tab_eventos_cbrd
   caption: [Histórico de Reprecificação e Perda de Capital em Choques de Estresse (CBRDB8).]
 ) <tab_eventos_cbrdb8>
 
-O HMM comprovou maior sensibilidade e agilidade preditiva. Ao incorporar a dependência temporal via matrizes de transição, o HMM antecipou a migração para regimes de alto risco semanas 
+O HMM evidenciou maior sensibilidade e agilidade preditiva. Ao incorporar a dependência temporal via matrizes de transição, o HMM antecipou a migração para regimes de alto risco semanas 
 antes do choque principal em múltiplos emissores independentes (GPA, CVC Corp e Light). O K-Means apresentou maior inércia, respondendo com atraso às variações iniciais de spread.
 
 As figuras @fig_gpa_kmeans, @fig_gpa_hmm e @fig_gpa_ensemble ilustram o comportamento temporal dos modelos durante o estresse das debêntures do Grupo Pão de Açúcar.
@@ -140,14 +140,14 @@ Para assegurar solidez analítica e afastar o viés amostral de um caso isolado,
   caption: [Resumo Comparativo: Antecipação (Lead Time) do Alerta de Crise por Modelo. \ *Nota*: Eventos: RJ = Rec. Judicial; RP = Reperfilamento; WV = Waiver; RE = Rec. Extrajudicial. Status: AN = Antecipado; AT = Atraso; F = Falhou.]
 ) <tab_lead_time>
 
-A análise da @tab_lead_time, calculada sob a premissa de estado de alerta contínuo, ou seja, o modelo entrou no estado vermelho e permaneceu nele de forma ininterrupta até a data do evento, demonstra empiricamente o valor preditivo que a
-dependência temporal (matriz de Markov) adiciona à classificação. Ao desconsiderar períodos de instabilidade de regimes (delimitando-se a análise a regimes de alerta permanente sem transições de saída), o K-Means apresentou oscilações de classificação, demonstrando 
+A análise da @tab_lead_time, calculada sob a premissa de estado de alerta contínuo — na qual o modelo atinge o estado vermelho e nele permanece de maneira ininterrupta até a data do evento —, evidencia empiricamente o valor preditivo que a
+dependência temporal (matriz de Markov) agrega à classificação. Ao desconsiderar períodos de instabilidade de regimes (delimitando-se a análise a regimes de alerta permanente sem transições de saída), o K-Means apresentou oscilações de classificação, demonstrando 
 atrasos efetivos (como observado nos casos da Oi, Dasa e Multilaser). Com exceção da recuperação judicial das Lojas Americanas e da Recuperação Extrajudicial das Casas Bahia (nas quais todos os algoritmos falharam em manter o alerta ininterrupto), o HMM apresentou 
 robustez preditiva superior. Para o caso da CVC Corp, o HMM foi capaz de sustentar o alerta de crise 78 dias antes do evento, enquanto o particionamento geométrico (K-Means) apresentou maior inércia, resultando em defasagem temporal de 669 dias.
 
 Os resultados do _Ensemble_ demonstram que a inclusão do K-Means dilui a probabilidade condicional de alerta gerada pelo HMM. 
-Conclui-se, assim, que a modelagem markoviana isolada apresenta maior capacidade de sinalização antecipada ininterrupta para a liquidação defensiva de 
-carteiras, ao se avaliar estritamente a capacidade de antecipação ininterrupta de alertas até a deflagração do choque financeiro. Ao considerar as regras operacionais definidas na metodologia do _Backtest_ (@subcap_kupiec_backtest), 
+Constata-se que a modelagem markoviana isolada apresenta maior eficácia na sinalização ininterrupta para a liquidação defensiva de 
+carteiras, caso se avalie estritamente a sustentação do alerta de crise até a deflagração do choque financeiro. Ao considerar as regras operacionais definidas na metodologia do _Backtest_ (@subcap_kupiec_backtest), 
 em que o portfólio adota um filtro de Quarentena Temporal: caso o modelo acuse Regime Vermelho, o ativo é alienado e permanece bloqueado para recompra por um período de 180 dias (6 meses), observa-se uma alteração
 na eficácia prática. Sob essa diretriz operacional, um sinal isolado (ainda que configure instabilidade matemática e não se mantenha ininterrupto até o choque) determina a liquidação imediata da posição e impede a recompra imediata durante
 o período de quarentena semestral, bastando que ocorra dentro da janela de 180 dias antecedentes ao choque. A @tab_lead_time_operacional consolida o _Lead Time_ sob este critério de execução.
@@ -171,10 +171,10 @@ o período de quarentena semestral, bastando que ocorra dentro da janela de 180 
   caption: [Resumo Comparativo: Antecipação (Lead Time) considerando Quarentena de 180 dias. \ *Nota*: Eventos: RJ = Rec. Judicial; RP = Reperfilamento; WV = Waiver; RE = Rec. Extrajudicial. Status: AN = Antecipado; AT = Atraso; F = Falhou.]
 ) <tab_lead_time_operacional>
 
-Ao se aplicar a trava temporal de 180 dias, os resultados operacionais do _Lead Time_ se mostram mais robustos. Casos como o da Light S.A., 
-nos quais a antecipação observada havia sido de poucos dias, passaram a contar com antecipação superior a 3 meses ao considerar-se as regras operacionais estabelecidas. O valor máximo de antecipação 
-dessa métrica fica matematicamente limitado ao teto da quarentena, o que explica os modelos empatarem em 169 dias e 180 dias (Unigel e Pão de Açúcar, respectivamente), configurando o disparo protetivo 
-na borda máxima do semestre. Ainda que a flexibilização operacional evidencie a viabilidade dos alertas do K-Means e do Ensemble, o HMM manteve maior capacidade antecipatória, como observado na Oi S.A. (57 dias) e na Dasa (139 dias), o que corrobora a relevância da dependência temporal na sinalização precoce de alterações de regime.
+Ao se aplicar a trava temporal de 180 dias, os resultados operacionais do _Lead Time_ apresentam maior consistência prática. Casos como o da Light S.A., 
+nos quais a antecipação observada restringia-se a poucos dias, passaram a registrar antecipação superior a três meses sob as diretrizes operacionais adotadas. O valor máximo de antecipação 
+dessa métrica fica delimitado ao teto da quarentena, o que justifica a convergência dos modelos em 169 dias e 180 dias (Unigel e Pão de Açúcar, respectivamente), configurando o acionamento protetivo 
+na borda do semestre. Ainda que a flexibilização operacional evidencie a viabilidade dos alertas do K-Means e do Ensemble, o HMM manteve maior capacidade antecipatória, como observado na Oi S.A. (57 dias) e na Dasa (139 dias), o que corrobora a relevância da dependência temporal na sinalização precoce de alterações de regime.
 
 
 == O Paradoxo da Acurácia-Rentabilidade no Backtest Financeiro 
@@ -207,17 +207,17 @@ A @fig_backtest_pnl exibe a curva de patrimônio líquido acumulado das estraté
 ) <tab_metricas_backtest>
 
 Os resultados consolidados na @tab_metricas_backtest e a evolução temporal da @fig_backtest_pnl revelam o valor adicionado pelas estratégias de _Early Warning_. 
-Enquanto o índice passivo (_Buy-and-Hold_) gerou um retorno total de 22,42% penalizado pelo carrego de papéis ilíquidos e depreciados, 
-as estratégias reativas obtiveram retornos superiores, destacando-se a _K-Means Vende Amarelo_ e _HMM Vende Amarelo_ que apresentaram retornos acumulados de 
+Enquanto o índice passivo (_Buy-and-Hold_) gerou um retorno total de 22,42% penalizado pelo carrego de títulos ilíquidos e depreciados, 
+as estratégias ativas obtiveram retornos superiores, destacando-se a _K-Means Vende Amarelo_ e a _HMM Vende Amarelo_, que apresentaram retornos acumulados de 
 36,18% e 32,62%, respectivamente.
 
 A avaliação de risco do portfólio privilegiou o _Calmar Ratio_ (razão entre a taxa composta anualizada de crescimento e o recuo máximo de pico a vale) e o _Maximum Drawdown_ em detrimento do Índice de Sharpe, 
-pois essas métricas refletem com fidelidade a penalização imposta pelos custos de liquidação forçada e não estão sujeitas à distorção observada no Índice de Sharpe (detalhado na @subcap_modelo_ensemble).
+pois essas métricas refletem com fidelidade a penalização imposta pelos custos de liquidação forçada e não sofrem a distorção teórica descrita na @subcap_modelo_ensemble.
 
 Apesar do retorno superior apresentado pelas estratégias ativas, elas também incorreram em maior volatilidade e _Drawdown_, sendo penalizadas quando avaliadas por métricas 
 que ponderam risco e retorno. Em especial, a estratégia _HMM (Vende Amarelo)_ apresentou um expressivo _drawdown_ de -9,74% em 2026, originado pela marcação simultânea de diversos ativos no estado de Alerta (Amarelo) 
 em decorrência do contágio de crédito gerado pelo evento do grupo GPA. Por possuir uma regra estrita de _stop loss_, a estratégia liquidou uma parcela relevante do portfólio 
-no mercado secundário exatamente no momento de forte abertura de _spreads_. Esse comportamento evidencia os riscos da sensibilidade acentuada do filtro Bayesiano quando combinado a uma execução automática.
+no mercado secundário no momento exato de expressiva abertura de _spreads_. Esse comportamento evidencia os riscos da sensibilidade acentuada do filtro Bayesiano quando combinado a uma execução automática.
 
 O portfólio _Buy-and-Hold_ apresentou um Calmar de 1,249, sendo superado exclusivamente pelos algoritmos K-Means, com índices de 1,711 (Padrão) e 1,603 (Vende Amarelo). 
 A superioridade do K-Means neste aspecto advém justamente da sua latência: por reagir de forma mais lenta e instável aos choques do que o HMM, a estratégia apresentou um menor giro de ativos. 
@@ -226,23 +226,23 @@ distanciando-se do _Buy-and-Hold_. Esse comportamento atenuou o impacto dos cust
 
 Por fim, o modelo _Ensemble_, desenvolvido com o intuito de harmonizar a reatividade do HMM com a inércia do K-Means, apresentou resultados negativos. Embora tenha sustentado um _Calmar Ratio_ próximo 
 ao da estratégia passiva (1,111 _vs._ 1,249), entregou o menor retorno total do período (16,37%), penalizado em grande parte pelo efeito _Whipsaw_ (efeito chicote). 
-A mediação conflitante dos modelos fez com que a estratégia acionasse vendas quando o HMM indicava a transição de regime, para logo em seguida recomprar os mesmos ativos assim que a influência do K-Means deslocava 
-a pontuação novamente para o regime de baixo risco. Conclui-se, portanto, que a abordagem mista mostrou-se operacionalmente ineficiente por combinar a sensibilidade de giro do HMM à latência temporal do K-Means,
-acumulando custos de fricção transacional sem obter a respectiva proteção defensiva.
+A mediação conflitante dos modelos fez com que a estratégia acionasse vendas quando o HMM indicava a transição de regime, para logo em seguida recomprar os mesmos ativos assim que a influência do K-Means 
+deslocava a pontuação novamente para o regime de baixo risco. Essa dinâmica evidenciou que a arquitetura híbrida revelou-se ineficaz sob o ponto de vista financeiro: a sobreposição entre a reatividade do HMM e 
+a inércia do K-Means apenas inflacionou a fricção transacional, sem proporcionar cobertura protetiva correspondente.
 
 == Validação por Block Bootstrap
 
-Para verificar se a rentabilidade superior do K-Means (_Vende Amarelo_) reflete consistência operacional estatisticamente robusta ou aleatoriedade amostral, aplicou-se a técnica de _Block Bootstrap_ estacionário com 
-10.000 repetições e blocos temporais de 20 dias úteis, seguindo a formulação para séries financeiras dependentes desenvolvida por #cite(<politis1994stationary>, form: "prose"). O procedimento preserva a 
-dependência temporal e a autocorrelação residual da carteira dentro de cada bloco reamostrado.
+Com o intuito de discernir se o retorno excedente auferido pelo K-Means (_Vende Amarelo_) decorre de efetiva consistência tática ou de mero viés de amostragem, submeteu-se a série temporal a um teste 
+de _Block Bootstrap_ estacionário (#cite(<politis1994stationary>, form: "prose")). Adotaram-se 10.000 iterações em blocos de 20 dias úteis, dimensão calibrada para preservar a dependência estocástica 
+e a estrutura de autocorrelação serial típica do mercado de crédito.
 
-A @fig_bootstrap apresenta a distribuição empírica dos retornos excedentes gerados pela reamostragem.
+A @fig_bootstrap sintetiza a dispersão das distribuições simuladas frente ao retorno passivo.
 
 #figure(
   image("../imagens/bootstrap_significance.png", width: 85%),
   caption: [Distribuição do Retorno Excedente das Estratégias via Block Bootstrap.]
 ) <fig_bootstrap>
 
-A estratégia K-Means Vende Amarelo registrou p-valor de $0,0416$ ($p < 0,05$), com intervalo de confiança a 95% estritamente positivo em relação ao _Buy and Hold_. Todas as demais estratégias 
-registraram p-valores superiores a 0,10, não rejeitando a hipótese de igualdade de desempenho frente ao mercado passivo. O resultado atesta que a disciplina de venda preventiva com filtro de inércia 
-agrega valor financeiro verificável sob atritos operacionais realistas.
+Entre todas as abordagens testadas, unicamente a estratégia K-Means Vende Amarelo atingiu relevância estatística, com $p = 0,0416$ ($p < 0,05$) e intervalo com 95% de confiança inteiramente deslocado 
+para o campo positivo em relação ao _Buy-and-Hold_. As configurações remanescentes exibiram $p > 0,10$, impedindo a rejeição da hipótese nula de igualdade. O teste comprova, sob o rigor da reamostragem 
+em blocos, que o atraso prudencial imposto pelo filtro de inércia gerou alfa genuíno mesmo após a absorção de custos operacionais expressivos.

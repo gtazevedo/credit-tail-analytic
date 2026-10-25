@@ -1,6 +1,6 @@
 = Canvas Analítico <sec_canvas_analitico>
 
-Apresenta-se a seguir o Canvas Analítico do projeto, estruturado em doze blocos estratégicos que sintetizam a formulação do problema, as bases de dados, 
+Apresenta-se o Canvas Analítico do projeto, estruturado em doze blocos estratégicos que sintetizam a formulação do problema, as bases de dados, 
 as técnicas estatísticas aplicadas e os resultados esperados.
 
 #v(0.3cm)
@@ -40,14 +40,14 @@ as técnicas estatísticas aplicadas e os resultados esperados.
     Gestores de fundos de crédito privado, analistas de risco corporativo, comitês de alocação de ativos e tesourarias institucionais.
   ]),
   card("5. Variável-alvo (Target)", [
-    Regime latente de risco de crédito do ativo: Verde (Baixo Risco), Amarelo (Alerta Preventivo) e Vermelho (Crise e Liquidação Imediata).
+    Regime latente de risco de crédito do ativo: Verde (Baixo Risco), Amarelo (Alerta) e Vermelho (Crise).
   ]),
   card("6. Variáveis de Entrada", [
     Delta Spread diário, Taxa ajustada ao prazo ($S_t / ln("DU")$), Volatilidade condicional EGARCH-t, Expected Shortfall (99%) e Z-Score móvel de 60 dias.
   ]),
 
   card("7. Fontes de Dados", [
-    Prévias públicas de negociação do sistema REUNE da ANBIMA, dados cadastrais via portal Debentures.com.br e séries macroeconômicas (CDI e IPCA) obtidas junto ao Banco Central via pacote `python-bcb`.
+    Prévias públicas de negociação do sistema REUNE da ANBIMA, dados cadastrais via portal Debentures.com.br e séries macroeconômicas (CDI e IPCA) obtidas do Banco Central do Brasil por meio do pacote `python-bcb`.
   ]),
   card("8. Técnicas Estatísticas / ML", [
     AR(1)-EGARCH(1,1)-t para volatilidade assimétrica; K-Means com agregação Borda Count; Gaussian HMM com regularização de Laplace e algoritmo de Viterbi; Ensemble ponderado.
@@ -63,6 +63,6 @@ as técnicas estatísticas aplicadas e os resultados esperados.
     Mitigação de perdas acentuadas em eventos de estresse corporativo, contenção de custos de transação pelo filtro de ruído e superação estatisticamente comprovada do carrego passivo (Buy and Hold).
   ]),
   card("12. Restrições e Riscos", [
-    Escassez de negociações diárias na maioria dos papéis, principalmente em períodos de estresse, custos operacionais de giro (50 bps) e instabilidade de estados (flickering).
+    Escassez de negociações diárias na maioria dos ativos, principalmente em períodos de estresse, custos operacionais de giro (50 bps) e instabilidade de estados (flickering).
   ])
 )

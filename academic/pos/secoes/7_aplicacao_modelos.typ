@@ -9,7 +9,7 @@ Para modelar a variância dos retornos de spread, realizou-se uma avaliação co
 processos heterocedásticos autorregressivos (ARCH) de #cite(<engle1982autoregressive>, form: "prose"), generalizados posteriormente por #cite(<bollerslev1986generalized>, form: "prose") na classe GARCH. As iterações avaliaram ordens autorregressivas 
 AR(1) para a média condicional, variações de defasagens ($p, q in \{1, 2\}$), diferentes funções de variância (GARCH tradicional, EGARCH, GJR-GARCH e TARCH) e distribuições de resíduos Normal e t-Student.
 
-A escolha do modelo foi baseada na taxa de vitórias (_Win Rate_) pelo Critério de Informação de Akaike (AIC) em 529 debêntures no período _In-Sample_. A taxa de vitória $W_j$ expressa a proporção da 
+A escolha do modelo fundamentou-se na taxa de seleção ótima (_Win Rate_) pelo Critério de Informação de Akaike (AIC) em 529 debêntures no período _In-Sample_. A taxa de seleção $W_j$ expressa a proporção da 
 amostra em que o modelo $j$ alcançou o menor AIC:
 
 $ W_j = (sum_{i=1}^N I_(i, j)) / N times 100 $
@@ -44,7 +44,7 @@ Para assegurar estabilidade numérica em ativos ilíquidos com quebras temporár
 1. Piso para graus de liberdade: $nu = max(2.05, nu_("est"))$, impedindo variância infinita na distribuição t-Student;
 2. Teto de variância: $sigma_("est")(t) = sigma_("est")(t-1)$ quando $sigma_("est")(t) > 20 times P_(99)(sigma_("IS"))$, mitigando divergências numéricas extremas decorrentes de pregões sem negócios.
 
-O diagnóstico dos resíduos padronizados do modelo EGARCH(1,1)-t para os 529 papéis confirmou a adequação estatística da especificação. A @fig_diagnostico_residuos exibe as taxas de aprovação nos testes de 
+O diagnóstico dos resíduos padronizados do modelo EGARCH(1,1)-t para as 529 debêntures confirmou a adequação estatística da especificação. A @fig_diagnostico_residuos exibe as taxas de aprovação nos testes de 
 Ljung-Box (86,4%) e ARCH-LM (94,9%) ao nível de 5%, atestando a remoção de autocorrelação serial e a eliminação de heterocedasticidade remanescente.
 
 #figure(
@@ -52,7 +52,7 @@ Ljung-Box (86,4%) e ARCH-LM (94,9%) ao nível de 5%, atestando a remoção de au
   caption: [Taxa de aprovação dos testes de diagnóstico nos resíduos do EGARCH(1,1) t-Student.]
 ) <fig_diagnostico_residuos>
 
-Após a calibração da volatilidade condicional, computaram-se o Valor em Risco (VaR 99%) e o Expected Shortfall (ES 99%) para cada papel e pregão.
+Após a calibração da volatilidade condicional, computaram-se o Valor em Risco (VaR 99%) e o Expected Shortfall (ES 99%) para cada ativo e pregão.
 
 == Agrupamento Não Supervisionado: K-Means
 
@@ -72,7 +72,7 @@ para $k in \{2, 3, 4, 5, 6, 7\}$ sobre os dados de treinamento, conforme exibe a
   caption: [Elbow Method e Silhouette Score por número de clusters (Superior: IPCA, Inferior: CDI Spread).]
 ) <fig_cluster_validation>
 
-A curva de inércia apresenta flexão em $k=3$, patamar que maximiza a interpretação financeira dos regimes. A natureza não supervisionada do K-Means, contudo, gera ordenações arbitrárias dos centróides, fenômeno denominado _Label Switching_.
+A curva de inércia apresenta flexão em $k=3$, patamar que potencializa a interpretabilidade financeira dos regimes. A natureza não supervisionada do K-Means, contudo, gera ordenações arbitrárias dos centróides, fenômeno denominado _Label Switching_.
 Para resolver essa indefinição, foi aplicado um vetor determinístico de polaridade de risco, no qual maiores magnitudes de volatilidade condicional e Z-score orientam a indexação crescente dos estados Verde (baixo risco), Amarelo (alerta) 
 e Vermelho (crise). Na etapa preditiva, para a construção de um modelo misto ponderado (conforme será abordado em @subcap_modelo_ensemble), a probabilidade de crise (`Prob_Crise_KMeans`) é definida 
 com base na distância euclidiana inversa de cada observação _Out-of-Sample_ até o centróide Vermelho.
@@ -97,7 +97,9 @@ adotando-se $alpha = 1$ e $K=3$. A inferência fora da amostra utilizou o algori
 == Modelo Ensemble <subcap_modelo_ensemble>
 
 O modelo misto buscou conciliar a inércia do particionamento geométrico à agilidade temporal da inferência bayesiana, aplicando princípios de combinação de múltiplos classificadores explorados por #cite(<kittler1998combining>, form: "prose") e 
-#cite(<ho1994decision>, form: "prose"). A ponderação ideal foi determinada por um _Grid Search_ sobre as predições de calibração visando maximizar o _Calmar Ratio_ (razão entre o retorno anualizado e o recuo máximo de pico a vale) do portfólio. Essa métrica foi adotada em substituição ao Índice de Sharpe porque debêntures pós-fixadas atreladas ao CDI possuem correlação direta com a taxa livre de risco e volatilidade diária de cotação reduzida sob condições normais, o que comprime o denominador e distorce a avaliação de prêmio de risco, invertendo a ordenação relativa sob retornos excedentes negativos.
+#cite(<ho1994decision>, form: "prose"). A ponderação ideal foi determinada por um _Grid Search_ sobre as predições de calibração visando maximizar o _Calmar Ratio_ (razão entre o retorno anualizado e o recuo máximo de pico a vale) do portfólio. Essa métrica 
+foi adotada em substituição ao Índice de Sharpe porque debêntures pós-fixadas atreladas ao CDI possuem correlação direta com a taxa livre de risco e volatilidade diária de cotação reduzida sob condições normais, o que comprime o denominador e distorce a 
+avaliação de prêmio de risco, invertendo a ordenação relativa sob retornos excedentes negativos.
 
 #figure(
   image("../imagens/sensitivity_ensemble_amarelo.png", width: 85%),
@@ -112,14 +114,14 @@ O sinal resultante recebeu suavização por média móvel exponencial de três d
 
 == Protocolos de Validação Operacional <subcap_kupiec_backtest>
 
-A validação operacional estruturou-se em duas frentes complementares sobre o período _Out-of-Sample_:
-
-1. *Validação Estatística:* Teste de Proporção de Falhas de #cite(<kupiec1995techniques>, form: "prose") para cobertura incondicional e Teste de Cobertura Condicional de #cite(<christoffersen1998>, form: "prose") para verificar a independência temporal das violações do VaR a 99%;
-2. *Simulador Financeiro de* _Backtest_: Execução diária de estratégias táticas de venda defensiva confrontadas com o carrego passivo (_Buy and Hold_). O simulador aplicou taxa de custo de transação de 0,5% (50 bps) por operação, remuneração diária de caixa a 100% do CDI, quarentena de 180 dias sem eventos para recompra e trava de _payback_ mínimo de 3 meses.
+A validação operacional sobre o período _Out-of-Sample_ desdobrou-se em duas frentes analíticas complementares. No âmbito estatístico, empregaram-se o Teste de Proporção de Falhas de #cite(<kupiec1995techniques>, form: "prose") 
+para atestar a cobertura incondicional e o Teste de Cobertura Condicional de #cite(<christoffersen1998>, form: "prose") para verificar a independência temporal das violações do VaR a 99%. Paralelamente, no plano da simulação financeira 
+(_backtest_), executaram-se estratégias táticas de venda defensiva em confronto direto com a estratégia passiva de carrego (_Buy and Hold_), parametrizando custos transacionais de 0,5% (50 bps) por operação, remuneração integral de caixa a 
+100% do CDI, quarentena mínima de 180 dias para recompra e trava prudencial de _payback_ de três meses.
 
 == Implementação em Código-Fonte
 
-As rotinas a seguir, integradas a partir de `volatility.py` e `regime.py`, implementam a estimação do modelo EGARCH(1,1)-t, a derivação analítica das medidas de cauda com as travas matemáticas de estabilidade 
+As rotinas estruturadas neste bloco, integradas a partir de `volatility.py` e `regime.py`, implementam a estimação do modelo EGARCH(1,1)-t, a derivação analítica das medidas de cauda com as travas matemáticas de estabilidade 
 e o treinamento do classificador markoviano com suavização de Laplace:
 
 ```python
@@ -143,7 +145,7 @@ class EconometricRiskEngine:
         cond_mean = (returns * 100 - res_oos.resid) / 100
         nu = res_is.params.get('nu', 5.0)
 
-        # 1. Trava matemática para caudas ultra-pesadas: nu ancorado marginalmente acima de 2
+        # 1. Limitação para caudas ultra-pesadas: nu ancorado marginalmente acima de 2
         nu_es = max(nu, 2.05)
         q_t = stats.t.ppf(1 - alpha, df=nu)
         es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1) if nu > 1.01 else 5.0
@@ -155,7 +157,7 @@ class EconometricRiskEngine:
         var_99 = cond_mean + cond_vol * q_alpha
         es_99 = cond_mean + cond_vol * es_t_padronizado
 
-        # 2. Trava de teto de volatilidade: 20x o percentil 99 In-Sample contra divergência numérica
+        # 2. Limitação de volatilidade: 20x o percentil 99 In-Sample contra divergência numérica
         vol_is_p99 = np.nanpercentile(cond_vol.iloc[:split_idx], 99)
         vol_teto = max(vol_is_p99 * 20.0, 0.05)
         invalid = cond_vol > vol_teto
