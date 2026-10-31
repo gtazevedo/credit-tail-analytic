@@ -23,4 +23,7 @@
 
 // 12. REFERÊNCIAS
 = Referências <sec_referencias>
-#bibliography("referencias.bib", title: none, style: "associacao-brasileira-de-normas-tecnicas")
+#text(size: 12pt)[
+  #set par(leading: 0.4em, spacing: 0.55em, first-line-indent: 0pt, justify: false)
+  #bibliography("referencias.bib", title: none, style: "associacao-brasileira-de-normas-tecnicas")
+]

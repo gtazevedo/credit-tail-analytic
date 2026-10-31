@@ -1,9 +1,10 @@
+#pagebreak(weak: true)
 = Canvas Analítico <sec_canvas_analitico>
 
 Apresenta-se o Canvas Analítico do projeto, estruturado em doze blocos estratégicos que sintetizam a formulação do problema, as bases de dados, 
 as técnicas estatísticas aplicadas e os resultados esperados.
 
-#v(0.3cm)
+#v(0.2cm)
 
 #let card(title, content) = block(
   stroke: 0.7pt + rgb(170, 190, 215),
@@ -27,20 +28,20 @@ as técnicas estatísticas aplicadas e os resultados esperados.
   row-gutter: 5pt,
   
   card("1. Problema de Negócio", [
-    Iliquidez crônica e assimetria de retornos no mercado secundário de debêntures. Modelos tradicionais de risco (GARCH contínuo e VaR paramétrico) falham diante de saltos discretos e elevados deságios em eventos de cauda.
+    Baixa liquidez e assimetria de retornos no mercado secundário de debêntures. Modelos tradicionais de risco (GARCH contínuo e VaR paramétrico) têm baixa aderência diante de saltos discretos e deságios acentuados em eventos de cauda.
   ]),
   card("2. Objetivo Analítico", [
     Classificar regimes latentes de risco de crédito (Verde, Amarelo e Vermelho) e antecipar choques patrimoniais por meio de aprendizado de máquina não supervisionado com modelagem temporal.
   ]),
   card("3. Justificativa", [
-    Atrasos na detecção de deterioração de crédito inviabilizam o desinvestimento em mercados ilíquidos. Alertas antecipados protegem o capital antes da materialização definitiva do evento.
+    Atrasos na detecção de deterioração de crédito dificultam a venda de posições em mercados pouco líquidos. Alertas antecipados reduzem perdas antes do agravamento do evento de crédito.
   ]),
 
   card("4. Stakeholders", [
     Gestores de fundos de crédito privado, analistas de risco corporativo, comitês de alocação de ativos e tesourarias institucionais.
   ]),
   card("5. Variável-alvo (Target)", [
-    Regime latente de risco de crédito do ativo: Verde (Baixo Risco), Amarelo (Alerta) e Vermelho (Crise).
+    Regime latente de risco de crédito do ativo, classificado em Verde (Baixo Risco), Amarelo (Alerta) e Vermelho (Crise).
   ]),
   card("6. Variáveis de Entrada", [
     Delta Spread diário, Taxa ajustada ao prazo ($S_t / ln("DU")$), Volatilidade condicional EGARCH-t, Expected Shortfall (99%) e Z-Score móvel de 60 dias.
@@ -53,16 +54,18 @@ as técnicas estatísticas aplicadas e os resultados esperados.
     AR(1)-EGARCH(1,1)-t para volatilidade assimétrica; K-Means com agregação Borda Count; Gaussian HMM com regularização de Laplace e algoritmo de Viterbi; Ensemble ponderado.
   ]),
   card("9. Métricas de Avaliação", [
-    Acurácia estatística: Testes de Kupiec POF e Christoffersen. Eficácia tática: Lead Time de antecipação em dias úteis, Retorno Acumulado líquido de custos e p-valor por Block Bootstrap.
+    Validação estatística pelos testes de Kupiec POF e Christoffersen, combinada à avaliação financeira pelo Lead Time de antecipação, retorno acumulado líquido e p-valor via Block Bootstrap.
   ]),
 
   card("10. Entregáveis", [
     Pacote Python modular (`credit_tail_analytics`), pipeline de dados automatizado, base histórica tratada, relatórios analíticos de backtest e repositório de código aberto.
   ]),
   card("11. Impacto Esperado", [
-    Mitigação de perdas acentuadas em eventos de estresse corporativo, contenção de custos de transação pelo filtro de ruído e superação estatisticamente comprovada do carrego passivo (Buy and Hold).
+    Mitigação de perdas acentuadas em eventos de estresse corporativo, contenção de custos de transação pelo filtro de ruído e retorno superior ao portfólio passivo (Buy and Hold) validado por teste estatístico.
   ]),
   card("12. Restrições e Riscos", [
-    Escassez de negociações diárias na maioria dos ativos, principalmente em períodos de estresse, custos operacionais de giro (50 bps) e instabilidade de estados (flickering).
+    Escassez de negociações diárias na maioria dos ativos, principalmente em períodos de estresse, custos operacionais de giro (50 bps) e alternância excessiva entre estados (flickering).
   ])
 )
+
+#pagebreak(weak: true)

@@ -21,9 +21,13 @@
     }
   )
 
-  // Fonte Arial, 12pt, espaçamento 1.5 linhas (em Typst, 0.8em equivale a 1.5 linhas)
+  // Fonte Arial, 12pt, espaçamento 1.5 linhas proporcional ABNT
   set text(font: "Arial", size: 12pt, lang: "pt")
-  set par(justify: true, first-line-indent: 1.25cm, leading: 0.8em)
+  set par(justify: true, first-line-indent: 1.25cm, leading: 0.65em)
+
+  // Espaçamentos verticais para figuras, tabelas e equações em relatório técnico
+  show figure: set block(spacing: 0.7em)
+  show math.equation.where(block: true): set block(spacing: 0.5em)
 
   // 1. CAPA OFICIAL PUC MINAS
   align(center)[
@@ -101,50 +105,57 @@
 
   show heading: it => {
     if it.level == 1 {
-      pagebreak(weak: true)
-      v(1.2em)
+      v(1em, weak: true)
       let num = if it.numbering != none {
         counter(heading).display(it.numbering)
         h(0.5em)
       }
       text(size: 12pt, weight: "bold")[#num#it.body]
-      v(1.2em)
+      v(0.6em, weak: true)
     } else if it.level == 2 {
-      v(1em)
+      v(0.8em, weak: true)
       let num = if it.numbering != none {
         counter(heading).display(it.numbering)
         h(0.5em)
       }
       text(size: 12pt, weight: "bold")[#num#it.body]
-      v(0.8em)
+      v(0.4em, weak: true)
     } else {
-      v(0.8em)
+      v(0.6em, weak: true)
       let num = if it.numbering != none {
         counter(heading).display(it.numbering)
         h(0.5em)
       }
       text(size: 12pt, weight: "bold")[#num#it.body]
-      v(0.6em)
+      v(0.3em, weak: true)
     }
     // Força indentação do primeiro parágrafo
     par(text(size: 0pt)[])
   }
 
-  // Legendas de figuras e tabelas em tamanho 10pt (ABNT)
-  show figure.caption: it => text(size: 10pt, it)
+  // Legendas de figuras e tabelas em tamanho 10pt e espaçamento simples (ABNT)
+  show figure.caption: it => {
+    set par(leading: 0.45em)
+    text(size: 10pt, it)
+  }
 
-  // Blocos de código em tamanho 9.5pt com quebra limpa
-  show raw: set text(size: 9.5pt, font: ("Consolas", "Courier New"))
+  // Blocos de código em tamanho 8.5pt com quebra limpa
+  show raw: set text(size: 8.5pt, font: ("Consolas", "Courier New"))
   show raw.where(block: true): it => block(
     fill: luma(248),
-    inset: 8pt,
+    inset: 6pt,
     radius: 3pt,
     width: 100%,
+    breakable: false,
     stroke: 0.5pt + luma(220),
     it
   )
 
   set math.equation(numbering: "(1)")
+
+  // Referências bibliográficas conforme ABNT e PUC Minas (tamanho 12pt, espaçamento simples, alinhadas à esquerda, sem recuo)
+  show bibliography: set par(leading: 0.4em, spacing: 0.55em, first-line-indent: 0pt, justify: false)
+  show bibliography: set text(size: 12pt)
 
   body
 }

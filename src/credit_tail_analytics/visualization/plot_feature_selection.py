@@ -9,8 +9,8 @@ def plot_borda_ranking():
     
     df = pd.read_csv('dados/feature_selection_metrics.csv')
     
-    # Pegar as Top 10
-    top_df = df.head(10).copy()
+    # Pegar as Top 5
+    top_df = df.head(5).copy()
     
     # Rótulos amigáveis
     labels = []
@@ -31,7 +31,7 @@ def plot_borda_ranking():
     # Inverter para o gráfico de barras horizontais
     top_df = top_df.iloc[::-1]
     
-    fig, ax = plt.subplots(figsize=(12, 7))
+    fig, ax = plt.subplots(figsize=(11, 4.0))
     
     colors = ['#A8C6FA'] * (len(top_df) - 1) + ['#174A7E']
     
@@ -52,7 +52,7 @@ def plot_borda_ranking():
                 ha='left', va='center', color='black', fontsize=10)
 
     ax.set_xlabel('Borda Score', fontweight='bold', fontsize=12)
-    ax.set_title('Top 10 Subconjuntos de Variáveis (Feature Selection)', fontweight='bold', fontsize=14, pad=15)
+    ax.set_title('Top 5 Subconjuntos de Variáveis (Feature Selection)', fontweight='bold', fontsize=13, pad=12)
     
     # Ajustes de eixo
     ax.set_xlim(0, top_df['Borda_Score'].max() * 1.3) # Dar espaço para o texto das métricas

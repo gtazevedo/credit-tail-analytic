@@ -1,191 +1,82 @@
 = Aplicação de Modelos <sec_aplicacao_modelos>
 
-A arquitetura analítica combina um motor estatístico de volatilidade condicional a algoritmos de aprendizado de máquina para classificação de regimes. A abordagem compara diretamente métodos com e sem dependência temporal, 
-investigando o ganho marginal da modelagem markoviana em séries de crédito privado.
+A arquitetura analítica combina um modelo econométrico de volatilidade condicional a algoritmos de aprendizado de máquina para classificação de regimes, investigando o ganho marginal da dependência temporal em séries de crédito.
 
-== Motor Econométrico de Volatilidade (EGARCH-t)
+== Modelagem Econométrica de Volatilidade (EGARCH-t)
 
-Para modelar a variância dos retornos de spread, realizou-se uma avaliação combinatória de 32 especificações da família GARCH utilizando a biblioteca `arch`. Esses modelos fundamentam-se nos 
-processos heterocedásticos autorregressivos (ARCH) de #cite(<engle1982autoregressive>, form: "prose"), generalizados posteriormente por #cite(<bollerslev1986generalized>, form: "prose") na classe GARCH. As iterações avaliaram ordens autorregressivas 
-AR(1) para a média condicional, variações de defasagens ($p, q in \{1, 2\}$), diferentes funções de variância (GARCH tradicional, EGARCH, GJR-GARCH e TARCH) e distribuições de resíduos Normal e t-Student.
-
-A escolha do modelo fundamentou-se na taxa de seleção ótima (_Win Rate_) pelo Critério de Informação de Akaike (AIC) em 529 debêntures no período _In-Sample_. A taxa de seleção $W_j$ expressa a proporção da 
-amostra em que o modelo $j$ alcançou o menor AIC:
-
-$ W_j = (sum_{i=1}^N I_(i, j)) / N times 100 $
-
-sendo $I_(i, j) = 1$ quando o modelo $j$ obtém o menor AIC no ativo $i$, e $0$ caso contrário. As figuras @fig_ranking_30, @fig_ranking_100 e @fig_ranking_500 apresentam os rankings médios obtidos 
-para amostras de 30, 100 e 500 debêntures.
+Avaliaram-se 32 especificações da família GARCH #cite(<engle1982autoregressive>)#cite(<bollerslev1986generalized>) combinando ordens AR(1), defasagens ($p, q in \{1, 2\}$), funções de variância (GARCH, EGARCH, GJR, TARCH) 
+e inovações Normal e t-Student. A seleção elegeu o modelo com menor AIC em 529 debêntures no período _In-Sample_ ($W_j = (sum I_(i,j)/N) times 100$). A @fig_ranking_garch exibe o ranking médio das especificações 
+avaliadas para o universo de debêntures ($N=500$).
 
 #figure(
-  image("../imagens/comparacao_modelos_ranking_n30_True.png", width: 85%),
-  caption: [Comparação de Modelos GARCH: Ranking Médio para a amostra dos 30 ativos mais líquidos.]
-) <fig_ranking_30>
+  image("../imagens/comparacao_modelos_ranking_n500_True.png", width: 65%),
+  caption: [Ranking Comparativo de Modelos GARCH por Menor AIC ($N=500$).]
+) <fig_ranking_garch>
+
+O modelo AR(1)-EGARCH(1,1) com inovação t-Student #cite(<nelson1991conditional>) obteve a maior taxa de seleção nos grupos amplos, modelando a variância em escala logarítmica com sensibilidade assimétrica ($gamma < 0$):
+
+$ ln(sigma_t^2) = omega + beta ln(sigma_(t-1)^2) + alpha ( abs(z_(t-1)) - E[abs(z_(t-1))] ) + gamma z_(t-1) $
+
+Para assegurar estabilidade numérica em séries com baixa liquidez, adotaram-se duas restrições analíticas: fixou-se um piso para os graus de liberdade em $nu = max(2.05, nu_("est"))$, 
+condição necessária para a existência do segundo momento estatístico, além de um teto de volatilidade que retém $sigma_("est")(t) = sigma_("est")(t-1)$ quando a estimativa supera $20 times P_(99)(sigma_("IS"))$. A @fig_diagnostico_residuos 
+confirma aprovação de 86,4% no teste de Ljung-Box e 94,9% no ARCH-LM ($alpha = 5\%$).
 
 #figure(
-  image("../imagens/comparacao_modelos_ranking_n100_True.png", width: 85%),
-  caption: [Comparação de Modelos GARCH: Ranking Médio para a amostra dos 100 ativos mais líquidos.]
-) <fig_ranking_100>
-
-#figure(
-  image("../imagens/comparacao_modelos_ranking_n500_True.png", width: 85%),
-  caption: [Comparação de Modelos GARCH: Ranking Médio para a amostra ampla de 500 ativos.]
-) <fig_ranking_500>
-
-O modelo AR(1)-EGARCH(1,1) com inovação t-Student alcançou a maior taxa de vitórias nos grupos amplos. Formulado originalmente por #cite(<nelson1991conditional>, form: "prose"), o EGARCH modela a variância condicional 
-em escala logarítmica, dispensando restrições de não-negatividade sobre os parâmetros e capturando a assimetria característica de ativos corporativos:
-
-$ ln(sigma_t^2) = omega + beta ln(sigma_(t-1)^2) + alpha ( |z_(t-1)| - E[|z_(t-1)|] ) + gamma z_(t-1) $
-
-sendo $z_t = epsilon_t / sigma_t$ os resíduos padronizados. Quando $gamma < 0$, choques negativos elevam a volatilidade com maior intensidade que choques positivos de igual magnitude.
-
-Para assegurar estabilidade numérica em ativos ilíquidos com quebras temporárias de cotação, implementaram-se duas travas matemáticas:
-
-1. Piso para graus de liberdade: $nu = max(2.05, nu_("est"))$, impedindo variância infinita na distribuição t-Student;
-2. Teto de variância: $sigma_("est")(t) = sigma_("est")(t-1)$ quando $sigma_("est")(t) > 20 times P_(99)(sigma_("IS"))$, mitigando divergências numéricas extremas decorrentes de pregões sem negócios.
-
-O diagnóstico dos resíduos padronizados do modelo EGARCH(1,1)-t para as 529 debêntures confirmou a adequação estatística da especificação. A @fig_diagnostico_residuos exibe as taxas de aprovação nos testes de 
-Ljung-Box (86,4%) e ARCH-LM (94,9%) ao nível de 5%, atestando a remoção de autocorrelação serial e a eliminação de heterocedasticidade remanescente.
-
-#figure(
-  image("../imagens/diagnostico_residuos_egarch.png", width: 80%),
+  image("../imagens/diagnostico_residuos_egarch.png", width: 45%),
   caption: [Taxa de aprovação dos testes de diagnóstico nos resíduos do EGARCH(1,1) t-Student.]
 ) <fig_diagnostico_residuos>
 
-Após a calibração da volatilidade condicional, computaram-se o Valor em Risco (VaR 99%) e o Expected Shortfall (ES 99%) para cada ativo e pregão.
-
 == Agrupamento Não Supervisionado: K-Means
 
-O algoritmo K-Means atua como linha de base estática. Conforme formulado por #cite(<bishop2006pattern>, form: "prose"), o K-Means particiona $N$ observações em $K$ grupos minimizando a soma das distâncias quadráticas aos 
-centróides mais próximos por meio do algoritmo iterativo de Lloyd (Maximização de Expectativa). O modelo assume propositalmente independência temporal entre as observações para isolar o efeito da geometria dos dados.
-
-A quantidade de agrupamentos foi fixada em $k=3$ regimes: Verde (baixo risco), Amarelo (alerta) e Vermelho (crise). A escolha recebeu validação formal pelo Método do Cotovelo (_Elbow Method_) e pelo _Silhouette Score_ 
-para $k in \{2, 3, 4, 5, 6, 7\}$ sobre os dados de treinamento, conforme exibe a @fig_cluster_validation.
+O K-Means atua como linha de base estática #cite(<bishop2006pattern>), particionando observações em $k=3$ regimes via algoritmo de Lloyd. A fixação de $k=3$ 
+reflete a classificação ordinal de três níveis de criticidade adotada na gestão de crédito, recebendo confirmação empírica pelo _Elbow Method_ e _Silhouette Score_ (@fig_cluster_validation). 
+O _Label Switching_ foi mitigado pela ordenação dos centroides segundo um vetor determinístico de polaridade de risco (volatilidade condicional e Z-Score).
 
 #figure(
-  grid(
-    columns: 1,
-    gutter: 12pt,
-    image("../imagens/val_IPCA_elbow_silhouette.png", width: 85%),
-    image("../imagens/val_CDI_Spread_elbow_silhouette.png", width: 85%)
-  ),
-  caption: [Elbow Method e Silhouette Score por número de clusters (Superior: IPCA, Inferior: CDI Spread).]
+  image("../imagens/cluster_val_elbow_silhouette.png", width: 65%),
+  caption: [Elbow Method (Inércia Intra-Cluster) e Silhouette Score Médio por Número de Clusters ($k$).]
 ) <fig_cluster_validation>
-
-A curva de inércia apresenta flexão em $k=3$, patamar que potencializa a interpretabilidade financeira dos regimes. A natureza não supervisionada do K-Means, contudo, gera ordenações arbitrárias dos centróides, fenômeno denominado _Label Switching_.
-Para resolver essa indefinição, foi aplicado um vetor determinístico de polaridade de risco, no qual maiores magnitudes de volatilidade condicional e Z-score orientam a indexação crescente dos estados Verde (baixo risco), Amarelo (alerta) 
-e Vermelho (crise). Na etapa preditiva, para a construção de um modelo misto ponderado (conforme será abordado em @subcap_modelo_ensemble), a probabilidade de crise (`Prob_Crise_KMeans`) é definida 
-com base na distância euclidiana inversa de cada observação _Out-of-Sample_ até o centróide Vermelho.
 
 == Modelos Ocultos de Markov (HMM)
 
-O Modelo Oculto de Markov (Gaussian HMM), estruturado classicamente por #cite(<rabiner1989tutorial>, form: "prose"), introduz dependência temporal estocástica na classificação dos regimes. A dinâmica pressupõe uma cadeia de Markov 
-latente de primeira ordem com três estados não observáveis, em que a probabilidade de transição depende exclusivamente do estado imediatamente anterior:
+O modelo Gaussian HMM #cite(<rabiner1989tutorial>) incorpora a dependência temporal por meio de uma cadeia de Markov oculta de três estados ($P(S_t = j | S_(t-1) = i) = A_(i j)$), com parâmetros estimados pelo algoritmo de Baum-Welch #cite(<baum1970maximization>). 
+Para evitar estados absorventes, aplicou-se regularização de Laplace com piso de 1%:
 
-$ P(S_t = j mid S_(t-1) = i) = A_(i j) $
+$ P'_(i j) = (C_(i j) + 1) / ( sum_(k=1)^3 C_(i k) + 3 ), quad P_(i j) = max(P'_(i j), 0.01) / (sum_(k=1)^3 max(P'_(i k), 0.01)) $
 
-O treinamento estimou as médias, as covariâncias diagonais e as probabilidades de transição por meio do algoritmo de Baum-Welch sobre os dados sequenciais _In-Sample_, fundamentado na teoria de máxima verossimilhança de #cite(<baum1970maximization>, form: "prose").
-
-Para impedir que estados extremos se transformassem em regimes absorventes por ausência de transições históricas na base de treino, aplicou-se a Suavização Aditiva de Laplace combinada a um piso de 1% nas probabilidades de transição:
-
-$ P'_{i j} = (C_{i j} + alpha) / ( sum_{k=1}^K C_{i k} + K alpha ) $
-
-$ P''_{i j} = max(P'_{i j}, 0.01) quad ==> quad P_(i j) = P''_{i j} / (sum_{k=1}^K P''_{i k}) $
-
-adotando-se $alpha = 1$ e $K=3$. A inferência fora da amostra utilizou o algoritmo de Viterbi para decodificar a trajetória latente mais provável e o procedimento Forward-Backward para calcular a probabilidade pontual de crise (`Prob_Crise_HMM`).
+A sequência mais provável de regimes foi obtida pelo algoritmo de Viterbi, enquanto as probabilidades filtradas de crise (`Prob_Crise_HMM`) foram calculadas pelo algoritmo Forward-Backward.
 
 == Modelo Ensemble <subcap_modelo_ensemble>
 
-O modelo misto buscou conciliar a inércia do particionamento geométrico à agilidade temporal da inferência bayesiana, aplicando princípios de combinação de múltiplos classificadores explorados por #cite(<kittler1998combining>, form: "prose") e 
-#cite(<ho1994decision>, form: "prose"). A ponderação ideal foi determinada por um _Grid Search_ sobre as predições de calibração visando maximizar o _Calmar Ratio_ (razão entre o retorno anualizado e o recuo máximo de pico a vale) do portfólio. Essa métrica 
-foi adotada em substituição ao Índice de Sharpe porque debêntures pós-fixadas atreladas ao CDI possuem correlação direta com a taxa livre de risco e volatilidade diária de cotação reduzida sob condições normais, o que comprime o denominador e distorce a 
-avaliação de prêmio de risco, invertendo a ordenação relativa sob retornos excedentes negativos.
+O modelo combinado integra a classificação estática do K-Means com a probabilidade de transição temporal do HMM #cite(<kittler1998combining>)#cite(<ho1994decision>). A ponderação foi otimizada por _Grid Search_ 
+visando maximizar o _Calmar Ratio_ (@fig_ensemble_sensitivity), métrica selecionada pela correlação de debêntures com o CDI e baixa dispersão diária de cotação.
 
 #figure(
-  image("../imagens/sensitivity_ensemble_amarelo.png", width: 85%),
+  image("../imagens/sensitivity_ensemble_amarelo.png", width: 65%),
   caption: [Análise de Sensibilidade dos pesos do Ensemble no período In-Sample.]
 ) <fig_ensemble_sensitivity>
 
-A combinação ótima alocou 70% de peso para o HMM e 30% para o K-Means:
-
-$ "Probabilidade Sintética"_t = 0.70 times "Prob_Crise_HMM"_t + 0.30 times "Prob_Crise_KMeans"_t $
-
-O sinal resultante recebeu suavização por média móvel exponencial de três dias ($"EMA"_3$, com fator $alpha = 0,5$), gerando a pontuação final de risco e atenuando oscilações de alta frequência.
+A alocação ótima estabeleceu pesos de 70% para o HMM e 30% para o K-Means, com suavização por média móvel exponencial de 21 dias úteis, dada por: $"Score"_t = "EMA"_(21)(0.70 times "Prob_Crise_HMM"_t + 0.30 times "Prob_Crise_KMeans"_t)$.
 
 == Protocolos de Validação Operacional <subcap_kupiec_backtest>
 
-A validação operacional sobre o período _Out-of-Sample_ desdobrou-se em duas frentes analíticas complementares. No âmbito estatístico, empregaram-se o Teste de Proporção de Falhas de #cite(<kupiec1995techniques>, form: "prose") 
-para atestar a cobertura incondicional e o Teste de Cobertura Condicional de #cite(<christoffersen1998>, form: "prose") para verificar a independência temporal das violações do VaR a 99%. Paralelamente, no plano da simulação financeira 
-(_backtest_), executaram-se estratégias táticas de venda defensiva em confronto direto com a estratégia passiva de carrego (_Buy and Hold_), parametrizando custos transacionais de 0,5% (50 bps) por operação, remuneração integral de caixa a 
-100% do CDI, quarentena mínima de 180 dias para recompra e trava prudencial de _payback_ de três meses.
+O protocolo no período _Out-of-Sample_ compreendeu duas fases. Inicialmente, realizou-se a validação estatística de cobertura incondicional de #cite(<kupiec1995techniques>, form: "prose") 
+e condicional de #cite(<christoffersen1998>, form: "prose") para o VaR a 99%. Em seguida, executou-se a simulação financeira (_backtest_) frente ao _Buy and Hold_, considerando custo 
+de transação de 50 bps, quarentena mínima de 180 dias e remuneração de caixa a 100% do CDI.
 
 == Implementação em Código-Fonte
 
-As rotinas estruturadas neste bloco, integradas a partir de `volatility.py` e `regime.py`, implementam a estimação do modelo EGARCH(1,1)-t, a derivação analítica das medidas de cauda com as travas matemáticas de estabilidade 
-e o treinamento do classificador markoviano com suavização de Laplace:
+As rotinas de modelagem e restrições analíticas encontram-se em `volatility.py` e `regime.py`:
 
 ```python
-import numpy as np
-import pandas as pd
-import scipy.stats as stats
-from arch import arch_model
-from hmmlearn.hmm import GaussianHMM
+# Trava de graus de liberdade, VaR/ES analíticos e teto prudencial (volatility.py)
+nu_es = max(res_is.params.get('nu', 5.0), 2.05)
+q_t = stats.t.ppf(1 - alpha, df=nu)
+es_pad = (stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1)) / np.sqrt(nu_es / (nu_es - 2))
+var_99, es_99 = cond_mean + cond_vol * model.distribution.ppf(1 - alpha, nu), cond_mean + cond_vol * es_pad
+cond_vol = cond_vol.mask(cond_vol > max(np.nanpercentile(cond_vol.iloc[:split_idx], 99) * 20.0, 0.05)).ffill().bfill()
 
-class EconometricRiskEngine:
-    """Estimação AR(1)-EGARCH(1,1)-t, VaR/ES analíticos e HMM regularizado."""
-
-    @staticmethod
-    def estimar_egarch_t(returns: pd.Series, split_idx: int, alpha: float = 0.01):
-        """Calibra EGARCH(1,1)-t com restrições numéricas e deriva VaR e ES analíticos."""
-        model = arch_model(returns * 100, mean='AR', lags=1, vol='EGARCH', p=1, o=1, q=1, dist='t', rescale=False)
-        res_is = model.fit(last_obs=split_idx, disp='off', show_warning=False)
-        res_oos = model.fix(res_is.params)
-
-        cond_vol = res_oos.conditional_volatility / 100
-        cond_mean = (returns * 100 - res_oos.resid) / 100
-        nu = res_is.params.get('nu', 5.0)
-
-        # 1. Limitação para caudas ultra-pesadas: nu ancorado marginalmente acima de 2
-        nu_es = max(nu, 2.05)
-        q_t = stats.t.ppf(1 - alpha, df=nu)
-        es_t = stats.t.pdf(q_t, df=nu) / alpha * (nu + q_t**2) / (nu - 1) if nu > 1.01 else 5.0
-        scale = np.sqrt(nu_es / (nu_es - 2))
-        es_t_padronizado = es_t / scale
-
-        # VaR e Expected Shortfall condicionais
-        q_alpha = model.distribution.ppf(1 - alpha, nu)
-        var_99 = cond_mean + cond_vol * q_alpha
-        es_99 = cond_mean + cond_vol * es_t_padronizado
-
-        # 2. Limitação de volatilidade: 20x o percentil 99 In-Sample contra divergência numérica
-        vol_is_p99 = np.nanpercentile(cond_vol.iloc[:split_idx], 99)
-        vol_teto = max(vol_is_p99 * 20.0, 0.05)
-        invalid = cond_vol > vol_teto
-        cond_vol[invalid] = np.nan
-        cond_vol = cond_vol.ffill().bfill()
-
-        return cond_vol, np.minimum(var_99, 1.0), np.minimum(es_99, 1.0)
-
-    @staticmethod
-    def treinar_hmm_regularizado(X_treino: np.ndarray, lengths: list, n_estados: int = 3):
-        """Ajusta Gaussian HMM impondo Suavização de Laplace e piso de 1% nas transições."""
-        hmm = GaussianHMM(n_components=n_estados, covariance_type='diag', n_iter=100, random_state=42)
-        hmm.fit(X_treino, lengths)
-
-        # Matriz de transição empírica recalibrada sem transições inter-ticker
-        states = hmm.predict(X_treino, lengths)
-        trans_counts = np.zeros((n_estados, n_estados))
-        pos = 0
-        for l in lengths:
-            seq = states[pos : pos + l]
-            for t in range(len(seq) - 1):
-                trans_counts[seq[t], seq[t + 1]] += 1
-            pos += l
-
-        # Suavização de Laplace e piso estocástico de 1%
-        trans_counts += 1.0
-        A = trans_counts / trans_counts.sum(axis=1, keepdims=True)
-        A_piso = np.maximum(A, 0.01)
-        hmm.transmat_ = A_piso / A_piso.sum(axis=1, keepdims=True)
-        return hmm
+# Gaussian HMM com suavização de Laplace e piso estocástico (regime.py)
+A = (trans_counts + 1.0) / (trans_counts + 1.0).sum(axis=1, keepdims=True)
+hmm.transmat_ = np.maximum(A, 0.01) / np.maximum(A, 0.01).sum(axis=1, keepdims=True)
 ```
