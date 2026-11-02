@@ -1,0 +1,64 @@
+Subconjunto_de_Variaveis,Quantidade_de_Variaveis,Silhouette_Score,Davies_Bouldin,CH_Score,CH_Score_Log,Borda_Score
+"Taxa_ZScore, Volatilidade_EGARCH",2,0.9843,0.3872,78219.5604,11.2673,160.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Expected_Shortfall_99",3,0.9842,0.3872,77865.8386,11.2628,156.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99",3,0.9839,0.3872,77901.6318,11.2632,154.0000
+"Taxa_ZScore, Spread_Range_Intraday",2,0.9415,0.2784,111444.6355,11.6213,151.0000
+"Taxa_ZScore, Expected_Shortfall_99, Spread_Range_Intraday",3,0.9514,0.2994,108169.2834,11.5915,151.0000
+"Taxa_ZScore, Spread_Range_Intraday, Spread_Skew_Intraday",3,0.9390,0.2797,111136.7729,11.6185,148.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Spread_Skew_Intraday",3,0.9839,0.3937,73501.0060,11.2051,148.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99",4,0.9838,0.3873,77550.5587,11.2587,148.0000
+"Taxa_ZScore, Expected_Shortfall_99, Spread_Range_Intraday, Spread_Skew_Intraday",4,0.9495,0.3003,107830.4200,11.5883,148.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Expected_Shortfall_99, Spread_Skew_Intraday",4,0.9838,0.3937,73186.7817,11.2008,142.0000
+"Taxa_ZScore, VaR_99, Expected_Shortfall_99, Spread_Range_Intraday",4,0.9488,0.3007,100402.3479,11.5170,141.0000
+"Taxa_ZScore, VaR_99, Spread_Range_Intraday",3,0.9493,0.3005,94753.8421,11.4590,139.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Spread_Skew_Intraday",4,0.9835,0.3937,73196.2925,11.2009,139.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Spread_Equivalente",3,0.9836,0.3947,73195.2642,11.2009,138.0000
+"Taxa_ZScore, VaR_99, Expected_Shortfall_99, Spread_Range_Intraday, Spread_Skew_Intraday",5,0.9471,0.3015,100134.8850,11.5143,136.0000
+"Taxa_ZScore, VaR_99, Spread_Range_Intraday, Spread_Skew_Intraday",4,0.9474,0.3014,94393.9289,11.4552,134.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99, Spread_Skew_Intraday",5,0.9834,0.3937,72884.4490,11.1966,132.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Expected_Shortfall_99, Spread_Equivalente",4,0.9835,0.3947,72881.7635,11.1966,131.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Spread_Equivalente",4,0.9832,0.3948,72892.3220,11.1968,128.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Spread_Equivalente, Spread_Skew_Intraday",4,0.9832,0.3948,73157.5687,11.2004,128.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99, Spread_Equivalente",5,0.9831,0.3948,72581.1957,11.1925,121.0000
+"Taxa_ZScore, Expected_Shortfall_99, Spread_Equivalente, Spread_Range_Intraday",4,0.9239,0.3996,106519.7134,11.5761,119.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Expected_Shortfall_99, Spread_Equivalente, Spread_Skew_Intraday",5,0.9831,0.3948,72844.1572,11.1961,119.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Spread_Equivalente, Spread_Skew_Intraday",5,0.9828,0.3949,72854.8476,11.1962,118.0000
+"Taxa_ZScore, Expected_Shortfall_99, Spread_Equivalente, Spread_Range_Intraday, Spread_Skew_Intraday",5,0.9200,0.4021,106257.2014,11.5736,115.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99, Spread_Equivalente, Spread_Skew_Intraday",6,0.9827,0.3949,72543.8098,11.1920,113.0000
+"Taxa_ZScore, Spread_Equivalente, Spread_Range_Intraday",3,0.9026,0.4043,109297.4259,11.6018,112.0000
+"Taxa_ZScore, VaR_99, Expected_Shortfall_99, Spread_Equivalente, Spread_Range_Intraday",5,0.9193,0.4021,98957.3651,11.5025,109.0000
+"Taxa_ZScore, Spread_Equivalente, Spread_Range_Intraday, Spread_Skew_Intraday",4,0.8973,0.4077,109103.6764,11.6001,108.0000
+"Taxa_ZScore, VaR_99, Spread_Equivalente, Spread_Range_Intraday",4,0.9196,0.4019,93184.5980,11.4423,108.0000
+"Taxa_ZScore, VaR_99, Expected_Shortfall_99, Spread_Equivalente, Spread_Range_Intraday, Spread_Skew_Intraday",6,0.9158,0.4043,98757.4298,11.5004,103.0000
+"Taxa_ZScore, VaR_99, Spread_Equivalente, Spread_Range_Intraday, Spread_Skew_Intraday",5,0.9160,0.4042,92894.9447,11.4392,102.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Spread_Range_Intraday",3,0.9653,0.4600,52722.8891,10.8728,97.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Spread_Range_Intraday, Spread_Skew_Intraday",4,0.9647,0.4602,52719.5110,10.8728,92.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Expected_Shortfall_99, Spread_Range_Intraday",4,0.9651,0.4601,52450.1765,10.8676,87.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Spread_Range_Intraday",4,0.9647,0.4602,52553.1720,10.8696,87.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Spread_Range_Intraday, Spread_Skew_Intraday",5,0.9642,0.4604,52549.8017,10.8695,80.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Spread_Equivalente, Spread_Range_Intraday",4,0.9641,0.4608,52698.0607,10.8724,80.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Expected_Shortfall_99, Spread_Range_Intraday, Spread_Skew_Intraday",5,0.9645,0.4603,52446.8031,10.8676,78.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99, Spread_Range_Intraday",5,0.9645,0.4603,52282.3183,10.8644,77.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Spread_Equivalente, Spread_Range_Intraday, Spread_Skew_Intraday",5,0.9636,0.4610,52694.7068,10.8723,74.0000
+"Taxa_ZScore, VaR_99, Spread_Equivalente",3,0.6944,0.5641,82346.2565,11.3187,72.0000
+"Taxa_ZScore, VaR_99, Expected_Shortfall_99, Spread_Equivalente",4,0.6837,0.5835,80092.2188,11.2909,69.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99, Spread_Range_Intraday, Spread_Skew_Intraday",6,0.9640,0.4605,52279.0320,10.8644,69.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Expected_Shortfall_99, Spread_Equivalente, Spread_Range_Intraday",5,0.9639,0.4609,52425.3673,10.8672,69.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Spread_Equivalente, Spread_Range_Intraday",5,0.9635,0.4610,52528.3875,10.8691,69.0000
+"Taxa_ZScore, VaR_99",2,0.5749,0.7008,92031.9833,11.4299,64.0000
+"Taxa_ZScore, VaR_99, Expected_Shortfall_99, Spread_Skew_Intraday",4,0.6610,0.7062,85829.0320,11.3601,64.0000
+"Taxa_ZScore, Volatilidade_EGARCH, Expected_Shortfall_99, Spread_Equivalente, Spread_Range_Intraday, Spread_Skew_Intraday",6,0.9634,0.4611,52422.0955,10.8671,62.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Spread_Equivalente, Spread_Range_Intraday, Spread_Skew_Intraday",6,0.9630,0.4612,52525.1180,10.8691,62.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99, Spread_Equivalente, Spread_Range_Intraday",6,0.9633,0.4611,52257.6309,10.8640,57.0000
+"Taxa_ZScore, VaR_99, Spread_Equivalente, Spread_Skew_Intraday",4,0.5291,0.7677,77618.7018,11.2596,53.0000
+"Taxa_ZScore, Volatilidade_EGARCH, VaR_99, Expected_Shortfall_99, Spread_Equivalente, Spread_Range_Intraday, Spread_Skew_Intraday",7,0.9629,0.4612,52254.2883,10.8639,52.0000
+"Taxa_ZScore, Expected_Shortfall_99, Spread_Equivalente",3,0.7101,0.5396,56661.9746,10.9449,52.0000
+"Taxa_ZScore, VaR_99, Spread_Skew_Intraday",3,0.5084,0.8729,88125.7571,11.3865,52.0000
+"Taxa_ZScore, VaR_99, Expected_Shortfall_99, Spread_Equivalente, Spread_Skew_Intraday",5,0.5217,0.7846,76742.4614,11.2482,48.0000
+"Taxa_ZScore, Expected_Shortfall_99, Spread_Equivalente, Spread_Skew_Intraday",4,0.6793,0.5905,54325.8784,10.9028,45.0000
+"Taxa_ZScore, Expected_Shortfall_99",2,0.5906,0.6616,57818.2871,10.9651,44.0000
+"Taxa_ZScore, VaR_99, Expected_Shortfall_99",3,0.6150,0.6966,53745.5195,10.8920,40.0000
+"Taxa_ZScore, Expected_Shortfall_99, Spread_Skew_Intraday",3,0.5219,0.8052,57367.4598,10.9572,33.0000
+"Taxa_ZScore, Spread_Equivalente",2,0.5136,0.7950,16185.6149,9.6919,11.0000
+"Taxa_ZScore, Spread_Skew_Intraday",2,0.3757,0.9332,16663.6379,9.7210,6.0000
+"Taxa_ZScore, Spread_Equivalente, Spread_Skew_Intraday",3,0.4575,0.9339,11544.0197,9.3540,4.0000

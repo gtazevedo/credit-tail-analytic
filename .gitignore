@@ -216,3 +216,15 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+#Yaml
+*.yaml
+
+#HTML
+*.html
+# Dados e saídas locais (não versionados)
+dados/
+/dados/
+dados/**
+/graficos
+/notebooks
